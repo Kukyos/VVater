@@ -1,0 +1,1283 @@
+{
+  "generated": "2026-09-22T18:36:37",
+  "region": {
+    "name": "Bay of Bengal",
+    "lon": [
+      78.0,
+      100.0
+    ],
+    "lat": [
+      5.0,
+      23.0
+    ]
+  },
+  "centre_date": "2018-08-25",
+  "pairing_days": 5.0,
+  "source": "INCOIS Argo 10-day, Variational Analysis",
+  "field_range_test": {
+    "checked": true,
+    "test": "Argo global range test (QC test 6)",
+    "limits": [
+      -2.5,
+      40.0
+    ],
+    "failed": 6,
+    "checked_cells": 68022,
+    "failed_range": [
+      40.038,
+      44.423
+    ]
+  },
+  "field": {
+    "shape": {
+      "time": 13,
+      "ZAX": 24,
+      "latitude": 19,
+      "longitude": 23
+    },
+    "fetch_seconds": 0.134,
+    "float32_mb": 0.545,
+    "finite_fraction": 0.4989,
+    "min": 2.388,
+    "max": 44.423
+  },
+  "regrid": {
+    "native_levels": 24,
+    "output_levels": 24,
+    "resample_ms": 440.7,
+    "stretch": "uniform in sqrt(depth)",
+    "levels": 24,
+    "z_min_m": 5.0,
+    "z_max_m": 2000.0,
+    "depths_m": [
+      5.0,
+      16.67,
+      35.17,
+      60.49,
+      92.64,
+      131.61,
+      177.4,
+      230.02,
+      289.46,
+      355.73,
+      428.82,
+      508.73,
+      595.47,
+      689.04,
+      789.42,
+      896.64,
+      1010.67,
+      1131.53,
+      1259.22,
+      1393.72,
+      1535.06,
+      1683.21,
+      1838.19,
+      2000.0
+    ]
+  },
+  "argo": {
+    "window_seconds": 0.24,
+    "profiles": 35,
+    "data_modes": {
+      "R": 0,
+      "A": 2,
+      "D": 33
+    },
+    "levels": 11525,
+    "levels_rejected": 510,
+    "profiles_fully_rejected": 2
+  },
+  "glider": {
+    "deployments": [
+      "ru29-20180812T0220"
+    ],
+    "fetch_seconds": 0.05,
+    "casts": 112,
+    "levels": 13053
+  },
+  "colocation": {
+    "profiles_compared": 29,
+    "mean_bias_degC": -0.2014,
+    "mean_rmse_degC": 0.7125,
+    "interpretation": "consistency check, not independent validation",
+    "per_profile": [
+      {
+        "levels": 100,
+        "levels_compared": 95,
+        "bias": -0.22369902503189795,
+        "rmse": 0.6236237094657628,
+        "method": "nearest in time, linear in lat/lon/depth (xarray.interp)",
+        "variable": "TEMP",
+        "standard_name": "sea_water_temperature",
+        "units": "\u00b0C",
+        "analysis_time": "2018-08-20T00:00:00",
+        "time_offset_days": -0.991,
+        "grid_offset_deg": {
+          "lat": 0.462,
+          "lon": 0.216
+        },
+        "pairing_window_days": 5.0,
+        "pairing_note": "Display window is +/-5 days centred on the analysis timestamp. The analysis's own assimilation window is wider: T_BOXOBS = 28-30 profiles/step over this region against ~20 profiles in a strict 10-day bucket (measured 2026-09-22).",
+        "cf_assumptions": [
+          "units 'degs' is not UDUNITS; read as 'degree_Celsius'",
+          "no standard_name; assumed 'sea_water_temperature' from variable identity",
+          "depth coordinate 'ZAX' has no 'positive' attribute; assumed positive-down because values are non-negative and ascending"
+        ],
+        "platform": "2902596",
+        "data_mode": "D",
+        "field_used": "TEMP_ADJUSTED",
+        "source_file": "argo_indian_ocean_20180820.nc",
+        "levels_rejected": 0,
+        "qc_accepted": [
+          "1",
+          "2",
+          "5",
+          "8"
+        ]
+      },
+      {
+        "levels": 120,
+        "levels_compared": 120,
+        "bias": 0.05555909897203586,
+        "rmse": 0.197799954876491,
+        "method": "nearest in time, linear in lat/lon/depth (xarray.interp)",
+        "variable": "TEMP",
+        "standard_name": "sea_water_temperature",
+        "units": "\u00b0C",
+        "analysis_time": "2018-08-20T00:00:00",
+        "time_offset_days": -0.786,
+        "grid_offset_deg": {
+          "lat": 0.382,
+          "lon": 0.116
+        },
+        "pairing_window_days": 5.0,
+        "pairing_note": "Display window is +/-5 days centred on the analysis timestamp. The analysis's own assimilation window is wider: T_BOXOBS = 28-30 profiles/step over this region against ~20 profiles in a strict 10-day bucket (measured 2026-09-22).",
+        "cf_assumptions": [
+          "units 'degs' is not UDUNITS; read as 'degree_Celsius'",
+          "no standard_name; assumed 'sea_water_temperature' from variable identity",
+          "depth coordinate 'ZAX' has no 'positive' attribute; assumed positive-down because values are non-negative and ascending"
+        ],
+        "platform": "6901740",
+        "data_mode": "D",
+        "field_used": "TEMP_ADJUSTED",
+        "source_file": "argo_indian_ocean_20180820.nc",
+        "levels_rejected": 0,
+        "qc_accepted": [
+          "1",
+          "2",
+          "5",
+          "8"
+        ]
+      },
+      {
+        "levels": 18,
+        "levels_compared": 0,
+        "bias": NaN,
+        "rmse": NaN,
+        "method": "nearest in time, linear in lat/lon/depth (xarray.interp)",
+        "variable": "TEMP",
+        "standard_name": "sea_water_temperature",
+        "units": "\u00b0C",
+        "analysis_time": "2018-08-20T00:00:00",
+        "time_offset_days": -1.179,
+        "grid_offset_deg": {
+          "lat": 0.2,
+          "lon": 0.0167
+        },
+        "pairing_window_days": 5.0,
+        "pairing_note": "Display window is +/-5 days centred on the analysis timestamp. The analysis's own assimilation window is wider: T_BOXOBS = 28-30 profiles/step over this region against ~20 profiles in a strict 10-day bucket (measured 2026-09-22).",
+        "cf_assumptions": [
+          "units 'degs' is not UDUNITS; read as 'degree_Celsius'",
+          "no standard_name; assumed 'sea_water_temperature' from variable identity",
+          "depth coordinate 'ZAX' has no 'positive' attribute; assumed positive-down because values are non-negative and ascending"
+        ],
+        "platform": "2902230",
+        "data_mode": "D",
+        "field_used": "TEMP_ADJUSTED",
+        "source_file": "argo_indian_ocean_20180821.nc",
+        "levels_rejected": 1,
+        "qc_accepted": [
+          "1",
+          "2",
+          "5",
+          "8"
+        ]
+      },
+      {
+        "levels": 74,
+        "levels_compared": 73,
+        "bias": 0.23138562036887822,
+        "rmse": 0.6816424862319723,
+        "method": "nearest in time, linear in lat/lon/depth (xarray.interp)",
+        "variable": "TEMP",
+        "standard_name": "sea_water_temperature",
+        "units": "\u00b0C",
+        "analysis_time": "2018-08-20T00:00:00",
+        "time_offset_days": -1.02,
+        "grid_offset_deg": {
+          "lat": 0.023,
+          "lon": 0.335
+        },
+        "pairing_window_days": 5.0,
+        "pairing_note": "Display window is +/-5 days centred on the analysis timestamp. The analysis's own assimilation window is wider: T_BOXOBS = 28-30 profiles/step over this region against ~20 profiles in a strict 10-day bucket (measured 2026-09-22).",
+        "cf_assumptions": [
+          "units 'degs' is not UDUNITS; read as 'degree_Celsius'",
+          "no standard_name; assumed 'sea_water_temperature' from variable identity",
+          "depth coordinate 'ZAX' has no 'positive' attribute; assumed positive-down because values are non-negative and ascending"
+        ],
+        "platform": "2902682",
+        "data_mode": "D",
+        "field_used": "TEMP_ADJUSTED",
+        "source_file": "argo_indian_ocean_20180821.nc",
+        "levels_rejected": 0,
+        "qc_accepted": [
+          "1",
+          "2",
+          "5",
+          "8"
+        ]
+      },
+      {
+        "levels": 300,
+        "levels_compared": 299,
+        "bias": -0.49421822476311017,
+        "rmse": 1.3550143427265686,
+        "method": "nearest in time, linear in lat/lon/depth (xarray.interp)",
+        "variable": "TEMP",
+        "standard_name": "sea_water_temperature",
+        "units": "\u00b0C",
+        "analysis_time": "2018-08-20T00:00:00",
+        "time_offset_days": -2.4,
+        "grid_offset_deg": {
+          "lat": 0.032,
+          "lon": 0.136
+        },
+        "pairing_window_days": 5.0,
+        "pairing_note": "Display window is +/-5 days centred on the analysis timestamp. The analysis's own assimilation window is wider: T_BOXOBS = 28-30 profiles/step over this region against ~20 profiles in a strict 10-day bucket (measured 2026-09-22).",
+        "cf_assumptions": [
+          "units 'degs' is not UDUNITS; read as 'degree_Celsius'",
+          "no standard_name; assumed 'sea_water_temperature' from variable identity",
+          "depth coordinate 'ZAX' has no 'positive' attribute; assumed positive-down because values are non-negative and ascending"
+        ],
+        "platform": "2901892",
+        "data_mode": "D",
+        "field_used": "TEMP_ADJUSTED",
+        "source_file": "argo_indian_ocean_20180822.nc",
+        "levels_rejected": 0,
+        "qc_accepted": [
+          "1",
+          "2",
+          "5",
+          "8"
+        ]
+      },
+      {
+        "levels": 266,
+        "levels_compared": 261,
+        "bias": -0.575722413012811,
+        "rmse": 0.7985051766003387,
+        "method": "nearest in time, linear in lat/lon/depth (xarray.interp)",
+        "variable": "TEMP",
+        "standard_name": "sea_water_temperature",
+        "units": "\u00b0C",
+        "analysis_time": "2018-08-20T00:00:00",
+        "time_offset_days": -2.176,
+        "grid_offset_deg": {
+          "lat": 0.4167,
+          "lon": 0.4667
+        },
+        "pairing_window_days": 5.0,
+        "pairing_note": "Display window is +/-5 days centred on the analysis timestamp. The analysis's own assimilation window is wider: T_BOXOBS = 28-30 profiles/step over this region against ~20 profiles in a strict 10-day bucket (measured 2026-09-22).",
+        "cf_assumptions": [
+          "units 'degs' is not UDUNITS; read as 'degree_Celsius'",
+          "no standard_name; assumed 'sea_water_temperature' from variable identity",
+          "depth coordinate 'ZAX' has no 'positive' attribute; assumed positive-down because values are non-negative and ascending"
+        ],
+        "platform": "2902233",
+        "data_mode": "D",
+        "field_used": "TEMP_ADJUSTED",
+        "source_file": "argo_indian_ocean_20180822.nc",
+        "levels_rejected": 0,
+        "qc_accepted": [
+          "1",
+          "2",
+          "5",
+          "8"
+        ]
+      },
+      {
+        "levels": 268,
+        "levels_compared": 262,
+        "bias": 0.004193682280477102,
+        "rmse": 0.7846095298075245,
+        "method": "nearest in time, linear in lat/lon/depth (xarray.interp)",
+        "variable": "TEMP",
+        "standard_name": "sea_water_temperature",
+        "units": "\u00b0C",
+        "analysis_time": "2018-08-20T00:00:00",
+        "time_offset_days": -2.173,
+        "grid_offset_deg": {
+          "lat": 0.0167,
+          "lon": 0.1667
+        },
+        "pairing_window_days": 5.0,
+        "pairing_note": "Display window is +/-5 days centred on the analysis timestamp. The analysis's own assimilation window is wider: T_BOXOBS = 28-30 profiles/step over this region against ~20 profiles in a strict 10-day bucket (measured 2026-09-22).",
+        "cf_assumptions": [
+          "units 'degs' is not UDUNITS; read as 'degree_Celsius'",
+          "no standard_name; assumed 'sea_water_temperature' from variable identity",
+          "depth coordinate 'ZAX' has no 'positive' attribute; assumed positive-down because values are non-negative and ascending"
+        ],
+        "platform": "2902235",
+        "data_mode": "D",
+        "field_used": "TEMP_ADJUSTED",
+        "source_file": "argo_indian_ocean_20180822.nc",
+        "levels_rejected": 0,
+        "qc_accepted": [
+          "1",
+          "2",
+          "5",
+          "8"
+        ]
+      },
+      {
+        "levels": 269,
+        "levels_compared": 263,
+        "bias": -1.1985295779026157,
+        "rmse": 1.5794103852268055,
+        "method": "nearest in time, linear in lat/lon/depth (xarray.interp)",
+        "variable": "TEMP",
+        "standard_name": "sea_water_temperature",
+        "units": "\u00b0C",
+        "analysis_time": "2018-08-20T00:00:00",
+        "time_offset_days": -2.17,
+        "grid_offset_deg": {
+          "lat": 0.0167,
+          "lon": 0.4167
+        },
+        "pairing_window_days": 5.0,
+        "pairing_note": "Display window is +/-5 days centred on the analysis timestamp. The analysis's own assimilation window is wider: T_BOXOBS = 28-30 profiles/step over this region against ~20 profiles in a strict 10-day bucket (measured 2026-09-22).",
+        "cf_assumptions": [
+          "units 'degs' is not UDUNITS; read as 'degree_Celsius'",
+          "no standard_name; assumed 'sea_water_temperature' from variable identity",
+          "depth coordinate 'ZAX' has no 'positive' attribute; assumed positive-down because values are non-negative and ascending"
+        ],
+        "platform": "2902234",
+        "data_mode": "D",
+        "field_used": "TEMP_ADJUSTED",
+        "source_file": "argo_indian_ocean_20180822.nc",
+        "levels_rejected": 0,
+        "qc_accepted": [
+          "1",
+          "2",
+          "5",
+          "8"
+        ]
+      },
+      {
+        "levels": 101,
+        "levels_compared": 96,
+        "bias": -0.30033310302886523,
+        "rmse": 0.9628119283891734,
+        "method": "nearest in time, linear in lat/lon/depth (xarray.interp)",
+        "variable": "TEMP",
+        "standard_name": "sea_water_temperature",
+        "units": "\u00b0C",
+        "analysis_time": "2018-08-20T00:00:00",
+        "time_offset_days": -3.97,
+        "grid_offset_deg": {
+          "lat": 0.211,
+          "lon": 0.421
+        },
+        "pairing_window_days": 5.0,
+        "pairing_note": "Display window is +/-5 days centred on the analysis timestamp. The analysis's own assimilation window is wider: T_BOXOBS = 28-30 profiles/step over this region against ~20 profiles in a strict 10-day bucket (measured 2026-09-22).",
+        "cf_assumptions": [
+          "units 'degs' is not UDUNITS; read as 'degree_Celsius'",
+          "no standard_name; assumed 'sea_water_temperature' from variable identity",
+          "depth coordinate 'ZAX' has no 'positive' attribute; assumed positive-down because values are non-negative and ascending"
+        ],
+        "platform": "2902570",
+        "data_mode": "D",
+        "field_used": "TEMP_ADJUSTED",
+        "source_file": "argo_indian_ocean_20180823.nc",
+        "levels_rejected": 0,
+        "qc_accepted": [
+          "1",
+          "2",
+          "5",
+          "8"
+        ]
+      },
+      {
+        "levels": 996,
+        "levels_compared": 995,
+        "bias": -0.1026207837558852,
+        "rmse": 0.3287958874085972,
+        "method": "nearest in time, linear in lat/lon/depth (xarray.interp)",
+        "variable": "TEMP",
+        "standard_name": "sea_water_temperature",
+        "units": "\u00b0C",
+        "analysis_time": "2018-08-20T00:00:00",
+        "time_offset_days": -3.964,
+        "grid_offset_deg": {
+          "lat": 0.035,
+          "lon": 0.188
+        },
+        "pairing_window_days": 5.0,
+        "pairing_note": "Display window is +/-5 days centred on the analysis timestamp. The analysis's own assimilation window is wider: T_BOXOBS = 28-30 profiles/step over this region against ~20 profiles in a strict 10-day bucket (measured 2026-09-22).",
+        "cf_assumptions": [
+          "units 'degs' is not UDUNITS; read as 'degree_Celsius'",
+          "no standard_name; assumed 'sea_water_temperature' from variable identity",
+          "depth coordinate 'ZAX' has no 'positive' attribute; assumed positive-down because values are non-negative and ascending"
+        ],
+        "platform": "2902197",
+        "data_mode": "D",
+        "field_used": "TEMP_ADJUSTED",
+        "source_file": "argo_indian_ocean_20180823.nc",
+        "levels_rejected": 0,
+        "qc_accepted": [
+          "1",
+          "2",
+          "5",
+          "8"
+        ]
+      },
+      {
+        "levels": 74,
+        "levels_compared": 64,
+        "bias": -0.269541900690497,
+        "rmse": 0.8050830844139085,
+        "method": "nearest in time, linear in lat/lon/depth (xarray.interp)",
+        "variable": "TEMP",
+        "standard_name": "sea_water_temperature",
+        "units": "\u00b0C",
+        "analysis_time": "2018-08-20T00:00:00",
+        "time_offset_days": -3.897,
+        "grid_offset_deg": {
+          "lat": 0.345,
+          "lon": 0.479
+        },
+        "pairing_window_days": 5.0,
+        "pairing_note": "Display window is +/-5 days centred on the analysis timestamp. The analysis's own assimilation window is wider: T_BOXOBS = 28-30 profiles/step over this region against ~20 profiles in a strict 10-day bucket (measured 2026-09-22).",
+        "cf_assumptions": [
+          "units 'degs' is not UDUNITS; read as 'degree_Celsius'",
+          "no standard_name; assumed 'sea_water_temperature' from variable identity",
+          "depth coordinate 'ZAX' has no 'positive' attribute; assumed positive-down because values are non-negative and ascending"
+        ],
+        "platform": "2902681",
+        "data_mode": "D",
+        "field_used": "TEMP_ADJUSTED",
+        "source_file": "argo_indian_ocean_20180823.nc",
+        "levels_rejected": 0,
+        "qc_accepted": [
+          "1",
+          "2",
+          "5",
+          "8"
+        ]
+      },
+      {
+        "levels": 340,
+        "levels_compared": 340,
+        "bias": 0.6336225547072138,
+        "rmse": 0.9688989404814103,
+        "method": "nearest in time, linear in lat/lon/depth (xarray.interp)",
+        "variable": "TEMP",
+        "standard_name": "sea_water_temperature",
+        "units": "\u00b0C",
+        "analysis_time": "2018-08-20T00:00:00",
+        "time_offset_days": -3.727,
+        "grid_offset_deg": {
+          "lat": 0.2444,
+          "lon": 0.2428
+        },
+        "pairing_window_days": 5.0,
+        "pairing_note": "Display window is +/-5 days centred on the analysis timestamp. The analysis's own assimilation window is wider: T_BOXOBS = 28-30 profiles/step over this region against ~20 profiles in a strict 10-day bucket (measured 2026-09-22).",
+        "cf_assumptions": [
+          "units 'degs' is not UDUNITS; read as 'degree_Celsius'",
+          "no standard_name; assumed 'sea_water_temperature' from variable identity",
+          "depth coordinate 'ZAX' has no 'positive' attribute; assumed positive-down because values are non-negative and ascending"
+        ],
+        "platform": "2902264",
+        "data_mode": "D",
+        "field_used": "TEMP_ADJUSTED",
+        "source_file": "argo_indian_ocean_20180823.nc",
+        "levels_rejected": 0,
+        "qc_accepted": [
+          "1",
+          "2",
+          "5",
+          "8"
+        ]
+      },
+      {
+        "levels": 997,
+        "levels_compared": 995,
+        "bias": -0.3971470751788454,
+        "rmse": 1.2192752929045585,
+        "method": "nearest in time, linear in lat/lon/depth (xarray.interp)",
+        "variable": "TEMP",
+        "standard_name": "sea_water_temperature",
+        "units": "\u00b0C",
+        "analysis_time": "2018-08-20T00:00:00",
+        "time_offset_days": -3.256,
+        "grid_offset_deg": {
+          "lat": 0.457,
+          "lon": 0.144
+        },
+        "pairing_window_days": 5.0,
+        "pairing_note": "Display window is +/-5 days centred on the analysis timestamp. The analysis's own assimilation window is wider: T_BOXOBS = 28-30 profiles/step over this region against ~20 profiles in a strict 10-day bucket (measured 2026-09-22).",
+        "cf_assumptions": [
+          "units 'degs' is not UDUNITS; read as 'degree_Celsius'",
+          "no standard_name; assumed 'sea_water_temperature' from variable identity",
+          "depth coordinate 'ZAX' has no 'positive' attribute; assumed positive-down because values are non-negative and ascending"
+        ],
+        "platform": "2902194",
+        "data_mode": "D",
+        "field_used": "TEMP_ADJUSTED",
+        "source_file": "argo_indian_ocean_20180823.nc",
+        "levels_rejected": 0,
+        "qc_accepted": [
+          "1",
+          "2",
+          "5",
+          "8"
+        ]
+      },
+      {
+        "levels": 131,
+        "levels_compared": 0,
+        "bias": NaN,
+        "rmse": NaN,
+        "method": "nearest in time, linear in lat/lon/depth (xarray.interp)",
+        "variable": "TEMP",
+        "standard_name": "sea_water_temperature",
+        "units": "\u00b0C",
+        "analysis_time": "2018-08-20T00:00:00",
+        "time_offset_days": -3.19,
+        "grid_offset_deg": {
+          "lat": 0.05,
+          "lon": 0.15
+        },
+        "pairing_window_days": 5.0,
+        "pairing_note": "Display window is +/-5 days centred on the analysis timestamp. The analysis's own assimilation window is wider: T_BOXOBS = 28-30 profiles/step over this region against ~20 profiles in a strict 10-day bucket (measured 2026-09-22).",
+        "cf_assumptions": [
+          "units 'degs' is not UDUNITS; read as 'degree_Celsius'",
+          "no standard_name; assumed 'sea_water_temperature' from variable identity",
+          "depth coordinate 'ZAX' has no 'positive' attribute; assumed positive-down because values are non-negative and ascending"
+        ],
+        "platform": "2902229",
+        "data_mode": "D",
+        "field_used": "TEMP_ADJUSTED",
+        "source_file": "argo_indian_ocean_20180823.nc",
+        "levels_rejected": 0,
+        "qc_accepted": [
+          "1",
+          "2",
+          "5",
+          "8"
+        ]
+      },
+      {
+        "levels": 104,
+        "levels_compared": 98,
+        "bias": -0.04902926938380311,
+        "rmse": 0.7087608773713414,
+        "method": "nearest in time, linear in lat/lon/depth (xarray.interp)",
+        "variable": "TEMP",
+        "standard_name": "sea_water_temperature",
+        "units": "\u00b0C",
+        "analysis_time": "2018-08-20T00:00:00",
+        "time_offset_days": -3.054,
+        "grid_offset_deg": {
+          "lat": 0.3167,
+          "lon": 0.15
+        },
+        "pairing_window_days": 5.0,
+        "pairing_note": "Display window is +/-5 days centred on the analysis timestamp. The analysis's own assimilation window is wider: T_BOXOBS = 28-30 profiles/step over this region against ~20 profiles in a strict 10-day bucket (measured 2026-09-22).",
+        "cf_assumptions": [
+          "units 'degs' is not UDUNITS; read as 'degree_Celsius'",
+          "no standard_name; assumed 'sea_water_temperature' from variable identity",
+          "depth coordinate 'ZAX' has no 'positive' attribute; assumed positive-down because values are non-negative and ascending"
+        ],
+        "platform": "2902236",
+        "data_mode": "A",
+        "field_used": "TEMP_ADJUSTED",
+        "source_file": "argo_indian_ocean_20180823.nc",
+        "levels_rejected": 0,
+        "qc_accepted": [
+          "1",
+          "2",
+          "5",
+          "8"
+        ]
+      },
+      {
+        "levels": 989,
+        "levels_compared": 988,
+        "bias": -0.15636178736381812,
+        "rmse": 0.2443360868436597,
+        "method": "nearest in time, linear in lat/lon/depth (xarray.interp)",
+        "variable": "TEMP",
+        "standard_name": "sea_water_temperature",
+        "units": "\u00b0C",
+        "analysis_time": "2018-08-20T00:00:00",
+        "time_offset_days": -4.427,
+        "grid_offset_deg": {
+          "lat": 0.069,
+          "lon": 0.26
+        },
+        "pairing_window_days": 5.0,
+        "pairing_note": "Display window is +/-5 days centred on the analysis timestamp. The analysis's own assimilation window is wider: T_BOXOBS = 28-30 profiles/step over this region against ~20 profiles in a strict 10-day bucket (measured 2026-09-22).",
+        "cf_assumptions": [
+          "units 'degs' is not UDUNITS; read as 'degree_Celsius'",
+          "no standard_name; assumed 'sea_water_temperature' from variable identity",
+          "depth coordinate 'ZAX' has no 'positive' attribute; assumed positive-down because values are non-negative and ascending"
+        ],
+        "platform": "2902192",
+        "data_mode": "D",
+        "field_used": "TEMP_ADJUSTED",
+        "source_file": "argo_indian_ocean_20180824.nc",
+        "levels_rejected": 0,
+        "qc_accepted": [
+          "1",
+          "2",
+          "5",
+          "8"
+        ]
+      },
+      {
+        "levels": 64,
+        "levels_compared": 12,
+        "bias": -0.14026275406084476,
+        "rmse": 0.7473548983062658,
+        "method": "nearest in time, linear in lat/lon/depth (xarray.interp)",
+        "variable": "TEMP",
+        "standard_name": "sea_water_temperature",
+        "units": "\u00b0C",
+        "analysis_time": "2018-08-20T00:00:00",
+        "time_offset_days": -4.191,
+        "grid_offset_deg": {
+          "lat": 0.232,
+          "lon": 0.495
+        },
+        "pairing_window_days": 5.0,
+        "pairing_note": "Display window is +/-5 days centred on the analysis timestamp. The analysis's own assimilation window is wider: T_BOXOBS = 28-30 profiles/step over this region against ~20 profiles in a strict 10-day bucket (measured 2026-09-22).",
+        "cf_assumptions": [
+          "units 'degs' is not UDUNITS; read as 'degree_Celsius'",
+          "no standard_name; assumed 'sea_water_temperature' from variable identity",
+          "depth coordinate 'ZAX' has no 'positive' attribute; assumed positive-down because values are non-negative and ascending"
+        ],
+        "platform": "2902680",
+        "data_mode": "D",
+        "field_used": "TEMP_ADJUSTED",
+        "source_file": "argo_indian_ocean_20180824.nc",
+        "levels_rejected": 0,
+        "qc_accepted": [
+          "1",
+          "2",
+          "5",
+          "8"
+        ]
+      },
+      {
+        "levels": 99,
+        "levels_compared": 95,
+        "bias": -0.08311856711127785,
+        "rmse": 0.508185254172813,
+        "method": "nearest in time, linear in lat/lon/depth (xarray.interp)",
+        "variable": "TEMP",
+        "standard_name": "sea_water_temperature",
+        "units": "\u00b0C",
+        "analysis_time": "2018-08-20T00:00:00",
+        "time_offset_days": -4.011,
+        "grid_offset_deg": {
+          "lat": 0.473,
+          "lon": 0.015
+        },
+        "pairing_window_days": 5.0,
+        "pairing_note": "Display window is +/-5 days centred on the analysis timestamp. The analysis's own assimilation window is wider: T_BOXOBS = 28-30 profiles/step over this region against ~20 profiles in a strict 10-day bucket (measured 2026-09-22).",
+        "cf_assumptions": [
+          "units 'degs' is not UDUNITS; read as 'degree_Celsius'",
+          "no standard_name; assumed 'sea_water_temperature' from variable identity",
+          "depth coordinate 'ZAX' has no 'positive' attribute; assumed positive-down because values are non-negative and ascending"
+        ],
+        "platform": "2902605",
+        "data_mode": "D",
+        "field_used": "TEMP_ADJUSTED",
+        "source_file": "argo_indian_ocean_20180824.nc",
+        "levels_rejected": 0,
+        "qc_accepted": [
+          "1",
+          "2",
+          "5",
+          "8"
+        ]
+      },
+      {
+        "levels": 82,
+        "levels_compared": 82,
+        "bias": 0.17087552986365045,
+        "rmse": 0.3256393750530559,
+        "method": "nearest in time, linear in lat/lon/depth (xarray.interp)",
+        "variable": "TEMP",
+        "standard_name": "sea_water_temperature",
+        "units": "\u00b0C",
+        "analysis_time": "2018-08-30T00:00:00",
+        "time_offset_days": 4.214,
+        "grid_offset_deg": {
+          "lat": 0.421,
+          "lon": 0.238
+        },
+        "pairing_window_days": 5.0,
+        "pairing_note": "Display window is +/-5 days centred on the analysis timestamp. The analysis's own assimilation window is wider: T_BOXOBS = 28-30 profiles/step over this region against ~20 profiles in a strict 10-day bucket (measured 2026-09-22).",
+        "cf_assumptions": [
+          "units 'degs' is not UDUNITS; read as 'degree_Celsius'",
+          "no standard_name; assumed 'sea_water_temperature' from variable identity",
+          "depth coordinate 'ZAX' has no 'positive' attribute; assumed positive-down because values are non-negative and ascending"
+        ],
+        "platform": "6901740",
+        "data_mode": "D",
+        "field_used": "TEMP_ADJUSTED",
+        "source_file": "argo_indian_ocean_20180825.nc",
+        "levels_rejected": 0,
+        "qc_accepted": [
+          "1",
+          "2",
+          "5",
+          "8"
+        ]
+      },
+      {
+        "levels": 268,
+        "levels_compared": 266,
+        "bias": -0.17288739760347668,
+        "rmse": 0.4145119062259613,
+        "method": "nearest in time, linear in lat/lon/depth (xarray.interp)",
+        "variable": "TEMP",
+        "standard_name": "sea_water_temperature",
+        "units": "\u00b0C",
+        "analysis_time": "2018-08-30T00:00:00",
+        "time_offset_days": 4.671,
+        "grid_offset_deg": {
+          "lat": 0.211,
+          "lon": 0.153
+        },
+        "pairing_window_days": 5.0,
+        "pairing_note": "Display window is +/-5 days centred on the analysis timestamp. The analysis's own assimilation window is wider: T_BOXOBS = 28-30 profiles/step over this region against ~20 profiles in a strict 10-day bucket (measured 2026-09-22).",
+        "cf_assumptions": [
+          "units 'degs' is not UDUNITS; read as 'degree_Celsius'",
+          "no standard_name; assumed 'sea_water_temperature' from variable identity",
+          "depth coordinate 'ZAX' has no 'positive' attribute; assumed positive-down because values are non-negative and ascending"
+        ],
+        "platform": "2902154",
+        "data_mode": "D",
+        "field_used": "TEMP_ADJUSTED",
+        "source_file": "argo_indian_ocean_20180825.nc",
+        "levels_rejected": 1,
+        "qc_accepted": [
+          "1",
+          "2",
+          "5",
+          "8"
+        ]
+      },
+      {
+        "levels": 269,
+        "levels_compared": 0,
+        "bias": NaN,
+        "rmse": NaN,
+        "method": "nearest in time, linear in lat/lon/depth (xarray.interp)",
+        "variable": "TEMP",
+        "standard_name": "sea_water_temperature",
+        "units": "\u00b0C",
+        "analysis_time": "2018-08-30T00:00:00",
+        "time_offset_days": 3.821,
+        "grid_offset_deg": {
+          "lat": 0.1167,
+          "lon": 0.25
+        },
+        "pairing_window_days": 5.0,
+        "pairing_note": "Display window is +/-5 days centred on the analysis timestamp. The analysis's own assimilation window is wider: T_BOXOBS = 28-30 profiles/step over this region against ~20 profiles in a strict 10-day bucket (measured 2026-09-22).",
+        "cf_assumptions": [
+          "units 'degs' is not UDUNITS; read as 'degree_Celsius'",
+          "no standard_name; assumed 'sea_water_temperature' from variable identity",
+          "depth coordinate 'ZAX' has no 'positive' attribute; assumed positive-down because values are non-negative and ascending"
+        ],
+        "platform": "2902230",
+        "data_mode": "D",
+        "field_used": "TEMP_ADJUSTED",
+        "source_file": "argo_indian_ocean_20180826.nc",
+        "levels_rejected": 2,
+        "qc_accepted": [
+          "1",
+          "2",
+          "5",
+          "8"
+        ]
+      },
+      {
+        "levels": 297,
+        "levels_compared": 295,
+        "bias": -0.2608981598125836,
+        "rmse": 0.8520521467190174,
+        "method": "nearest in time, linear in lat/lon/depth (xarray.interp)",
+        "variable": "TEMP",
+        "standard_name": "sea_water_temperature",
+        "units": "\u00b0C",
+        "analysis_time": "2018-08-30T00:00:00",
+        "time_offset_days": 2.612,
+        "grid_offset_deg": {
+          "lat": 0.433,
+          "lon": 0.145
+        },
+        "pairing_window_days": 5.0,
+        "pairing_note": "Display window is +/-5 days centred on the analysis timestamp. The analysis's own assimilation window is wider: T_BOXOBS = 28-30 profiles/step over this region against ~20 profiles in a strict 10-day bucket (measured 2026-09-22).",
+        "cf_assumptions": [
+          "units 'degs' is not UDUNITS; read as 'degree_Celsius'",
+          "no standard_name; assumed 'sea_water_temperature' from variable identity",
+          "depth coordinate 'ZAX' has no 'positive' attribute; assumed positive-down because values are non-negative and ascending"
+        ],
+        "platform": "2901895",
+        "data_mode": "D",
+        "field_used": "TEMP_ADJUSTED",
+        "source_file": "argo_indian_ocean_20180827.nc",
+        "levels_rejected": 0,
+        "qc_accepted": [
+          "1",
+          "2",
+          "5",
+          "8"
+        ]
+      },
+      {
+        "levels": 350,
+        "levels_compared": 344,
+        "bias": -0.1427224300580687,
+        "rmse": 0.5483347478175815,
+        "method": "nearest in time, linear in lat/lon/depth (xarray.interp)",
+        "variable": "TEMP",
+        "standard_name": "sea_water_temperature",
+        "units": "\u00b0C",
+        "analysis_time": "2018-08-30T00:00:00",
+        "time_offset_days": 2.648,
+        "grid_offset_deg": {
+          "lat": 0.0725,
+          "lon": 0.0514
+        },
+        "pairing_window_days": 5.0,
+        "pairing_note": "Display window is +/-5 days centred on the analysis timestamp. The analysis's own assimilation window is wider: T_BOXOBS = 28-30 profiles/step over this region against ~20 profiles in a strict 10-day bucket (measured 2026-09-22).",
+        "cf_assumptions": [
+          "units 'degs' is not UDUNITS; read as 'degree_Celsius'",
+          "no standard_name; assumed 'sea_water_temperature' from variable identity",
+          "depth coordinate 'ZAX' has no 'positive' attribute; assumed positive-down because values are non-negative and ascending"
+        ],
+        "platform": "2901898",
+        "data_mode": "D",
+        "field_used": "TEMP_ADJUSTED",
+        "source_file": "argo_indian_ocean_20180827.nc",
+        "levels_rejected": 0,
+        "qc_accepted": [
+          "1",
+          "2",
+          "5",
+          "8"
+        ]
+      },
+      {
+        "levels": 270,
+        "levels_compared": 263,
+        "bias": -0.7495313152909957,
+        "rmse": 1.059864178533669,
+        "method": "nearest in time, linear in lat/lon/depth (xarray.interp)",
+        "variable": "TEMP",
+        "standard_name": "sea_water_temperature",
+        "units": "\u00b0C",
+        "analysis_time": "2018-08-30T00:00:00",
+        "time_offset_days": 2.824,
+        "grid_offset_deg": {
+          "lat": 0.45,
+          "lon": 0.4
+        },
+        "pairing_window_days": 5.0,
+        "pairing_note": "Display window is +/-5 days centred on the analysis timestamp. The analysis's own assimilation window is wider: T_BOXOBS = 28-30 profiles/step over this region against ~20 profiles in a strict 10-day bucket (measured 2026-09-22).",
+        "cf_assumptions": [
+          "units 'degs' is not UDUNITS; read as 'degree_Celsius'",
+          "no standard_name; assumed 'sea_water_temperature' from variable identity",
+          "depth coordinate 'ZAX' has no 'positive' attribute; assumed positive-down because values are non-negative and ascending"
+        ],
+        "platform": "2902233",
+        "data_mode": "D",
+        "field_used": "TEMP_ADJUSTED",
+        "source_file": "argo_indian_ocean_20180827.nc",
+        "levels_rejected": 0,
+        "qc_accepted": [
+          "1",
+          "2",
+          "5",
+          "8"
+        ]
+      },
+      {
+        "levels": 266,
+        "levels_compared": 260,
+        "bias": 0.1408078484492146,
+        "rmse": 0.2423993272431829,
+        "method": "nearest in time, linear in lat/lon/depth (xarray.interp)",
+        "variable": "TEMP",
+        "standard_name": "sea_water_temperature",
+        "units": "\u00b0C",
+        "analysis_time": "2018-08-30T00:00:00",
+        "time_offset_days": 2.828,
+        "grid_offset_deg": {
+          "lat": 0.1,
+          "lon": 0.1
+        },
+        "pairing_window_days": 5.0,
+        "pairing_note": "Display window is +/-5 days centred on the analysis timestamp. The analysis's own assimilation window is wider: T_BOXOBS = 28-30 profiles/step over this region against ~20 profiles in a strict 10-day bucket (measured 2026-09-22).",
+        "cf_assumptions": [
+          "units 'degs' is not UDUNITS; read as 'degree_Celsius'",
+          "no standard_name; assumed 'sea_water_temperature' from variable identity",
+          "depth coordinate 'ZAX' has no 'positive' attribute; assumed positive-down because values are non-negative and ascending"
+        ],
+        "platform": "2902235",
+        "data_mode": "D",
+        "field_used": "TEMP_ADJUSTED",
+        "source_file": "argo_indian_ocean_20180827.nc",
+        "levels_rejected": 0,
+        "qc_accepted": [
+          "1",
+          "2",
+          "5",
+          "8"
+        ]
+      },
+      {
+        "levels": 269,
+        "levels_compared": 263,
+        "bias": -1.5952269989122558,
+        "rmse": 2.2468806425404506,
+        "method": "nearest in time, linear in lat/lon/depth (xarray.interp)",
+        "variable": "TEMP",
+        "standard_name": "sea_water_temperature",
+        "units": "\u00b0C",
+        "analysis_time": "2018-08-30T00:00:00",
+        "time_offset_days": 2.828,
+        "grid_offset_deg": {
+          "lat": 0.0667,
+          "lon": 0.4833
+        },
+        "pairing_window_days": 5.0,
+        "pairing_note": "Display window is +/-5 days centred on the analysis timestamp. The analysis's own assimilation window is wider: T_BOXOBS = 28-30 profiles/step over this region against ~20 profiles in a strict 10-day bucket (measured 2026-09-22).",
+        "cf_assumptions": [
+          "units 'degs' is not UDUNITS; read as 'degree_Celsius'",
+          "no standard_name; assumed 'sea_water_temperature' from variable identity",
+          "depth coordinate 'ZAX' has no 'positive' attribute; assumed positive-down because values are non-negative and ascending"
+        ],
+        "platform": "2902234",
+        "data_mode": "D",
+        "field_used": "TEMP_ADJUSTED",
+        "source_file": "argo_indian_ocean_20180827.nc",
+        "levels_rejected": 0,
+        "qc_accepted": [
+          "1",
+          "2",
+          "5",
+          "8"
+        ]
+      },
+      {
+        "levels": 997,
+        "levels_compared": 995,
+        "bias": -0.03617052505513265,
+        "rmse": 0.15487790133306073,
+        "method": "nearest in time, linear in lat/lon/depth (xarray.interp)",
+        "variable": "TEMP",
+        "standard_name": "sea_water_temperature",
+        "units": "\u00b0C",
+        "analysis_time": "2018-08-30T00:00:00",
+        "time_offset_days": 1.191,
+        "grid_offset_deg": {
+          "lat": 0.028,
+          "lon": 0.28
+        },
+        "pairing_window_days": 5.0,
+        "pairing_note": "Display window is +/-5 days centred on the analysis timestamp. The analysis's own assimilation window is wider: T_BOXOBS = 28-30 profiles/step over this region against ~20 profiles in a strict 10-day bucket (measured 2026-09-22).",
+        "cf_assumptions": [
+          "units 'degs' is not UDUNITS; read as 'degree_Celsius'",
+          "no standard_name; assumed 'sea_water_temperature' from variable identity",
+          "depth coordinate 'ZAX' has no 'positive' attribute; assumed positive-down because values are non-negative and ascending"
+        ],
+        "platform": "2902197",
+        "data_mode": "D",
+        "field_used": "TEMP_ADJUSTED",
+        "source_file": "argo_indian_ocean_20180828.nc",
+        "levels_rejected": 0,
+        "qc_accepted": [
+          "1",
+          "2",
+          "5",
+          "8"
+        ]
+      },
+      {
+        "levels": 340,
+        "levels_compared": 340,
+        "bias": 0.21427032414235064,
+        "rmse": 0.4133125284347733,
+        "method": "nearest in time, linear in lat/lon/depth (xarray.interp)",
+        "variable": "TEMP",
+        "standard_name": "sea_water_temperature",
+        "units": "\u00b0C",
+        "analysis_time": "2018-08-30T00:00:00",
+        "time_offset_days": 1.27,
+        "grid_offset_deg": {
+          "lat": 0.2666,
+          "lon": 0.1239
+        },
+        "pairing_window_days": 5.0,
+        "pairing_note": "Display window is +/-5 days centred on the analysis timestamp. The analysis's own assimilation window is wider: T_BOXOBS = 28-30 profiles/step over this region against ~20 profiles in a strict 10-day bucket (measured 2026-09-22).",
+        "cf_assumptions": [
+          "units 'degs' is not UDUNITS; read as 'degree_Celsius'",
+          "no standard_name; assumed 'sea_water_temperature' from variable identity",
+          "depth coordinate 'ZAX' has no 'positive' attribute; assumed positive-down because values are non-negative and ascending"
+        ],
+        "platform": "2902264",
+        "data_mode": "D",
+        "field_used": "TEMP_ADJUSTED",
+        "source_file": "argo_indian_ocean_20180828.nc",
+        "levels_rejected": 0,
+        "qc_accepted": [
+          "1",
+          "2",
+          "5",
+          "8"
+        ]
+      },
+      {
+        "levels": 123,
+        "levels_compared": 0,
+        "bias": NaN,
+        "rmse": NaN,
+        "method": "nearest in time, linear in lat/lon/depth (xarray.interp)",
+        "variable": "TEMP",
+        "standard_name": "sea_water_temperature",
+        "units": "\u00b0C",
+        "analysis_time": "2018-08-30T00:00:00",
+        "time_offset_days": 1.809,
+        "grid_offset_deg": {
+          "lat": 0.1667,
+          "lon": 0.15
+        },
+        "pairing_window_days": 5.0,
+        "pairing_note": "Display window is +/-5 days centred on the analysis timestamp. The analysis's own assimilation window is wider: T_BOXOBS = 28-30 profiles/step over this region against ~20 profiles in a strict 10-day bucket (measured 2026-09-22).",
+        "cf_assumptions": [
+          "units 'degs' is not UDUNITS; read as 'degree_Celsius'",
+          "no standard_name; assumed 'sea_water_temperature' from variable identity",
+          "depth coordinate 'ZAX' has no 'positive' attribute; assumed positive-down because values are non-negative and ascending"
+        ],
+        "platform": "2902229",
+        "data_mode": "D",
+        "field_used": "TEMP_ADJUSTED",
+        "source_file": "argo_indian_ocean_20180828.nc",
+        "levels_rejected": 0,
+        "qc_accepted": [
+          "1",
+          "2",
+          "5",
+          "8"
+        ]
+      },
+      {
+        "levels": 997,
+        "levels_compared": 996,
+        "bias": -0.04955398963596167,
+        "rmse": 0.23766738413265864,
+        "method": "nearest in time, linear in lat/lon/depth (xarray.interp)",
+        "variable": "TEMP",
+        "standard_name": "sea_water_temperature",
+        "units": "\u00b0C",
+        "analysis_time": "2018-08-30T00:00:00",
+        "time_offset_days": 1.911,
+        "grid_offset_deg": {
+          "lat": 0.24,
+          "lon": 0.27
+        },
+        "pairing_window_days": 5.0,
+        "pairing_note": "Display window is +/-5 days centred on the analysis timestamp. The analysis's own assimilation window is wider: T_BOXOBS = 28-30 profiles/step over this region against ~20 profiles in a strict 10-day bucket (measured 2026-09-22).",
+        "cf_assumptions": [
+          "units 'degs' is not UDUNITS; read as 'degree_Celsius'",
+          "no standard_name; assumed 'sea_water_temperature' from variable identity",
+          "depth coordinate 'ZAX' has no 'positive' attribute; assumed positive-down because values are non-negative and ascending"
+        ],
+        "platform": "2902194",
+        "data_mode": "D",
+        "field_used": "TEMP_ADJUSTED",
+        "source_file": "argo_indian_ocean_20180828.nc",
+        "levels_rejected": 0,
+        "qc_accepted": [
+          "1",
+          "2",
+          "5",
+          "8"
+        ]
+      },
+      {
+        "levels": 103,
+        "levels_compared": 98,
+        "bias": -0.4144815150449378,
+        "rmse": 1.1789154454653945,
+        "method": "nearest in time, linear in lat/lon/depth (xarray.interp)",
+        "variable": "TEMP",
+        "standard_name": "sea_water_temperature",
+        "units": "\u00b0C",
+        "analysis_time": "2018-08-30T00:00:00",
+        "time_offset_days": 1.952,
+        "grid_offset_deg": {
+          "lat": 0.4,
+          "lon": 0.0
+        },
+        "pairing_window_days": 5.0,
+        "pairing_note": "Display window is +/-5 days centred on the analysis timestamp. The analysis's own assimilation window is wider: T_BOXOBS = 28-30 profiles/step over this region against ~20 profiles in a strict 10-day bucket (measured 2026-09-22).",
+        "cf_assumptions": [
+          "units 'degs' is not UDUNITS; read as 'degree_Celsius'",
+          "no standard_name; assumed 'sea_water_temperature' from variable identity",
+          "depth coordinate 'ZAX' has no 'positive' attribute; assumed positive-down because values are non-negative and ascending"
+        ],
+        "platform": "2902236",
+        "data_mode": "A",
+        "field_used": "TEMP_ADJUSTED",
+        "source_file": "argo_indian_ocean_20180828.nc",
+        "levels_rejected": 0,
+        "qc_accepted": [
+          "1",
+          "2",
+          "5",
+          "8"
+        ]
+      },
+      {
+        "levels": 996,
+        "levels_compared": 995,
+        "bias": 0.07925110117475392,
+        "rmse": 0.3008021013037162,
+        "method": "nearest in time, linear in lat/lon/depth (xarray.interp)",
+        "variable": "TEMP",
+        "standard_name": "sea_water_temperature",
+        "units": "\u00b0C",
+        "analysis_time": "2018-08-30T00:00:00",
+        "time_offset_days": 0.69,
+        "grid_offset_deg": {
+          "lat": 0.19,
+          "lon": 0.196
+        },
+        "pairing_window_days": 5.0,
+        "pairing_note": "Display window is +/-5 days centred on the analysis timestamp. The analysis's own assimilation window is wider: T_BOXOBS = 28-30 profiles/step over this region against ~20 profiles in a strict 10-day bucket (measured 2026-09-22).",
+        "cf_assumptions": [
+          "units 'degs' is not UDUNITS; read as 'degree_Celsius'",
+          "no standard_name; assumed 'sea_water_temperature' from variable identity",
+          "depth coordinate 'ZAX' has no 'positive' attribute; assumed positive-down because values are non-negative and ascending"
+        ],
+        "platform": "2902192",
+        "data_mode": "D",
+        "field_used": "TEMP_ADJUSTED",
+        "source_file": "argo_indian_ocean_20180829.nc",
+        "levels_rejected": 0,
+        "qc_accepted": [
+          "1",
+          "2",
+          "5",
+          "8"
+        ]
+      },
+      {
+        "levels": 82,
+        "levels_compared": 82,
+        "bias": 0.041765808473234196,
+        "rmse": 0.17372611007256186,
+        "method": "nearest in time, linear in lat/lon/depth (xarray.interp)",
+        "variable": "TEMP",
+        "standard_name": "sea_water_temperature",
+        "units": "\u00b0C",
+        "analysis_time": "2018-08-30T00:00:00",
+        "time_offset_days": -0.79,
+        "grid_offset_deg": {
+          "lat": 0.424,
+          "lon": 0.34
+        },
+        "pairing_window_days": 5.0,
+        "pairing_note": "Display window is +/-5 days centred on the analysis timestamp. The analysis's own assimilation window is wider: T_BOXOBS = 28-30 profiles/step over this region against ~20 profiles in a strict 10-day bucket (measured 2026-09-22).",
+        "cf_assumptions": [
+          "units 'degs' is not UDUNITS; read as 'degree_Celsius'",
+          "no standard_name; assumed 'sea_water_temperature' from variable identity",
+          "depth coordinate 'ZAX' has no 'positive' attribute; assumed positive-down because values are non-negative and ascending"
+        ],
+        "platform": "6901740",
+        "data_mode": "D",
+        "field_used": "TEMP_ADJUSTED",
+        "source_file": "argo_indian_ocean_20180830.nc",
+        "levels_rejected": 0,
+        "qc_accepted": [
+          "1",
+          "2",
+          "5",
+          "8"
+        ]
+      }
+    ],
+    "glider_casts_compared": 98,
+    "glider_mean_bias_degC": -0.6933,
+    "glider_mean_rmse_degC": 1.5754,
+    "glider_interpretation": "independent: gliders are not assimilated into this analysis"
+  },
+  "depth_bands": {
+    "0-300 m": {
+      "argo": {
+        "levels": 3583,
+        "bias": -0.3749,
+        "rmse": 1.2561
+      },
+      "glider": {
+        "levels": 3407,
+        "bias": -2.2459,
+        "rmse": 2.8875
+      }
+    },
+    "300-950 m": {
+      "argo": {
+        "levels": 2984,
+        "bias": -0.1922,
+        "rmse": 0.3534
+      },
+      "glider": {
+        "levels": 7651,
+        "bias": -0.0194,
+        "rmse": 0.3076
+      }
+    },
+    "950-2000 m": {
+      "argo": {
+        "levels": 3768,
+        "bias": 0.0268,
+        "rmse": 0.1897
+      },
+      "glider": {
+        "levels": 237,
+        "bias": 0.1977,
+        "rmse": 0.2319
+      }
+    },
+    "50-950 m (matched)": {
+      "argo": {
+        "levels": 5818,
+        "bias": -0.3429,
+        "rmse": 0.9901
+      },
+      "glider": {
+        "levels": 10907,
+        "bias": -0.7145,
+        "rmse": 1.6223
+      }
+    }
+  }
+}

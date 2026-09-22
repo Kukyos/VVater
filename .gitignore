@@ -1,0 +1,31 @@
+# Local instructions — never pushed
+CLAUDE.md
+
+# Secrets
+.env
+
+# Data cache — large NetCDF slabs, regenerable
+data/cache/
+*.nc
+*.nc4
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.pytest_cache/
+*.egg-info/
+
+# Node
+node_modules/
+dist/
+.vite/
+
+# Build output
+submission/sih/final/*.bak
+video/out/
+
+# Submission templates supplied by the portal, kept local
+*.pptx
+*.docx

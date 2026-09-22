@@ -1,0 +1,129 @@
+# Problem statement — official text, verbatim
+
+Source of truth. Never paraphrase it, never edit it to fit what we built.
+
+---
+
+**Problem Statement ID:** 26067
+
+**Problem Statement Title:** Develop a web-based interactive 3D visualization platform
+that integrates numerical ocean model outputs and in-situ observations.
+
+**Organization:** Ministry of Earth Sciences (MoES)
+**Department:** Indian National Centre for Ocean Information Services (INCOIS) Ocean Valley
+**Category:** Software
+**Theme:** Disaster Management
+
+---
+
+## Description
+
+### Background
+
+India's vast Exclusive Economic Zone (EEZ) and coastline demand continuous,
+high-resolution monitoring of ocean state variables. INCOIS routinely generates and
+archives large volumes of ocean model outputs - including three-dimensional fields of
+temperature, salinity, current vectors, chlorophyll, etc. - as well as real-time and
+delayed-mode observations from autonomous instruments such as Argo profiling floats and
+underwater Gliders. These datasets are stored in NetCDF and ASCII/text formats and span
+multiple depth levels, spatial grids, and time steps.
+
+Despite the richness of this data, no integrated, web-based 3D visualization platform
+currently exists that can simultaneously render model fields and in-situ instrument
+observations in a single interactive environment. Existing tools are either
+desktop-bound, support only 2D plan views, or lack the ability to co-visualize model
+outputs alongside instrument profiles. Operational oceanographers and forecasters are
+therefore forced to toggle between disparate software packages, making it difficult to
+rapidly correlate model predictions with observational evidence.
+
+Key gaps identified include:
+
+- No web-based, platform-independent 3D rendering of ocean model data (temperature,
+  salinity, currents, etc.) with depth-resolved volumetric views.
+- No unified display of Argo float and Glider profile data (latitude, longitude, depth,
+  time, temperature, salinity, chlorophyll) alongside model fields.
+- Absence of interactive controls for variable selection, depth-slice navigation,
+  time-step animation, and customizable colorbars.
+- Inability to ingest new observational data streams or additional model variables
+  without significant re-engineering.
+- Lack of tools to support intuitive, rapid understanding of complex 3D ocean phenomena
+  for operational decision-making.
+
+The absence of such a system impedes timely hazard assessment, search-and-rescue support,
+fishery advisories, climate monitoring, etc. - all operational mandates of INCOIS.
+
+### Expected Solution
+
+The proposed solution is a web-based, browser-native 3D Ocean Data Visualization System
+that integrates ocean model outputs with observational data on a single interactive
+platform.
+
+Core functional requirements:
+
+- **3D Volumetric Rendering:** Interactive visualization of ocean model fields
+  (temperature, salinity, current vectors) across the full water column, with support for
+  depth-slice views, isosurface extraction, and time-step animation using WebGL /
+  Three.js or Cesium.js.
+- **Instrument Data Overlay:** Co-display of Argo float, Glider profile, CTD and BGC data
+  using geospatially accurate markers; users can click a float/glider to inspect a
+  depth-vs-variable profile chart with timestamps.
+- **Multi-format Data Ingestion:** Automated parsers for NetCDF (via PyNIO / xarray
+  backend) and delimited text formats, with a modular architecture that allows new
+  variables or data sources to be added with minimal code change.
+- **Customizable Colorbar & Variable Controls:** Dynamic colorbar editor (color palette,
+  min/max range, log/linear scale), variable selector, layer opacity controls, and
+  vertical exaggeration slider for intuitive depth perception.
+- **Web-based, Scalable Architecture:** Frontend built on modern JavaScript frameworks
+  with a lightweight REST/OPeNDAP API backend, enabling deployment on INCOIS
+  infrastructure without any client-side dependencies.
+- **Extensible Design:** Plugin-style module for future integration of additional sensors
+  (e.g., CTDs, moorings, HF-radar, Acoustic Doppler Current Profiler (ADCP), etc.), new
+  ocean model variables, and machine-learning derived products.
+
+The system will follow open standards (OGC WMS/WCS, CF Conventions for NetCDF), enabling
+interoperability with national and international ocean data portals.
+
+The end product will empower INCOIS forecasters to perform rapid, intuitive analysis of
+complex 3D ocean phenomena - significantly improving the speed and accuracy of
+operational advisories, in the same way that 3D meteorological visualization has
+transformed weather forecasting workflows.
+
+### Public Outreach & Science Communication
+
+Beyond operational use, the platform will serve as a powerful science communication tool.
+Complex numerical ocean model outputs - which are typically inaccessible to
+non-specialists - can be transformed into visually intuitive, interactive 3D experiences.
+
+This makes the tool valuable for educating school and college students about ocean
+dynamics, engaging the general public during awareness campaigns, and supporting
+policymakers in understanding marine environmental conditions.
+
+INCOIS can use the platform for outreach events, exhibitions, and e-learning initiatives,
+bridging the gap between cutting-edge ocean science and the common person.
+
+### Dataset Link
+
+> The following dataset links are missing and should be included:
+>
+> a. Numerical Ocean Model Outputs: https://las.incois.gov.in/ &
+>    https://data.marine.copernicus.eu/product/GLOBAL_MULTIYEAR_PHY_001_030/description
+> b. Argo Global Data: ftp://ftp.ifremer.fr/ifremer/argo
+> c. Glider Data: ftp://ftp.ifremer.fr/ifremer/glider/v2/
+> d. Collection of In-situ Data:
+
+**YouTube Link:** (none given)
+
+---
+
+## Notes on the text — ours, not theirs
+
+Kept separate from the verbatim text above so the two are never confused.
+
+- **Both FTP links are dead from a normal network.** Port 21 is blocked and
+  `ftp.ifremer.fr` does not connect. See `05-data-sources.md`.
+- **Item (d) is truncated in the official listing** — "Collection of In-situ Data:" has no
+  URL after it. Re-check the portal before submission in case it is patched.
+- The brief names "PyNIO" for NetCDF parsing. PyNIO is archived and unmaintained; xarray,
+  which the same sentence also names, is the live path and is what we use.
+- "Plugin-style module" is satisfied by a dict of parsers, not a plugin framework — see
+  `03-limitations.md` L11 for why that is a judgement call rather than a shortcut.
