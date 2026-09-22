@@ -1,0 +1,166 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>VVater — 3D ocean data, Bay of Bengal</title>
+<style>
+  :root {
+    --bg: #05080d; --panel: rgba(12, 18, 26, 0.86); --line: rgba(255,255,255,0.1);
+    --text: #e9f0f7; --muted: rgba(233,240,247,0.58); --accent: #4dd2ff;
+    --warn: #c9a227; --error: #ff5f6d;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; height: 100%; background: var(--bg); color: var(--text);
+    font: 13px/1.45 system-ui, -apple-system, "Segoe UI", sans-serif; overflow: hidden; }
+  #globe { position: absolute; inset: 0; }
+  .cesium-viewer-bottom { display: none !important; }
+
+  .panel { position: absolute; background: var(--panel); border: 1px solid var(--line);
+    border-radius: 10px; backdrop-filter: blur(14px); }
+
+  #controls { top: 14px; left: 14px; width: 288px; padding: 14px; max-height: calc(100% - 28px);
+    overflow-y: auto; }
+  #controls h1 { margin: 0 0 2px; font-size: 15px; font-weight: 600; letter-spacing: .2px; }
+  #controls .sub { margin: 0 0 12px; color: var(--muted); font-size: 11px; }
+
+  .group { margin-bottom: 13px; }
+  .group > label { display: block; font-size: 11px; color: var(--muted);
+    text-transform: uppercase; letter-spacing: .06em; margin-bottom: 4px; }
+  select, input[type=number] { width: 100%; padding: 5px 7px; background: rgba(0,0,0,.35);
+    color: var(--text); border: 1px solid var(--line); border-radius: 6px; font-size: 12px; }
+  input[type=range] { width: 100%; accent-color: var(--accent); }
+  .row { display: flex; gap: 8px; align-items: center; }
+  .row > * { flex: 1; }
+  .inline { display: flex; justify-content: space-between; align-items: baseline; }
+  .inline .val { color: var(--accent); font-variant-numeric: tabular-nums; font-size: 11px; }
+  .check { display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--muted); }
+  .check input { accent-color: var(--accent); }
+
+  #legend-strip canvas { display: block; width: 100%; height: 12px; border-radius: 3px; }
+  .legend-ends { display: flex; justify-content: space-between; font-size: 10px;
+    color: var(--muted); font-variant-numeric: tabular-nums; margin-top: 3px; }
+  #palette-note { font-size: 10px; color: var(--muted); margin-top: 3px; line-height: 1.35; }
+
+  #provenance { white-space: pre-wrap; font: 10px/1.5 ui-monospace, "Cascadia Code", monospace;
+    color: var(--muted); border-top: 1px solid var(--line); padding-top: 9px; margin-top: 4px; }
+
+  #status { position: absolute; bottom: 14px; left: 14px; padding: 7px 12px; font-size: 11px;
+    background: var(--panel); border: 1px solid var(--line); border-radius: 8px; color: var(--muted); }
+  #status[data-kind=warn] { color: var(--warn); }
+  #status[data-kind=error] { color: var(--error); }
+
+  #obs-legend { position: absolute; bottom: 14px; right: 14px; padding: 9px 12px; font-size: 11px; }
+  #obs-legend .key { display: flex; align-items: center; gap: 6px; margin-top: 4px; color: var(--muted); }
+  .dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; }
+
+  #profile-panel { top: 14px; right: 14px; width: 340px; padding: 13px; }
+  #profile-panel.hidden { display: none; }
+  #profile-panel header { display: flex; justify-content: space-between; align-items: center;
+    margin-bottom: 8px; }
+  #profile-title { font-size: 13px; font-weight: 600; }
+  #close-profile { background: none; border: none; color: var(--muted); cursor: pointer;
+    font-size: 16px; line-height: 1; padding: 0 2px; }
+  #profile-chart { width: 100%; height: 300px; display: block; }
+  #profile-caption { font-size: 10px; color: var(--muted); margin-top: 7px; line-height: 1.5; }
+  .chart-key { display: flex; gap: 12px; font-size: 10px; color: var(--muted); margin-top: 6px; }
+  .swatch { width: 14px; height: 2px; display: inline-block; vertical-align: middle; margin-right: 4px; }
+</style>
+</head>
+<body>
+<div id="globe"></div>
+
+<section id="controls" class="panel">
+  <h1>VVater</h1>
+  <p class="sub">3D ocean model and in-situ observations · Bay of Bengal</p>
+
+  <div class="group">
+    <label for="source">Source</label>
+    <select id="source"></select>
+  </div>
+
+  <div class="group">
+    <label for="variable">Variable</label>
+    <select id="variable"></select>
+  </div>
+
+  <div class="group">
+    <div class="inline"><label for="time">Time step</label><span class="val" id="time-label">—</span></div>
+    <input type="range" id="time" min="0" max="1" step="1" />
+  </div>
+
+  <div class="group">
+    <label for="palette">Colourbar</label>
+    <select id="palette"></select>
+    <div id="legend-strip"></div>
+    <div class="legend-ends">
+      <span id="legend-min">—</span><span id="legend-units"></span><span id="legend-max">—</span>
+    </div>
+    <div id="palette-note"></div>
+  </div>
+
+  <div class="group row">
+    <div><label for="range-min">Min</label><input type="number" id="range-min" step="0.1" /></div>
+    <div><label for="range-max">Max</label><input type="number" id="range-max" step="0.1" /></div>
+  </div>
+
+  <div class="group">
+    <label class="check"><input type="checkbox" id="reverse" /> Reverse palette</label>
+    <label class="check"><input type="checkbox" id="log" /> Logarithmic scale</label>
+  </div>
+
+  <div class="group">
+    <div class="inline"><label for="opacity">Opacity</label><span class="val" id="opacity-label">0.35</span></div>
+    <input type="range" id="opacity" min="1" max="100" value="35" />
+  </div>
+
+  <div class="group">
+    <div class="inline"><label for="sea-surface">Sea surface</label><span class="val" id="sea-surface-label">0.38</span></div>
+    <input type="range" id="sea-surface" min="0" max="100" value="38" />
+  </div>
+
+  <div class="group">
+    <div class="inline"><label for="error-weight">Fade by uncertainty</label><span class="val" id="error-weight-label">1.00</span></div>
+    <input type="range" id="error-weight" min="0" max="100" value="100" />
+  </div>
+
+  <div class="group">
+    <div class="inline"><label for="iso">Isosurface</label><span class="val" id="iso-label">—</span></div>
+    <input type="range" id="iso" min="0" max="35" step="0.1" />
+    <div class="inline"><label for="iso-band">Shell width</label><span class="val" id="iso-band-label">off</span></div>
+    <input type="range" id="iso-band" min="0" max="50" value="0" />
+  </div>
+
+  <div class="group">
+    <div class="inline"><label for="exaggeration">Vertical exaggeration</label><span class="val" id="exaggeration-label">40x</span></div>
+    <input type="range" id="exaggeration" min="1" max="200" step="1" value="40" />
+  </div>
+
+  <div id="provenance"></div>
+</section>
+
+<section id="profile-panel" class="panel hidden">
+  <header>
+    <span id="profile-title">—</span>
+    <button id="close-profile" title="Close">&times;</button>
+  </header>
+  <canvas id="profile-chart"></canvas>
+  <div class="chart-key">
+    <span><i class="swatch" style="background:#4dd2ff"></i>observed</span>
+    <span><i class="swatch" style="background:#ffb454"></i>analysis</span>
+    <span><i class="swatch" style="background:#ff5f6d"></i>QC rejected</span>
+  </div>
+  <div id="profile-caption"></div>
+</section>
+
+<aside id="obs-legend" class="panel">
+  <div id="obs-count">—</div>
+  <div class="key"><i class="dot" style="background:#4dd2ff"></i> Argo float</div>
+  <div class="key"><i class="dot" style="background:#7ee787"></i> Glider, QC applied</div>
+  <div class="key"><i class="dot" style="background:#c9a227"></i> Glider, unevaluated</div>
+</aside>
+
+<div id="status">starting…</div>
+<script type="module" src="/src/main.ts"></script>
+</body>
+</html>
