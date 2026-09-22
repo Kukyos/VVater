@@ -13,10 +13,10 @@ from datetime import date, datetime
 from functools import lru_cache
 
 import numpy as np
-from fastapi import FastAPI, HTTPException, Query, Response
+from fastapi import FastAPI, HTTPException, Request, Response
 from fastapi.middleware.cors import CORSMiddleware
 
-from . import argo, colocate, config, glider, sources, volume
+from . import argo, cf, colocate, config, currents, glider, residual, sources, volume, wms
 
 # Variables that exist as gridded fields but not as instrument measurements. Asking a
 # float for its "observation count" is meaningless, so the in-situ side falls back to
@@ -131,6 +131,72 @@ def volume_data(variable: str = "temperature",
     )
 
 
+@lru_cache(maxsize=8)
+def _residual(variable: str, source_key: str, time_index: int, on: str, t0: str, t1: str):
+    ds, names = _dataset(variable, source_key, t0, t1)
+    centre = date.fromisoformat(on)
+    casts = (argo.load_window(centre, variable) + glider.load_window(centre, variable))
+    return residual.build(ds, names["value"], casts, time_index, source_key, canonical=variable)
+
+
+@app.get("/api/residual/meta")
+def residual_meta(variable: str = "temperature",
+                  source: str = config.DEFAULT_SOURCE,
+                  time_index: int = 0, on: str | None = None,
+                  t0: str | None = None, t1: str | None = None) -> dict:
+    """Observed minus modelled, binned onto the grid. See server/ocean/residual.py."""
+    start, end = _window(t0, t1)
+    centre = on or str(config.DEMO_DATE)
+    try:
+        packed, _ = _residual(variable, source, time_index, centre, start, end)
+    except (KeyError, IndexError) as exc:
+        raise HTTPException(status_code=404, detail=str(exc)) from exc
+    return packed.as_dict()
+
+
+@app.get("/api/residual/data")
+def residual_data(variable: str = "temperature",
+                  source: str = config.DEFAULT_SOURCE,
+                  time_index: int = 0, on: str | None = None,
+                  t0: str | None = None, t1: str | None = None) -> Response:
+    start, end = _window(t0, t1)
+    centre = on or str(config.DEMO_DATE)
+    packed, _ = _residual(variable, source, time_index, centre, start, end)
+    return Response(content=packed.values.tobytes(),
+                    media_type="application/octet-stream",
+                    headers={"Cache-Control": "public, max-age=3600"})
+
+
+@lru_cache(maxsize=16)
+def _streamlines(source_key: str, time_index: int, depth_index: int, t0: str, t1: str):
+    source = config.SOURCES[source_key]
+    if "u" not in source.variables or "v" not in source.variables:
+        raise HTTPException(
+            status_code=404,
+            detail=(f"{source_key} has no current vectors. Only Copernicus GLORYS12 "
+                    "carries uo/vo; the INCOIS Argo analyses do not."),
+        )
+    # One day, centred on the demo date. Currents are a snapshot, and asking Copernicus
+    # for the full analysis window here is how the first version of this hung.
+    day = config.DEMO_DATE.isoformat()
+    ds, _ = sources.fetch_many(["u", "v"], day, day, source_key=source_key)
+    return currents.streamlines(ds, source.variables["u"], source.variables["v"],
+                                time_index, depth_index)
+
+
+@app.get("/api/streamlines")
+def streamlines(source: str = "glorys12", time_index: int = 0, depth_index: int = 0,
+                t0: str | None = None, t1: str | None = None) -> dict:
+    """Current streamlines on one depth level, integrated server-side (L4)."""
+    start, end = _window(t0, t1)
+    try:
+        return _streamlines(source, time_index, depth_index, start, end)
+    except HTTPException:
+        raise
+    except RuntimeError as exc:
+        raise HTTPException(status_code=501, detail=str(exc)) from exc
+
+
 @app.get("/api/observations")
 def observations(on: str | None = None, variable: str = "temperature") -> dict:
     """Float and glider positions for the map, with enough to draw a marker and no more.
@@ -203,6 +269,90 @@ def profile(platform: str, on: str | None = None, variable: str = "temperature",
         "error": clean(comparison.error) if comparison.error is not None else None,
         "summary": {k: v for k, v in comparison.summary().items() if k != "per_profile"},
     }
+
+
+@app.get("/wms")
+def wms_endpoint(request: Request,
+                 SERVICE: str = "WMS", REQUEST: str = "GetCapabilities",
+                 LAYERS: str = "", BBOX: str = "", WIDTH: int = 512, HEIGHT: int = 512,
+                 CRS: str = "EPSG:4326", TIME: str | None = None,
+                 ELEVATION: float | None = None,
+                 FORMAT: str = "image/png") -> Response:
+    """Minimal OGC WMS 1.3.0. GetCapabilities and GetMap only — see server/ocean/wms.py.
+
+    Parameter names are upper-case because that is what the specification says and what
+    QGIS sends. WCS is deliberately absent rather than half-built.
+    """
+    xml = "text/xml"
+
+    if SERVICE.upper() != "WMS":
+        return Response(wms.service_exception(f"SERVICE={SERVICE} is not WMS"),
+                        media_type=xml, status_code=400)
+
+    if REQUEST.lower() == "getcapabilities":
+        return Response(wms.capabilities(str(request.url).split("?")[0]), media_type=xml)
+
+    if REQUEST.lower() != "getmap":
+        return Response(
+            wms.service_exception(
+                f"REQUEST={REQUEST} is not supported. This service implements "
+                "GetCapabilities and GetMap only.", "OperationNotSupported"),
+            media_type=xml, status_code=400)
+
+    if not CRS.upper().endswith("4326"):
+        return Response(wms.service_exception(f"{CRS} unsupported; EPSG:4326 only", "InvalidCRS"),
+                        media_type=xml, status_code=400)
+
+    try:
+        source_key, variable = LAYERS.split(":", 1)
+    except ValueError:
+        return Response(
+            wms.service_exception(f"LAYERS={LAYERS!r} must be '<source>:<variable>'"),
+            media_type=xml, status_code=400)
+
+    try:
+        parts = [float(v) for v in BBOX.split(",")]
+        # WMS 1.3.0 with a geographic CRS orders the bbox lat-first, which is the single
+        # most common source of a silently rotated map.
+        min_lat, min_lon, max_lat, max_lon = parts
+    except (ValueError, TypeError):
+        return Response(wms.service_exception(f"BBOX={BBOX!r} is not four numbers"),
+                        media_type=xml, status_code=400)
+
+    start, end = _window(None, None)
+    try:
+        ds, names = _dataset(variable, source_key, start, end)
+    except (KeyError, RuntimeError) as exc:
+        return Response(wms.service_exception(str(exc), "LayerNotDefined"),
+                        media_type=xml, status_code=400)
+
+    z_name = "ZAX" if "ZAX" in ds.coords else "depth"
+    lat_name = "latitude" if "latitude" in ds.coords else "lat"
+    lon_name = "longitude" if "longitude" in ds.coords else "lon"
+
+    depths = np.asarray(ds[z_name].values, dtype=float)
+    level = 0 if ELEVATION is None else int(np.abs(depths - ELEVATION).argmin())
+
+    times = ds.time.values
+    step = 0
+    if TIME:
+        step = int(np.abs(times - np.datetime64(TIME[:19])).argmin())
+    else:
+        step = len(times) - 1
+
+    field = np.asarray(ds[names["value"]].isel({"time": step, z_name: level}).values, dtype=float)
+    finite = field[np.isfinite(field)]
+    value_range = ((float(finite.min()), float(finite.max())) if finite.size else (0.0, 1.0))
+
+    png = wms.get_map(
+        field,
+        np.asarray(ds[lon_name].values, dtype=float),
+        np.asarray(ds[lat_name].values, dtype=float),
+        (min_lon, min_lat, max_lon, max_lat),
+        max(1, min(WIDTH, 2048)), max(1, min(HEIGHT, 2048)),
+        value_range,
+    )
+    return Response(content=png, media_type="image/png")
 
 
 @app.get("/api/health")

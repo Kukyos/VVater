@@ -20,7 +20,10 @@ import "@cesium/widgets/Source/widgets.css";
 
 import * as api from "./api";
 import type { Meta, VolumeMeta } from "./api";
-import { DEFAULT_PALETTE_FOR, byId, logScaleAllowed, renderLegend } from "./colorbar";
+import {
+  DEFAULT_PALETTE_FOR, PALETTES, byId, logScaleAllowed, renderLegend, symmetricRange,
+} from "./colorbar";
+import { StreamlineLayer } from "./streamlines";
 import { captionFor, drawProfile } from "./profile";
 import { OceanVoxelProvider, addVolume, applyRamp, makeOceanShader } from "./voxels";
 
@@ -29,8 +32,15 @@ import { OceanVoxelProvider, addVolume, applyRamp, makeOceanShader } from "./vox
 // which is fine — the data is the point, not the basemap.
 Ion.defaultAccessToken = "";
 
+type Layer = "field" | "residual";
+
 interface State {
   meta: Meta;
+  /** "field" is the analysis itself; "residual" is observed minus modelled (N4). */
+  layer: Layer;
+  showCurrents: boolean;
+  depthIndex: number;
+  playing: boolean;
   variable: string;
   source: string;
   timeIndex: number;
@@ -130,6 +140,10 @@ async function main(): Promise<void> {
 
   const state: State = {
     meta,
+    layer: "field",
+    showCurrents: false,
+    depthIndex: 0,
+    playing: false,
     variable: "temperature",
     source: meta.defaultSource,
     timeIndex: Math.floor(meta.times.length / 2),
@@ -146,18 +160,54 @@ async function main(): Promise<void> {
 
   let primitive: ReturnType<typeof addVolume> | undefined;
   let shader: ReturnType<typeof makeOceanShader> | undefined;
+  const streamlineLayer = new StreamlineLayer(viewer.scene);
+
+  /**
+   * Currents exist only in Copernicus; the INCOIS Argo analyses carry no u/v at all
+   * (docs/03-limitations.md L4). Rather than hide the control, it says why when the
+   * current source cannot answer.
+   */
+  async function loadStreamlines(): Promise<void> {
+    if (!state.showCurrents) {
+      streamlineLayer.hide();
+      return;
+    }
+    try {
+      status("integrating streamlines…");
+      const data = await api.getStreamlines("glorys12", 0, state.depthIndex);
+      // Draw the lines at the depth they describe, in the same exaggerated column as
+      // the volume, so they sit inside the water rather than on top of it.
+      const depths = state.volumeMeta?.provenance.depth_grid.depths_m ?? [0];
+      const depth = depths[Math.min(state.depthIndex, depths.length - 1)] ?? 0;
+      streamlineLayer.show(data, -depth * state.exaggeration);
+      status(`${data.count} streamlines at ${data.depth_m.toFixed(0)} m · ${data.note}`);
+    } catch (error) {
+      streamlineLayer.hide();
+      status(`currents unavailable: ${(error as Error).message}`, "warn");
+    }
+  }
 
   async function loadVolume(): Promise<void> {
-    status("loading volume…");
-    const volumeMeta = await api.getVolumeMeta(state.variable, state.source, state.timeIndex);
+    status(state.layer === "residual" ? "co-locating casts…" : "loading volume…");
+
+    const isResidual = state.layer === "residual";
+    const volumeMeta = isResidual
+      ? await api.getResidualMeta(state.variable, state.source, state.timeIndex, meta.demoDate)
+      : await api.getVolumeMeta(state.variable, state.source, state.timeIndex);
     state.volumeMeta = volumeMeta;
 
     const [nx, ny, nz] = volumeMeta.dimensions;
-    const { values, errors } = await api.getVolumeData(
-      state.variable, state.source, state.timeIndex, nx * ny * nz, volumeMeta.hasError,
-    );
+    const { values, errors } = isResidual
+      ? await api.getResidualData(
+          state.variable, state.source, state.timeIndex, meta.demoDate, nx * ny * nz)
+      : await api.getVolumeData(
+          state.variable, state.source, state.timeIndex, nx * ny * nz, volumeMeta.hasError);
 
-    state.range = [...volumeMeta.valueRange] as [number, number];
+    // A residual is signed, so its range is forced symmetric about zero and its palette
+    // is diverging. Anything else puts the neutral colour at an arbitrary value.
+    state.range = isResidual
+      ? symmetricRange(volumeMeta.valueRange[0], volumeMeta.valueRange[1])
+      : ([...volumeMeta.valueRange] as [number, number]);
     state.isoValue = (state.range[0] + state.range[1]) / 2;
 
     if (primitive) {
@@ -171,10 +221,34 @@ async function main(): Promise<void> {
 
     renderLegendStrip();
     renderProvenance(volumeMeta);
+
+    const residualStats = volumeMeta.provenance.residual;
     status(
-      `${volumeMeta.provenance.source} · ${volumeMeta.provenance.time.slice(0, 10)} · ` +
-      `${nx}x${ny}x${nz} voxels`,
+      residualStats
+        ? `${residualStats.casts} casts · ${residualStats.cells_filled} of ` +
+          `${residualStats.cells_total} cells have an observation ` +
+          `(${residualStats.coverage_percent}%) · bias ${residualStats.bias.toFixed(2)}, ` +
+          `rmse ${residualStats.rmse.toFixed(2)}`
+        : `${volumeMeta.provenance.source} · ${volumeMeta.provenance.time.slice(0, 10)} · ` +
+          `${nx}x${ny}x${nz} voxels`,
     );
+
+    // Prefetch the next step so scrubbing and playback do not stall on the network.
+    // The responses are cacheable, so this is a warm cache rather than a second copy.
+    void prefetch(state.timeIndex + 1);
+  }
+
+  /** Warm the HTTP cache for a timestep without using the result. */
+  async function prefetch(index: number): Promise<void> {
+    if (state.layer !== "field" || index < 0 || index >= meta.times.length) return;
+    try {
+      const m = await api.getVolumeMeta(state.variable, state.source, index);
+      const [nx, ny, nz] = m.dimensions;
+      await api.getVolumeData(state.variable, state.source, index, nx * ny * nz, m.hasError);
+    } catch {
+      // A failed prefetch is not an error the user needs to see; the real load will
+      // report it if the step is genuinely unavailable.
+    }
   }
 
   function applyUniforms(): void {
@@ -330,10 +404,13 @@ async function main(): Promise<void> {
   }
   refreshVariables();
 
-  for (const palette of ["thermal", "haline", "viridis", "grey"]) {
+  // Driven off PALETTES rather than a hardcoded list: adding "balance" for residuals
+  // left it out of the dropdown, so the residual layer selected a palette that was not
+  // an option and the control went blank.
+  for (const palette of PALETTES) {
     const option = document.createElement("option");
-    option.value = palette;
-    option.textContent = byId(palette).label;
+    option.value = palette.id;
+    option.textContent = palette.label;
     paletteSelect.append(option);
   }
   paletteSelect.value = state.paletteId;
@@ -434,9 +511,95 @@ async function main(): Promise<void> {
   });
 
   timeSlider.addEventListener("change", async () => {
+    setPlaying(false);
     state.timeIndex = Number(timeSlider.value);
     el("time-label").textContent = meta.times[state.timeIndex].slice(0, 10);
     await loadVolume();
+  });
+
+  // ---- time animation --------------------------------------------------
+
+  let timer: number | undefined;
+
+  async function step(): Promise<void> {
+    state.timeIndex = (state.timeIndex + 1) % meta.times.length;
+    timeSlider.value = String(state.timeIndex);
+    el("time-label").textContent = meta.times[state.timeIndex].slice(0, 10);
+    await loadVolume();
+  }
+
+  function setPlaying(on: boolean): void {
+    state.playing = on;
+    el("play").textContent = on ? "Pause" : "Play";
+    if (timer !== undefined) {
+      window.clearInterval(timer);
+      timer = undefined;
+    }
+    if (!on) return;
+    // Each tick awaits its own load, so a slow step delays the next frame instead of
+    // stacking requests. The prefetch in loadVolume is what keeps it smooth.
+    timer = window.setInterval(() => { void step(); }, 1100);
+  }
+
+  el("play").addEventListener("click", () => setPlaying(!state.playing));
+
+  // ---- layers and presets ----------------------------------------------
+
+  el("layer-field").addEventListener("click", () => void setLayer("field"));
+  el("layer-residual").addEventListener("click", () => void setLayer("residual"));
+
+  async function setLayer(layer: Layer): Promise<void> {
+    state.layer = layer;
+    state.paletteId = layer === "residual"
+      ? DEFAULT_PALETTE_FOR.residual
+      : DEFAULT_PALETTE_FOR[state.variable] ?? "thermal";
+    paletteSelect.value = state.paletteId;
+    el("layer-field").classList.toggle("on", layer === "field");
+    el("layer-residual").classList.toggle("on", layer === "residual");
+    if (layer === "residual") setPlaying(false);
+    try {
+      await loadVolume();
+    } catch (error) {
+      status((error as Error).message, "error");
+    }
+  }
+
+  bind("currents", "change", (node) => {
+    state.showCurrents = node.checked;
+    void loadStreamlines();
+  });
+
+  bind("slice", "input", (node) => {
+    state.depthIndex = Number(node.value);
+    const depths = state.volumeMeta?.provenance.depth_grid.depths_m ?? [0];
+    const depth = depths[Math.min(state.depthIndex, depths.length - 1)] ?? 0;
+    // Always through the grid, never the raw index: the axis is stretched (L2).
+    el("slice-label").textContent = `${depth.toFixed(0)} m`;
+    if (state.showCurrents) void loadStreamlines();
+  });
+
+  /**
+   * The 20 degC isotherm: the standard proxy for the heat available to a tropical
+   * cyclone. The isosurface control could always do this; naming it is the difference
+   * between a generic slider and the thing this theme is actually about.
+   */
+  el("preset-d20").addEventListener("click", () => {
+    state.isoValue = 20;
+    state.isoBand = 0.6;
+    el<HTMLInputElement>("iso").value = "20";
+    el<HTMLInputElement>("iso-band").value = "6";
+    el("iso-label").textContent = "20.0";
+    el("iso-band-label").textContent = "0.6";
+    applyUniforms();
+    status("20 °C isotherm — the depth of this surface is tropical cyclone heat potential");
+  });
+
+  el("preset-truescale").addEventListener("click", async () => {
+    state.exaggeration = 1;
+    el<HTMLInputElement>("exaggeration").value = "1";
+    el("exaggeration-label").textContent = "1x";
+    await loadVolume();
+    status("True scale. The ocean is 4 km deep and 2000 km wide — this is the real shape.");
   });
 
   el("close-profile").addEventListener("click", () => {
@@ -454,6 +617,9 @@ async function main(): Promise<void> {
   try {
     await loadVolume();
     await loadObservations();
+    const depths = state.volumeMeta?.provenance.depth_grid.depths_m ?? [0];
+    el<HTMLInputElement>("slice").max = String(depths.length - 1);
+    el("slice-label").textContent = `${depths[0].toFixed(0)} m`;
     el("range-min").setAttribute("value", state.range[0].toFixed(1));
     el("range-max").setAttribute("value", state.range[1].toFixed(1));
     el<HTMLInputElement>("iso").min = String(state.range[0]);

@@ -20,3 +20,28 @@ try:
     truststore.inject_into_ssl()
 except ImportError:  # pragma: no cover - truststore is in requirements.txt
     pass
+
+
+def _load_env() -> None:
+    """Read .env into the environment without adding a dependency.
+
+    The Copernicus toolbox reads COPERNICUSMARINE_SERVICE_USERNAME/PASSWORD from the
+    environment, and every entry point (API, eval harness, tests) needs them, so this
+    happens once at import rather than in each caller. Existing environment variables
+    win, so a real deployment can set them properly and this becomes a no-op.
+    """
+    import os
+    from pathlib import Path
+
+    env = Path(__file__).resolve().parents[2] / ".env"
+    if not env.exists():
+        return
+    for line in env.read_text(encoding="utf-8").splitlines():
+        line = line.strip()
+        if not line or line.startswith("#") or "=" not in line:
+            continue
+        key, value = line.split("=", 1)
+        os.environ.setdefault(key.strip(), value.strip())
+
+
+_load_env()

@@ -37,6 +37,17 @@
   .check { display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--muted); }
   .check input { accent-color: var(--accent); }
 
+  .seg { display: flex; gap: 0; border: 1px solid var(--line); border-radius: 6px;
+    overflow: hidden; }
+  .seg button { flex: 1; background: rgba(0,0,0,.3); color: var(--muted); border: none;
+    padding: 6px 4px; font-size: 11px; cursor: pointer; font-family: inherit; }
+  .seg button.on { background: var(--accent); color: #05080d; font-weight: 600; }
+  .preset { background: rgba(0,0,0,.3); color: var(--muted); border: 1px solid var(--line);
+    border-radius: 6px; padding: 5px 8px; font-size: 11px; cursor: pointer;
+    font-family: inherit; }
+  .preset:hover { color: var(--text); border-color: var(--accent); }
+  #play { width: 100%; margin-top: 5px; }
+
   #legend-strip canvas { display: block; width: 100%; height: 12px; border-radius: 3px; }
   .legend-ends { display: flex; justify-content: space-between; font-size: 10px;
     color: var(--muted); font-variant-numeric: tabular-nums; margin-top: 3px; }
@@ -85,8 +96,23 @@
   </div>
 
   <div class="group">
+    <label>Layer</label>
+    <div class="seg">
+      <button id="layer-field" class="on">Analysis</button>
+      <button id="layer-residual">Residual vs observed</button>
+    </div>
+  </div>
+
+  <div class="group">
     <div class="inline"><label for="time">Time step</label><span class="val" id="time-label">—</span></div>
     <input type="range" id="time" min="0" max="1" step="1" />
+    <button id="play" class="preset">Play</button>
+  </div>
+
+  <div class="group">
+    <label class="check"><input type="checkbox" id="currents" /> Current streamlines (Copernicus)</label>
+    <div class="inline"><label for="slice">Depth slice</label><span class="val" id="slice-label">—</span></div>
+    <input type="range" id="slice" min="0" max="23" step="1" value="0" />
   </div>
 
   <div class="group">
@@ -134,6 +160,10 @@
   <div class="group">
     <div class="inline"><label for="exaggeration">Vertical exaggeration</label><span class="val" id="exaggeration-label">40x</span></div>
     <input type="range" id="exaggeration" min="1" max="200" step="1" value="40" />
+    <div class="row" style="margin-top:6px">
+      <button id="preset-d20" class="preset" title="Depth of the 20 °C isotherm">20 °C isotherm</button>
+      <button id="preset-truescale" class="preset" title="No vertical exaggeration">True scale</button>
+    </div>
   </div>
 
   <div id="provenance"></div>

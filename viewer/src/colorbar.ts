@@ -17,6 +17,8 @@ export interface Palette {
   id: string;
   label: string;
   note?: string;
+  /** Diverging palettes are centred on zero and must be used with a symmetric range. */
+  diverging?: boolean;
   stops: [number, number, number][];
 }
 
@@ -51,6 +53,17 @@ export const PALETTES: Palette[] = [
     ],
   },
   {
+    id: "balance",
+    label: "Balance (diverging)",
+    note: "cmocean balance — for residuals, where the sign matters and zero is the middle",
+    diverging: true,
+    stops: [
+      [24, 28, 89], [42, 83, 160], [93, 146, 200], [175, 203, 224],
+      [247, 247, 247],
+      [239, 185, 168], [216, 118, 96], [170, 52, 46], [103, 0, 31],
+    ],
+  },
+  {
     id: "grey",
     label: "Greyscale",
     note: "for print, and for checking that structure is not a colour artefact",
@@ -64,6 +77,9 @@ export const DEFAULT_PALETTE_FOR: Record<string, string> = {
   // Counts are not a physical field, so a perceptually uniform ramp beats an
   // oceanographic one: the question is "how many", not "how warm".
   observations: "viridis",
+  // A residual has a sign. A sequential ramp on signed data is how people misread
+  // residual plots: it makes -0.1 and +0.1 look like different magnitudes.
+  residual: "balance",
 };
 
 /** A wide, visible version of the same palette for the legend strip in the UI. */
@@ -139,3 +155,15 @@ export function paletteStops(palette: Palette, reversed = false,
 
 /** How many stops the shader ramp carries. Changing this means editing the GLSL too. */
 export const RAMP_STOPS = 6;
+
+/**
+ * Force a range symmetric about zero.
+ *
+ * A diverging palette puts its neutral colour at the midpoint of the range, so unless
+ * the range is symmetric that neutral sits at some arbitrary non-zero value and the map
+ * lies about which cells are unbiased.
+ */
+export function symmetricRange(lo: number, hi: number): [number, number] {
+  const extent = Math.max(Math.abs(lo), Math.abs(hi), 1e-6);
+  return [-extent, extent];
+}

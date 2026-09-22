@@ -11,6 +11,7 @@ from dataclasses import dataclass, field
 # Non-UDUNITS spellings seen in real files, mapped to what they actually mean.
 UNIT_ALIASES = {
     "degs": "degree_Celsius",
+    "degrees_c": "degree_Celsius",
     "deg_c": "degree_Celsius",
     "degc": "degree_Celsius",
     "celsius": "degree_Celsius",
@@ -19,6 +20,7 @@ UNIT_ALIASES = {
 
 STANDARD_NAMES = {
     "temperature": "sea_water_temperature",
+    "speed": "sea_water_speed",
     # Not a CF standard name, because CF has none for "how many observations went into
     # this cell". Kept distinct so the range test knows not to apply ocean limits to it.
     "observations": "number_of_observations",
@@ -29,9 +31,16 @@ STANDARD_NAMES = {
 
 DISPLAY_UNITS = {
     "sea_water_temperature": "°C",
+    # GLORYS12 reports potential temperature, which is a different quantity from in-situ
+    # temperature even though both are degrees C. Kept distinct so a comparison between
+    # the two sources is never silently treated as like-for-like.
+    "sea_water_potential_temperature": "°C",
+    "sea_water_salinity": "PSU",
     "number_of_observations": "profiles",
     "sea_water_practical_salinity": "PSU",
     "eastward_sea_water_velocity": "m/s",
+    "northward_sea_water_velocity": "m/s",
+    "sea_water_speed": "m/s",
     "northward_sea_water_velocity": "m/s",
 }
 
@@ -113,8 +122,22 @@ def depth_sign_assumption(depth_coord) -> tuple[bool, str | None]:
 # produced it.
 GLOBAL_RANGE = {
     "sea_water_temperature": (-2.5, 40.0),
+    "sea_water_potential_temperature": (-2.5, 40.0),
     "sea_water_practical_salinity": (2.0, 41.0),
+    "sea_water_salinity": (2.0, 41.0),
+    # Not an Argo test. Ocean currents above about 5 m/s do not occur outside a few
+    # narrow jets, and nothing in this region approaches it; treated as a sanity bound
+    # rather than a published limit, and labelled as such in the report below.
+    "eastward_sea_water_velocity": (-5.0, 5.0),
+    "northward_sea_water_velocity": (-5.0, 5.0),
+    "sea_water_speed": (0.0, 5.0),
 }
+
+# Which entries above come from a published standard and which are our own sanity bounds.
+PUBLISHED_RANGE = frozenset({
+    "sea_water_temperature", "sea_water_potential_temperature",
+    "sea_water_practical_salinity", "sea_water_salinity",
+})
 
 
 def global_range_check(values, standard_name: str):
@@ -143,7 +166,8 @@ def global_range_check(values, standard_name: str):
     bad = np.isfinite(array) & ((array < lo) | (array > hi))
     report = {
         "checked": True,
-        "test": "Argo global range test (QC test 6)",
+        "test": ("Argo global range test (QC test 6)" if standard_name in PUBLISHED_RANGE
+                 else "sanity bound, not a published test"),
         "limits": [lo, hi],
         "failed": int(bad.sum()),
         "checked_cells": int(np.isfinite(array).sum()),

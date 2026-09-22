@@ -57,11 +57,19 @@ def build_grid(native_depths: np.ndarray, native_levels: int,
     native = np.asarray(native_depths, dtype=float)
     z_min, z_max = float(native.min()), float(native.max())
 
-    requested = native_levels if levels is None else int(levels)
-    if requested > native_levels:
+    # The ceiling is what the ARRAY actually has, not what config declares. A source can
+    # declare 50 levels and then hand back 36 once the depth range is clamped -- GLORYS12
+    # does exactly that -- and trusting the declared number would upsample 36 levels into
+    # 50, which is the precise thing L2 exists to forbid. The declared count is kept as a
+    # second, looser ceiling so a config that disagrees with reality still cannot widen it.
+    ceiling = min(int(native_levels), int(native.size))
+
+    requested = ceiling if levels is None else int(levels)
+    if requested > ceiling:
         raise ValueError(
-            f"regrid to {requested} levels from a source with {native_levels} native "
-            "levels would invent structure that is not in the data (docs/03-limitations.md L2)"
+            f"regrid to {requested} levels from data with {native.size} native levels "
+            f"(source declares {native_levels}) would invent structure that is not in "
+            "the data (docs/03-limitations.md L2)"
         )
 
     s = np.linspace(np.sqrt(z_min), np.sqrt(z_max), requested)
@@ -118,6 +126,10 @@ def demo() -> None:
         assert "invent structure" in str(exc)
     else:
         raise AssertionError("upsampling past the native level count must be refused")
+
+    # A source that declares MORE levels than the array actually carries must not be
+    # able to widen the grid. GLORYS12 declares 50 and returns 36 once depth is clamped.
+    assert build_grid(native, native_levels=50).n == native.size
 
     # Round-trip: a linear-in-depth field resamples to itself.
     values = native * 2.0

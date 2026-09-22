@@ -121,6 +121,12 @@ ERDDAP_BASE = "https://erddap.incois.gov.in/erddap"
 ARGO_GDAC_BASE = "https://data-argo.ifremer.fr"
 ARGO_BASIN = "indian_ocean"
 
+# Copernicus is ~15 MB per day for two variables over this region against 0.55 MB for
+# thirteen INCOIS timesteps, so a window that is merely generous for one source is
+# catastrophic for the other: the default four-month window would be roughly 1.8 GB.
+# Any Copernicus request is truncated to this many days from its start.
+COPERNICUS_MAX_DAYS = 2
+
 # Network timeouts, seconds. The measured fetches were 0.9 s (ERDDAP subset) and
 # 3.7 s (8.7 MB Argo day-file); these are generous multiples of that.
 HTTP_TIMEOUT = 120

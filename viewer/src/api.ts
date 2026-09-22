@@ -27,6 +27,10 @@ export interface VolumeMeta {
   valueRange: [number, number];
   hasError: boolean;
   provenance: {
+    residual?: {
+      casts: number; levels_binned: number; cells_filled: number; cells_total: number;
+      coverage_percent: number; bias: number; rmse: number;
+    };
     source: string;
     variable: string;
     standard_name: string;
@@ -73,7 +77,28 @@ async function json<T>(path: string): Promise<T> {
   return (await response.json()) as T;
 }
 
+export interface Streamlines {
+  depth_m: number;
+  time: string;
+  count: number;
+  speedRange: [number, number];
+  units: string;
+  method: string;
+  note: string;
+  streamlines: { points: [number, number][]; speeds: number[] }[];
+}
+
 export const getMeta = () => json<Meta>("/api/meta");
+
+export const getStreamlines = (source: string, timeIndex: number, depthIndex: number) =>
+  json<Streamlines>(
+    `/api/streamlines?source=${source}&time_index=${timeIndex}&depth_index=${depthIndex}`,
+  );
+
+export const getResidualMeta = (variable: string, source: string, timeIndex: number, on: string) =>
+  json<VolumeMeta>(
+    `/api/residual/meta?variable=${variable}&source=${source}&time_index=${timeIndex}&on=${on}`,
+  );
 
 export const getVolumeMeta = (variable: string, source: string, timeIndex: number) =>
   json<VolumeMeta>(`/api/volume/meta?variable=${variable}&source=${source}&time_index=${timeIndex}`);
@@ -85,6 +110,22 @@ export const getProfile = (platform: string, on: string, variable: string) =>
   json<ProfileComparison>(
     `/api/profile?platform=${encodeURIComponent(platform)}&on=${on}&variable=${variable}`,
   );
+
+/** Residual volume: one channel, no uncertainty. Same binary contract as a field. */
+export async function getResidualData(
+  variable: string, source: string, timeIndex: number, on: string, voxelCount: number,
+): Promise<{ values: Float32Array; errors: null }> {
+  const response = await fetch(
+    `${BASE}/api/residual/data?variable=${variable}&source=${source}` +
+    `&time_index=${timeIndex}&on=${on}`,
+  );
+  if (!response.ok) throw new Error(`${response.status} fetching residual data`);
+  const all = new Float32Array(await response.arrayBuffer());
+  if (all.length !== voxelCount) {
+    throw new Error(`residual payload is ${all.length} floats, expected ${voxelCount}`);
+  }
+  return { values: all, errors: null };
+}
 
 /**
  * Volume payload as raw float32: the value channel, then the uncertainty channel when
