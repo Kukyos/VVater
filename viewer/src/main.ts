@@ -318,7 +318,13 @@ async function main(): Promise<void> {
       variableSelect.append(option);
     }
     if (!source?.variables.includes(state.variable)) {
-      state.variable = source?.variables[0] ?? "temperature";
+      // Prefer temperature on a source switch rather than whatever sorts first, which
+      // would drop a user coming back from the observation-density layer into salinity.
+      state.variable = source?.variables.includes("temperature")
+        ? "temperature"
+        : source?.variables[0] ?? "temperature";
+      state.paletteId = DEFAULT_PALETTE_FOR[state.variable] ?? state.paletteId;
+      paletteSelect.value = state.paletteId;
     }
     variableSelect.value = state.variable;
   }

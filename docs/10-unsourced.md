@@ -10,4 +10,5 @@ Anything here is structurally present and visibly unsourced. Never quoted as fac
 | `TEMP` units | File says `"degs"`, which is not UDUNITS. Read as `degree_Celsius`. | Confirmed by value range (2.57–31.85), but INCOIS should state it. |
 | `ZAX` depth sign | No `positive` attribute. Assumed positive-down. | Pinned by physics in `server/tests/test_colocate.py`, not by metadata. Ask INCOIS to add the attribute. |
 | Analysis assimilation window | Inferred from `T_BOXOBS` counts (28–30/step vs ~20 for a strict 10-day bucket). | The VAM / Kessler-McCreary method papers, or INCOIS directly. |
+| cmocean palettes (`thermal`, `haline`) | **Approximated** from published anchor points and then resampled to six stops for the shader, not the full published lookup tables. | The cmocean package (Thyng et al. 2016). Worth replacing before anything is published as a figure. |
 | Current vectors | Not available in any INCOIS Argo analysis. | **Resolved** — Copernicus GLORYS12 `uo`/`vo`, verified working 2026-09-22. |

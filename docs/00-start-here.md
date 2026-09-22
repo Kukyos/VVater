@@ -21,17 +21,31 @@ Region is the **Bay of Bengal**. Stack is **CesiumJS** on a **FastAPI** backend.
 | `13-eval-results.md` | Generated numbers. Never hand-edited. | Whenever anyone questions an accuracy claim. |
 | `10-unsourced.md` | Everything we could not source, and where the real thing comes from. | Before quoting any value. |
 | `11-deferred.md` | Everything knowingly incomplete, with what it blocks. | This is the live status doc. |
+| `14-novelties.md` | What this does that the brief did not ask for, and what is designed but unbuilt. | When a new feature idea shows up, and before a pitch. |
 
 ## What is built, as of 2026-09-22
 
-The **spine is done and measured** — ingestion, QC, regrid, co-location and the eval
-harness. No renderer yet.
+The **spine and the viewer**. Ingestion, QC, regrid and co-location are measured; the
+water column renders as a true volume and clicking a float draws it against the analysis.
 
 ```
-python -m server.tools.fetch_fixtures    # pull the real files the tests run against
-python -m pytest server/tests -q         # 4 passed
-python -m server.eval.run_eval           # the numbers table
+python -m server.tools.fetch_fixtures         # real files the tests run against
+python -m pytest server/tests -q              # 4 passed
+python -m server.eval.run_eval --json         # numbers table + data/eval-latest.json
+
+python -m uvicorn server.ocean.api:app --port 8011     # the API
+cd viewer && npm install && npm run dev                # the viewer, on :5173
 ```
+
+**Viewer:** CesiumJS voxel volume with an offline Natural Earth basemap (no Ion token,
+no network at demo time), colourbar editor with palette / min-max / log-linear, opacity,
+sea-surface translucency, isosurface, vertical exaggeration, time-step selection, Argo
+and glider markers, and a depth-vs-variable chart per cast with QC and provenance.
+
+**Three layers a forecaster can switch between**, all from the same voxel path: the
+field, its per-cell uncertainty (as fade), and how many profiles actually informed each
+cell — the last runs 0 to 2 over this region, which is the honest answer to how much of
+the analysis is measurement.
 
 Demo date is **2018-08-25** — the one date where the INCOIS analysis, Argo, a glider and
 GLORYS12 are all present over this region at once.
