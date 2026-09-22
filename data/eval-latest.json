@@ -1,5 +1,5 @@
 {
-  "generated": "2026-09-22T18:36:37",
+  "generated": "2026-09-22T20:07:47",
   "region": {
     "name": "Bay of Bengal",
     "lon": [
@@ -35,7 +35,7 @@
       "latitude": 19,
       "longitude": 23
     },
-    "fetch_seconds": 0.134,
+    "fetch_seconds": 0.061,
     "float32_mb": 0.545,
     "finite_fraction": 0.4989,
     "min": 2.388,
@@ -44,7 +44,7 @@
   "regrid": {
     "native_levels": 24,
     "output_levels": 24,
-    "resample_ms": 440.7,
+    "resample_ms": 200.2,
     "stretch": "uniform in sqrt(depth)",
     "levels": 24,
     "z_min_m": 5.0,
@@ -77,7 +77,7 @@
     ]
   },
   "argo": {
-    "window_seconds": 0.24,
+    "window_seconds": 0.13,
     "profiles": 35,
     "data_modes": {
       "R": 0,
@@ -92,7 +92,7 @@
     "deployments": [
       "ru29-20180812T0220"
     ],
-    "fetch_seconds": 0.05,
+    "fetch_seconds": 0.02,
     "casts": 112,
     "levels": 13053
   },
@@ -1279,5 +1279,30 @@
         "rmse": 1.6223
       }
     }
+  },
+  "residual": {
+    "casts": 127,
+    "analysis_steps": [
+      "2018-08-20",
+      "2018-08-30"
+    ],
+    "levels_binned": 21629,
+    "cells_filled": 510,
+    "cells_total": 10488,
+    "coverage_percent": 4.86,
+    "bias": -0.4424,
+    "rmse": 1.2776,
+    "build_seconds": 0.43
+  },
+  "currents": {
+    "count": 397,
+    "depth_m": 5.078224182128906,
+    "speed_range": [
+      0.0008631937992834291,
+      1.4960088661086222
+    ],
+    "seconds": 0.386,
+    "method": "RK2 midpoint, normalised steps of 0.12 deg, max 40 steps",
+    "caveat": "Streamlines show the instantaneous flow pattern, not particle trajectories through time."
   }
 }

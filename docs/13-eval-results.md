@@ -153,6 +153,46 @@ conversion, the `sqrt(depth)` regrid, CF normalisation, the QC mask and the inte
 all have to be simultaneously right to land here. This is what the fixture tests in
 `server/tests/test_colocate.py` exist to protect.
 
+## Residual volume
+
+The numbers the viewer prints on its residual layer. They are here because a figure on
+screen during a demo is a claim, and hard rule 1 says claims come from the harness.
+
+| | |
+|---|---|
+| Casts compared | **127** (Argo + glider) |
+| Analysis steps spanned | **2018-08-20 and 2018-08-30** |
+| Levels binned | 21,629 |
+| Cells with an observation | **510 of 10,488 — 4.86 %** |
+| Pooled | bias **−0.442**, RMSE **1.278 °C** |
+| Build | 0.4 s |
+
+> **It spans two analysis steps, and that is why it has no timestep.** A ±5-day window
+> over a 10-day cadence straddles two. An earlier version took a `time_index`, used it
+> only for the label, and produced an identical volume carrying whichever date the slider
+> happened to sit on. The steps actually used are now recorded and the slider is disabled
+> on that layer.
+
+**4.86 % is the number worth saying out loud.** You can only verify the analysis where
+somebody measured, and in a ±5-day window that is one cell in twenty. The residual volume
+leaves the other nineteen empty rather than interpolating a comforting smooth field.
+
+## Current streamlines
+
+| | |
+|---|---|
+| Source | Copernicus GLORYS12 — **the only source with `uo`/`vo`** |
+| Streamlines | **397** at 5 m |
+| Speed | 0.001 – 1.496 m/s |
+| Integration | 386 ms, RK2 midpoint, normalised 0.12° steps, max 40 |
+
+Verified against solid-body rotation, where every streamline is a known circle:
+**0.04 % radius drift over 120 steps**. Plain Euler visibly spirals outward on the same
+field, which matters because this region is full of eddies.
+
+**Caveat carried in the API response and shown in the UI:** streamlines are the
+instantaneous flow pattern, not particle trajectories through time.
+
 ## Assumptions carried on every record
 
 Emitted with each comparison, because the source file does not state them:

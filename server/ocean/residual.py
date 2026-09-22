@@ -18,6 +18,14 @@ Two things this deliberately does NOT do:
     where somebody measured.
   * **It does not average across depth.** Binning is per (lon, lat, depth) cell, because
     the entire finding is that the error is depth-dependent.
+
+**This is a window aggregate, not a timestep.** Each cast is compared against the
+analysis step nearest to *its own* time, so a +/-5 day window over a 10-day cadence
+pools two steps -- measured: casts around 2018-08-25 match both 2018-08-20 and
+2018-08-30. The first version took a `time_index` and printed it as the provenance date,
+which produced an identical volume carrying a different date depending on where the
+slider happened to sit. The steps actually used are now recorded and there is no
+single-step label left to be wrong.
 """
 
 from dataclasses import dataclass
@@ -39,10 +47,12 @@ class ResidualStats:
     cells_total: int
     bias: float
     rmse: float
+    analysis_steps: list[str]
 
     def as_dict(self) -> dict:
         return {
             "casts": self.casts,
+            "analysis_steps": self.analysis_steps,
             "levels_binned": self.levels_binned,
             "cells_filled": self.cells_filled,
             "cells_total": self.cells_total,
@@ -56,10 +66,14 @@ def _nearest(values: np.ndarray, target: float) -> int:
     return int(np.abs(values - target).argmin())
 
 
-def build(ds: xr.Dataset, value_name: str, profiles, time_index: int,
+def build(ds: xr.Dataset, value_name: str, profiles, centre: str,
           source_key: str = config.DEFAULT_SOURCE,
           canonical: str = "temperature") -> tuple[Volume, ResidualStats]:
-    """Bin observed-minus-modelled onto the model grid as a renderable volume."""
+    """Bin observed-minus-modelled onto the model grid as a renderable volume.
+
+    `centre` is the date the observation window is centred on. There is deliberately no
+    timestep argument -- see the module docstring.
+    """
     source = config.SOURCES[source_key]
 
     z_name = "ZAX" if "ZAX" in ds.coords else "depth"
@@ -77,6 +91,7 @@ def build(ds: xr.Dataset, value_name: str, profiles, time_index: int,
 
     all_residuals: list[np.ndarray] = []
     used_casts = 0
+    steps_used: set[str] = set()
 
     for profile in profiles:
         if not profile.accepted.any():
@@ -89,6 +104,7 @@ def build(ds: xr.Dataset, value_name: str, profiles, time_index: int,
 
         used_casts += 1
         all_residuals.append(residual[usable])
+        steps_used.add(str(comparison.provenance["analysis_time"])[:10])
 
         j = _nearest(lats, profile.lat)
         i = _nearest(lons, profile.lon)
@@ -108,6 +124,7 @@ def build(ds: xr.Dataset, value_name: str, profiles, time_index: int,
         cells_total=int(count.size),
         bias=float(pooled.mean()) if pooled.size else float("nan"),
         rmse=float(np.sqrt((pooled ** 2).mean())) if pooled.size else float("nan"),
+        analysis_steps=sorted(steps_used),
     )
 
     finite = binned[np.isfinite(binned)]
@@ -124,12 +141,16 @@ def build(ds: xr.Dataset, value_name: str, profiles, time_index: int,
         "variable": f"{value_name} residual",
         "standard_name": f"{report.standard_name}_residual",
         "units": report.display_units,
-        "time": str(ds.time.values[time_index])[:19],
+        # No single timestep: each cast is matched to the step nearest its own time.
+        "time": f"{centre} +/-{config.FLOAT_PAIRING_DAYS:.0f} d",
+        "analysis_steps": stats.analysis_steps,
         "depth_grid": grid.provenance(),
         "range_test": {"checked": False, "reason": "a residual has no physical range"},
         "masked_cells": 0,
         "residual": stats.as_dict(),
         "cf_assumptions": [
+            "window aggregate, not a single timestep: each cast is compared against the "
+            f"analysis step nearest its own time ({', '.join(stats.analysis_steps) or 'none'})",
             "observed minus modelled, binned to the nearest grid cell, no smoothing",
             "cells with no observation in this window stay empty rather than interpolated",
             f"colour range forced symmetric about zero at +/-{extent:.2f}",

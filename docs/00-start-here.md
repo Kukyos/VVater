@@ -38,14 +38,26 @@ cd viewer && npm install && npm run dev                # the viewer, on :5173
 ```
 
 **Viewer:** CesiumJS voxel volume with an offline Natural Earth basemap (no Ion token,
-no network at demo time), colourbar editor with palette / min-max / log-linear, opacity,
-sea-surface translucency, isosurface, vertical exaggeration, time-step selection, Argo
-and glider markers, and a depth-vs-variable chart per cast with QC and provenance.
+no network at demo time). Colourbar editor (palette, min/max, log/linear), opacity,
+sea-surface translucency, isosurface, vertical exaggeration, time animation with
+prefetch, current streamlines on a depth slice, Argo and glider markers, and a
+depth-vs-variable chart per cast with QC and provenance.
 
-**Three layers a forecaster can switch between**, all from the same voxel path: the
-field, its per-cell uncertainty (as fade), and how many profiles actually informed each
-cell — the last runs 0 to 2 over this region, which is the honest answer to how much of
-the analysis is measurement.
+**Four things to look at**, all from the same voxel path:
+
+1. **The field** — temperature or salinity through the water column.
+2. **Its uncertainty** — the analysis ships a per-cell error field; low-confidence water
+   renders faint instead of being drawn as if it were measurement.
+3. **Observation density** — how many profiles actually informed each cell. Over this
+   region: **0 to 2**.
+4. **The residual** — observed minus modelled, binned onto the grid. Only **4.86 %** of
+   cells contain an observation at all, and the empty ones stay empty.
+
+**Also served:** a minimal OGC WMS (`/wms`, GetCapabilities + GetMap, nine layers,
+EPSG:4326) so the same data opens in QGIS. WCS is deliberately not implemented.
+
+**Two presets that name what the controls already did:** the **20 °C isotherm** (the
+standard proxy for tropical cyclone heat potential) and **true vertical scale**.
 
 Demo date is **2018-08-25** — the one date where the INCOIS analysis, Argo, a glider and
 GLORYS12 are all present over this region at once.

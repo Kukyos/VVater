@@ -192,14 +192,13 @@ async function main(): Promise<void> {
 
     const isResidual = state.layer === "residual";
     const volumeMeta = isResidual
-      ? await api.getResidualMeta(state.variable, state.source, state.timeIndex, meta.demoDate)
+      ? await api.getResidualMeta(state.variable, state.source, meta.demoDate)
       : await api.getVolumeMeta(state.variable, state.source, state.timeIndex);
     state.volumeMeta = volumeMeta;
 
     const [nx, ny, nz] = volumeMeta.dimensions;
     const { values, errors } = isResidual
-      ? await api.getResidualData(
-          state.variable, state.source, state.timeIndex, meta.demoDate, nx * ny * nz)
+      ? await api.getResidualData(state.variable, state.source, meta.demoDate, nx * ny * nz)
       : await api.getVolumeData(
           state.variable, state.source, state.timeIndex, nx * ny * nz, volumeMeta.hasError);
 
@@ -225,7 +224,8 @@ async function main(): Promise<void> {
     const residualStats = volumeMeta.provenance.residual;
     status(
       residualStats
-        ? `${residualStats.casts} casts · ${residualStats.cells_filled} of ` +
+        ? `${residualStats.casts} casts vs analysis steps ` +
+          `${residualStats.analysis_steps.join(" and ")} · ${residualStats.cells_filled} of ` +
           `${residualStats.cells_total} cells have an observation ` +
           `(${residualStats.coverage_percent}%) · bias ${residualStats.bias.toFixed(2)}, ` +
           `rmse ${residualStats.rmse.toFixed(2)}`
@@ -556,7 +556,14 @@ async function main(): Promise<void> {
     paletteSelect.value = state.paletteId;
     el("layer-field").classList.toggle("on", layer === "field");
     el("layer-residual").classList.toggle("on", layer === "residual");
-    if (layer === "residual") setPlaying(false);
+
+    // The residual pools every cast in a +/-5 day window against whichever analysis step
+    // is nearest each one, so it has no single timestep. Leaving the slider live would
+    // let someone move it, see nothing change, and reasonably conclude it was broken.
+    const isResidual = layer === "residual";
+    timeSlider.disabled = isResidual;
+    el<HTMLButtonElement>("play").disabled = isResidual;
+    if (isResidual) setPlaying(false);
     try {
       await loadVolume();
     } catch (error) {

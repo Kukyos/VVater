@@ -17,7 +17,7 @@ from pathlib import Path
 import numpy as np
 import xarray as xr
 
-from server.ocean import argo, cf, colocate, config, glider, regrid, sources
+from server.ocean import argo, cf, colocate, config, currents, glider, regrid, residual, sources
 
 CACHE = Path(__file__).resolve().parents[2] / "data" / "cache"
 CENTRE = config.DEMO_DATE
@@ -193,6 +193,46 @@ def main(write_json: bool = False) -> None:
     print(f"\n  Below 300 m the two instruments are indistinguishable "
           f"({deep['argo']['rmse']:.2f} vs {deep['glider']['rmse']:.2f}).")
     print("  The entire disagreement lives in the upper 300 m, where the thermocline is.")
+
+    # ---- residual volume ------------------------------------------------
+    # The viewer prints these numbers on screen during a demo, so they have to come from
+    # here. Hard rule 1: no figure appears anywhere the harness did not produce it.
+    _rule("Residual volume  (what the viewer shows on the residual layer)")
+    t0 = time.perf_counter()
+    _, res = residual.build(ds, names["value"], usable + gliders, str(CENTRE))
+    residual_s = time.perf_counter() - t0
+    summary = res.as_dict()
+    print(f"  casts compared   {summary['casts']}")
+    print(f"  analysis steps   {', '.join(summary['analysis_steps'])}"
+          "   <- a +/-5 d window over a 10-day cadence spans two")
+    print(f"  levels binned    {summary['levels_binned']}")
+    print(f"  cells with data  {summary['cells_filled']} of {summary['cells_total']} "
+          f"({summary['coverage_percent']} %)")
+    print(f"  pooled           bias {summary['bias']:+.3f}   rmse {summary['rmse']:.3f}")
+    print(f"  build            {residual_s:.1f} s")
+    record["residual"] = {**summary, "build_seconds": round(residual_s, 2)}
+
+    # ---- currents -------------------------------------------------------
+    _rule("Current streamlines")
+    try:
+        day = config.DEMO_DATE.isoformat()
+        cds, cnames = sources.fetch_many(["u", "v"], day, day, source_key="glorys12")
+        t0 = time.perf_counter()
+        lines = currents.streamlines(cds, cnames["u"], cnames["v"], 0, 0)
+        currents_s = time.perf_counter() - t0
+        print(f"  source           Copernicus GLORYS12 (the only source with u/v)")
+        print(f"  streamlines      {lines['count']} at {lines['depth_m']:.0f} m")
+        print(f"  speed            {lines['speedRange'][0]:.3f} to {lines['speedRange'][1]:.3f} m/s")
+        print(f"  integrate        {currents_s * 1000:.0f} ms")
+        print(f"  method           {lines['method']}")
+        record["currents"] = {
+            "count": lines["count"], "depth_m": lines["depth_m"],
+            "speed_range": lines["speedRange"], "seconds": round(currents_s, 3),
+            "method": lines["method"], "caveat": lines["note"],
+        }
+    except Exception as exc:  # credentials absent, or no network
+        print(f"  unavailable: {exc}")
+        record["currents"] = {"unavailable": str(exc)}
 
     _rule("Assumptions on the record")
     for note in rows[0]["cf_assumptions"]:

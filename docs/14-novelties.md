@@ -41,11 +41,9 @@ measurement?*
 Over the Bay of Bengal it runs **0 to 2 profiles per cell**. That number is the argument
 for the whole platform, and it took one line in `config.py` to surface.
 
----
+### N4 · The residual volume
 
-## Designed, not built
-
-### N4 · The residual volume — the demo moment
+**Built.** 
 
 `docs/13-eval-results.md` established that the analysis and an independent glider agree
 below 300 m (0.35 vs 0.31 °C RMSE) and **disagree badly above it** (1.26 vs 2.89, with a
@@ -56,13 +54,26 @@ Co-locate every float and glider cast in the window onto the grid and render
 **observed − modelled as a volume**. Where the analysis is wrong becomes the first thing
 on screen instead of a table in an appendix.
 
-Everything needed exists: `colocate.colocate`, `colocate.pooled_residuals`, the voxel
-path, the provider. What is missing is a **diverging palette centred on zero** —
-`balance` from cmocean — because a residual has a sign and every palette currently in
-`colorbar.ts` is sequential. Sequential ramps on signed data are how people misread
-residual plots.
+Measured: **127 casts, 21,629 levels, 510 of 10,488 cells (4.86 %)**, pooled bias −0.442
+and RMSE 1.278 °C. Empty cells stay empty — a smooth residual field would imply we know
+the error everywhere, which is the opposite of the point.
 
-### N5 · Vertical exaggeration as a teaching control, not a slider
+It uses the `balance` diverging palette on a range forced symmetric about zero, because a
+residual has a sign and a sequential ramp on signed data is how residual plots get
+misread.
+
+**It is a window aggregate, not a timestep**, and it says so: a ±5-day window over a
+10-day cadence spans two analysis steps. The first version took a timestep it did not
+use, which put a date on the picture that the picture did not come from.
+
+---
+
+## Designed, not built
+
+### N5 · Vertical exaggeration as a teaching control
+
+**Partly built** — a "true scale" preset exists. What is still missing is the second
+labelled stop and the on-screen line explaining what the comparison means.
 
 The ocean is 4 km deep and 2000 km wide; at true scale the Bay of Bengal is a film of
 water. Exaggeration is already free here (it is the ratio of the voxel shape's height
@@ -73,18 +84,27 @@ For the outreach mandate it should have **two labelled stops**: "true scale" and
 `sqrt(depth)` stretch. The lesson — *this is how thin the layer we depend on actually
 is* — is the whole public-communication argument, and it is currently a slider at 40x.
 
----
-
-## Named, because it is the point of the theme
-
 ### N6 · The 20 °C isotherm
 
-The isosurface control is generic. In the Bay of Bengal under a Disaster Management
-theme it has one obvious worked example: **the depth of the 20 °C isotherm**, the
-standard proxy for the heat available to a tropical cyclone. A deeper D20 means more
+**Built.** The isosurface control was generic; under a Disaster Management theme in the
+Bay of Bengal it has one obvious worked example — the depth of the **20 °C isotherm**,
+the standard proxy for the heat available to a tropical cyclone. A deeper D20 means more
 fuel.
 
-The control already does this — set the threshold to 20 and open the shell width. What
-is missing is that the interface never says so. It should ship as a **named preset**
-next to the slider, so the first thing anyone sees the isosurface do is the thing the
-theme is about.
+It now ships as a named preset that sets the threshold and shell width and says what it
+is, so the first thing anyone sees the isosurface do is the thing the theme is about.
+
+---
+
+## N7 · Streamlines integrated on the server
+
+Not a novelty of idea but of method. The two usual ways to draw currents are decimated
+glyphs (thousands of primitives, still ugly) and GPU particle advection (a shader project
+with its own silent failure modes). Integrating **RK2 streamlines in numpy** and sending
+polylines is cheaper than both, and — the actual reason — it is **testable**: a wrong
+integrator draws a picture that looks fine. `currents.demo()` checks it against
+solid-body rotation where every streamline is a known circle, and gets 0.04 % radius
+drift over 120 steps where plain Euler visibly spirals.
+
+The honesty cost is stated in the API response and on screen: streamlines are the
+instantaneous flow pattern, not particle trajectories through time.

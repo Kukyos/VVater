@@ -132,23 +132,27 @@ def volume_data(variable: str = "temperature",
 
 
 @lru_cache(maxsize=8)
-def _residual(variable: str, source_key: str, time_index: int, on: str, t0: str, t1: str):
+def _residual(variable: str, source_key: str, on: str, t0: str, t1: str):
     ds, names = _dataset(variable, source_key, t0, t1)
     centre = date.fromisoformat(on)
     casts = (argo.load_window(centre, variable) + glider.load_window(centre, variable))
-    return residual.build(ds, names["value"], casts, time_index, source_key, canonical=variable)
+    return residual.build(ds, names["value"], casts, on, source_key, canonical=variable)
 
 
 @app.get("/api/residual/meta")
 def residual_meta(variable: str = "temperature",
                   source: str = config.DEFAULT_SOURCE,
-                  time_index: int = 0, on: str | None = None,
+                  on: str | None = None,
                   t0: str | None = None, t1: str | None = None) -> dict:
-    """Observed minus modelled, binned onto the grid. See server/ocean/residual.py."""
+    """Observed minus modelled, binned onto the grid. See server/ocean/residual.py.
+
+    There is deliberately no time_index: the residual is a window aggregate, and
+    accepting one would let the label disagree with the data it describes.
+    """
     start, end = _window(t0, t1)
     centre = on or str(config.DEMO_DATE)
     try:
-        packed, _ = _residual(variable, source, time_index, centre, start, end)
+        packed, _ = _residual(variable, source, centre, start, end)
     except (KeyError, IndexError) as exc:
         raise HTTPException(status_code=404, detail=str(exc)) from exc
     return packed.as_dict()
@@ -157,11 +161,11 @@ def residual_meta(variable: str = "temperature",
 @app.get("/api/residual/data")
 def residual_data(variable: str = "temperature",
                   source: str = config.DEFAULT_SOURCE,
-                  time_index: int = 0, on: str | None = None,
+                  on: str | None = None,
                   t0: str | None = None, t1: str | None = None) -> Response:
     start, end = _window(t0, t1)
     centre = on or str(config.DEMO_DATE)
-    packed, _ = _residual(variable, source, time_index, centre, start, end)
+    packed, _ = _residual(variable, source, centre, start, end)
     return Response(content=packed.values.tobytes(),
                     media_type="application/octet-stream",
                     headers={"Cache-Control": "public, max-age=3600"})
