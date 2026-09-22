@@ -87,7 +87,13 @@ SOURCES: dict[str, Source] = {
         title="INCOIS Argo 10-day, Kessler-McCreary Analysis",
         kind="erddap",
         native_levels=24,
-        variables={"temperature": "T_ANALYZED", "salinity": "S_ANALYZED"},
+        # "observations" is not a physical field and the brief never asks for it, but
+        # the product ships it: T_BOXOBS counts how many profiles fell inside each 1x1
+        # cell. Rendered as a volume it shows where the analysis is informed by data and
+        # where it is interpolating between distant floats -- which is the honest answer
+        # to "how much should I trust this?" and costs one line to expose.
+        variables={"temperature": "T_ANALYZED", "salinity": "S_ANALYZED",
+                   "observations": "T_BOXOBS"},
         error_variables={"temperature": "T_RMSE", "salinity": "S_RMSE"},
     ),
     # Secondary. Higher resolution and the only source with currents (L4).

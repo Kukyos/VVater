@@ -61,6 +61,9 @@ export const PALETTES: Palette[] = [
 export const DEFAULT_PALETTE_FOR: Record<string, string> = {
   temperature: "thermal",
   salinity: "haline",
+  // Counts are not a physical field, so a perceptually uniform ramp beats an
+  // oceanographic one: the question is "how many", not "how warm".
+  observations: "viridis",
 };
 
 /** A wide, visible version of the same palette for the legend strip in the UI. */

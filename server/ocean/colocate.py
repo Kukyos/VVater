@@ -55,7 +55,8 @@ def _coord(ds: xr.Dataset, *candidates: str) -> str:
 
 
 def colocate(profile, ds: xr.Dataset, value_name: str,
-             error_name: str | None = None) -> Comparison:
+             error_name: str | None = None,
+             canonical: str = "temperature") -> Comparison:
     """Interpolate `ds[value_name]` onto one float profile.
 
     Nearest neighbour in time (the analysis is 10-daily and the float is instantaneous;
@@ -73,7 +74,7 @@ def colocate(profile, ds: xr.Dataset, value_name: str,
             "(docs/03-limitations.md L2)"
         )
 
-    report = cf.normalise_variable(ds[value_name], "temperature")
+    report = cf.normalise_variable(ds[value_name], canonical)
 
     field = ds[value_name].sel({"time": profile.time}, method="nearest")
     picked_time = field["time"].values

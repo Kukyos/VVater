@@ -65,8 +65,15 @@ def _flatten(array: np.ndarray) -> np.ndarray:
 
 def build(ds: xr.Dataset, value_name: str, time_index: int,
           error_name: str | None = None,
-          source_key: str = config.DEFAULT_SOURCE) -> Volume:
-    """Build one volume from an already-fetched dataset."""
+          source_key: str = config.DEFAULT_SOURCE,
+          canonical: str = "temperature") -> Volume:
+    """Build one volume from an already-fetched dataset.
+
+    `canonical` is our own name for the variable ("temperature", "salinity", ...) as
+    opposed to `value_name`, which is whatever the source calls it. It was hardcoded to
+    "temperature" here, which meant salinity was labelled sea_water_temperature in the
+    units shown on screen AND checked against the temperature global range limits.
+    """
     source = config.SOURCES[source_key]
 
     z_name = "ZAX" if "ZAX" in ds.coords else "depth"
@@ -81,7 +88,7 @@ def build(ds: xr.Dataset, value_name: str, time_index: int,
     grid = regrid.build_grid(native, source.native_levels)
 
     field = ds[value_name].isel(time=time_index)
-    report = cf.normalise_variable(field, "temperature")
+    report = cf.normalise_variable(field, canonical)
 
     # Physically impossible cells are masked out of the render and counted, never
     # silently clipped (docs/13-eval-results.md).

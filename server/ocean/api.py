@@ -18,6 +18,15 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from . import argo, colocate, config, glider, sources, volume
 
+# Variables that exist as gridded fields but not as instrument measurements. Asking a
+# float for its "observation count" is meaningless, so the in-situ side falls back to
+# temperature rather than raising.
+GRID_ONLY = {"observations"}
+
+
+def _instrument_variable(variable: str) -> str:
+    return "temperature" if variable in GRID_ONLY else variable
+
 app = FastAPI(title="VVater — 3D ocean data", version="0.1.0")
 
 # The viewer runs on Vite's dev server on another port during development. In a real
@@ -42,7 +51,8 @@ def _dataset(variable: str, source_key: str, t0: str, t1: str):
 @lru_cache(maxsize=32)
 def _volume(variable: str, source_key: str, time_index: int, t0: str, t1: str):
     ds, names = _dataset(variable, source_key, t0, t1)
-    return volume.build(ds, names["value"], time_index, names.get("error"), source_key)
+    return volume.build(ds, names["value"], time_index, names.get("error"),
+                        source_key, canonical=variable)
 
 
 def _window(t0: str | None, t1: str | None) -> tuple[str, str]:
@@ -129,6 +139,7 @@ def observations(on: str | None = None, variable: str = "temperature") -> dict:
     to send just so a dot can appear on a globe.
     """
     centre = date.fromisoformat(on) if on else config.DEMO_DATE
+    variable = _instrument_variable(variable)
     out = []
     for kind, profiles in (("argo", argo.load_window(centre, variable)),
                            ("glider", glider.load_window(centre, variable))):
@@ -159,6 +170,7 @@ def profile(platform: str, on: str | None = None, variable: str = "temperature",
     """
     centre = date.fromisoformat(on) if on else config.DEMO_DATE
     start, end = _window(t0, t1)
+    variable = _instrument_variable(variable)
 
     found = None
     for profiles in (argo.load_window(centre, variable), glider.load_window(centre, variable)):
@@ -172,7 +184,8 @@ def profile(platform: str, on: str | None = None, variable: str = "temperature",
         raise HTTPException(status_code=404, detail=f"no profile {platform!r} on {centre}")
 
     ds, names = _dataset(variable, source, start, end)
-    comparison = colocate.colocate(found, ds, names["value"], names.get("error"))
+    comparison = colocate.colocate(found, ds, names["value"], names.get("error"),
+                                   canonical=variable)
 
     def clean(array):
         return [None if not np.isfinite(v) else round(float(v), 4) for v in array]

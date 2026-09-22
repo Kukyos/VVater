@@ -19,6 +19,9 @@ UNIT_ALIASES = {
 
 STANDARD_NAMES = {
     "temperature": "sea_water_temperature",
+    # Not a CF standard name, because CF has none for "how many observations went into
+    # this cell". Kept distinct so the range test knows not to apply ocean limits to it.
+    "observations": "number_of_observations",
     "salinity": "sea_water_practical_salinity",
     "u": "eastward_sea_water_velocity",
     "v": "northward_sea_water_velocity",
@@ -26,6 +29,7 @@ STANDARD_NAMES = {
 
 DISPLAY_UNITS = {
     "sea_water_temperature": "°C",
+    "number_of_observations": "profiles",
     "sea_water_practical_salinity": "PSU",
     "eastward_sea_water_velocity": "m/s",
     "northward_sea_water_velocity": "m/s",
