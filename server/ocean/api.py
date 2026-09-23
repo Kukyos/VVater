@@ -46,14 +46,20 @@ async def _errors_as_json(request: Request, call_next):
         return JSONResponse({"detail": f"{type(exc).__name__}: {exc}"}, status_code=500)
 
 
-# The viewer runs on Vite's dev server on another port during development. In a real
-# INCOIS deployment both are served from the same origin and this does nothing.
+# The viewer runs on Vite's dev server on another port during development, and on a
+# separate Vercel host in production (Vercel preview deploys get a random *.vercel.app
+# subdomain each time, so ALLOWED_ORIGIN_REGEX covers those; ALLOWED_ORIGINS covers the
+# fixed production domain). Falls back to local dev origins when unset.
+import os
+
+_extra_origins = [o.strip() for o in os.environ.get("ALLOWED_ORIGINS", "").split(",") if o.strip()]
 app.add_middleware(
     CORSMiddleware,
     # 5173 is `npm run dev`, 4173 is `npm run preview` (the production build). Preview
     # was missing, so the built viewer could not reach the API at all.
     allow_origins=[f"http://{host}:{port}" for host in ("localhost", "127.0.0.1")
-                   for port in (5173, 4173)],
+                   for port in (5173, 4173)] + _extra_origins,
+    allow_origin_regex=os.environ.get("ALLOWED_ORIGIN_REGEX"),
     allow_methods=["GET", "POST"],
     allow_headers=["*"],
 )
