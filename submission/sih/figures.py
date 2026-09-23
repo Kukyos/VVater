@@ -186,6 +186,11 @@ def main() -> None:
     levels = regrid["output_levels"]
     ta, tg = tchp["argo"], tchp["glider"]
     empty_pct = f"{100 - float(res['coverage_percent']):.0f}"
+    # The region box, as the harness recorded it: width along its middle latitude.
+    import math
+    (lon0, lon1), (lat0, lat1) = e["region"]["lon"], e["region"]["lat"]
+    width_km = round((lon1 - lon0) * 111.32 * math.cos(math.radians((lat0 + lat1) / 2)) / 100) * 100
+    depth_km = float(regrid["z_max_m"]) / 1000
 
     # ============================================================ 2 solution
     page("body-solution", f"""
@@ -210,8 +215,8 @@ def main() -> None:
       <div class="step now">Open the float files in another, plot one profile</div>
       <div class="step now">Line them up by eye; repeat for every depth</div>
       <div class="who" style="color:var(--navy)">VVater</div>
-      <div class="step vv">Open one link. <b>No install</b>; runs on INCOIS servers</div>
-      <div class="step vv">Whole water column + <b>{argo["profiles"]} floats, {glider["casts"]} glider casts</b></div>
+      <div class="step vv">Open one link. <b>No install</b>; deployable on INCOIS servers</div>
+      <div class="step vv">Whole water column + <b>{argo["profiles"]} float profiles, {glider["casts"]} glider casts</b></div>
       <div class="step vv">Click a float: profile vs model, gap in <b>°C and cyclone fuel</b></div>
     </div>
     <h2 style="margin:4px 0 0">What makes it different</h2>
@@ -261,21 +266,20 @@ def main() -> None:
       <tr><td>CesiumJS</td><td class="alt">Three.js, deck.gl</td><td class="why">A real globe with
         correct geography, and a built-in voxel raymarcher; we wrote only the colour transfer
         function. Three.js needs both hand-built; deck.gl has no volume layer.</td></tr>
-      <tr><td>TypeScript + Vite</td><td class="alt">React, Angular</td><td class="why">The viewer is
-        one canvas and a panel of controls. A UI framework adds a second render loop next to
-        Cesium's for no gain; typed modern JavaScript is what the brief asks for.</td></tr>
-      <tr><td>FastAPI</td><td class="alt">Flask, Django, Node</td><td class="why">The science stack
+      <tr><td>TypeScript + Vite</td><td class="alt">React, Angular</td><td class="why">No UI framework,
+        on purpose: one Cesium canvas and a control panel. React or Angular would add a second
+        render loop beside Cesium's; typed ES modules do the job.</td></tr>
+      <tr><td>FastAPI</td><td class="alt">Flask, Django</td><td class="why">The science stack
         (xarray, NumPy, TEOS-10) is Python; typed parameters and API docs come free; nothing
         here needs Django's database layer.</td></tr>
       <tr><td>xarray</td><td class="alt">PyNIO</td><td class="why">The brief names both; PyNIO is
         archived and unmaintained, xarray is live and reads CF metadata.</td></tr>
       <tr><td>Raw float32</td><td class="alt">JSON, OPeNDAP</td><td class="why">Bytes go straight
-        into a GPU texture with no parsing: one INCOIS timestep is <b>{n2(field["float32_mb"])} MB</b>,
-        fetched in <b>{field["fetch_seconds"]} s</b>.</td></tr>
+        into a GPU texture with no parsing: one full INCOIS timestep is <b>{n2(field["float32_mb"])} MB</b>.</td></tr>
       <tr><td>OGC WMS 1.3.0</td><td class="alt">only our own tiles</td><td class="why">The same layers
         open in QGIS or any national portal, as the brief's open-standards clause asks.</td></tr>
       <tr><td>Canvas charts</td><td class="alt">Chart.js, D3</td><td class="why">A profile is two
-        lines and a band; a charting library is a dependency for 200 lines of drawing.</td></tr>
+        lines and a band; a charting library would be a dependency for two polylines.</td></tr>
     </table>
     <h2 style="margin:8px 0 0">How a volume is drawn</h2>
     <ul class="points">
@@ -292,7 +296,7 @@ def main() -> None:
 <div class="stats" style="grid-template-columns: repeat(6, 1fr)">
   <div class="stat"><b>{argo["profiles"]}</b><span>Argo profiles in the demo window, {argo["data_modes"]["D"]} scientist-checked (delayed mode)</span></div>
   <div class="stat"><b>{glider["casts"]}</b><span>glider casts, {glider["levels"]:,} levels, from an independent instrument</span></div>
-  <div class="stat"><b>{n2(field["float32_mb"])} MB</b><span>one full 3D timestep over the wire, fetched live in {field["fetch_seconds"]} s</span></div>
+  <div class="stat"><b>{n2(field["float32_mb"])} MB</b><span>one full 3D timestep, temperature and its error, as sent to the browser</span></div>
   <div class="stat"><b>{res["build_seconds"]} s</b><span>to pair {res["casts"]} casts with the model and build the residual volume</span></div>
   <div class="stat"><b>{cur["count"]}</b><span>current streamlines integrated in {int(float(cur["seconds"]) * 1000)} ms on the server</span></div>
   <div class="stat"><b>{text["casts_identical"]}/{text["casts_netcdf"]}</b><span>casts identical read from CSV and from NetCDF — {text["levels_identical"]:,} levels</span></div>
@@ -374,7 +378,7 @@ def main() -> None:
       water column had a measurement in this window. Shown honestly, that is itself the case
       for more floats — a sentence a policymaker can repeat.</p></div>
     <ul class="points">
-      <li><b>True scale in one click</b><span>the Bay really is a film of water: 2 km deep, 2,000+ km wide. Then 40×, to read it</span></li>
+      <li><b>True scale in one click</b><span>the Bay really is a film of water: {depth_km:g} km deep, {width_km:,} km wide. Then 40×, to read it</span></li>
       <li><b>From planet to profile</b><span>globe, to region, to one float's dive, in three clicks</span></li>
       <li><b>Runs in a school's browser</b><span>exhibitions, e-learning and outreach, as the brief asks</span></li>
       <li><b>Plain labels, real data</b><span>every colour has a legend, every point a source file</span></li>

@@ -63,7 +63,7 @@ currents on.
 
 | Shot | State | Captured |
 |---|---|---|
-| workspace | full window, float 2902596 clicked | whole page |
+| workspace | left dock retracted, float 2902596 clicked; 1280 x 720 at scale 2.5 so the inspector reads at slide size | whole page |
 | region | both docks retracted, Region 3D home camera | `#view` |
 | map | docks retracted, Map 2D | `#view` |
 | globe | docks retracted, Globe | `#view` |

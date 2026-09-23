@@ -259,6 +259,18 @@ async function main(): Promise<void> {
   // lines or leave none: the "sometimes they never load" report.
   let streamTicket = 0;
   let streamData: api.Streamlines | undefined;
+  /** The slice depth the current lines were asked for. */
+  let streamAskedFor: number | undefined;
+
+  /**
+   * Refetch when the slice has moved by any route other than the slider: the 20 degC
+   * preset, a source switch (a different depth grid), a variable change. Only the
+   * slider refetched, so after the preset the lines stayed at 92 m, buried inside the
+   * volume under a label that said 5 m.
+   */
+  function refreshStreamlinesIfStale(): void {
+    if (state.showCurrents && streamAskedFor !== sliceDepth()) void loadStreamlines();
+  }
 
   /** Put the lines at their depth in the current exaggeration. No request. */
   function placeStreamlines(): void {
@@ -282,6 +294,7 @@ async function main(): Promise<void> {
       return;
     }
     status("integrating streamlines…", "busy");
+    streamAskedFor = sliceDepth();
     let data: api.Streamlines | undefined;
     let failure: Error | undefined;
     // One retry: the first request after start-up can race the server's own first read
@@ -375,8 +388,10 @@ async function main(): Promise<void> {
 
     renderLegendStrip();
     renderProvenance(volumeMeta);
-    // A rebuild can change the exaggeration the lines were placed for.
+    // A rebuild can change the exaggeration the lines were placed for, and a new grid
+    // can change the depth the slice index points at.
     placeStreamlines();
+    refreshStreamlinesIfStale();
     void renderSection();
     void renderGlobal();
     renderHud();
@@ -996,6 +1011,7 @@ async function main(): Promise<void> {
     el("iso-label").textContent = "20.0";
     el("iso-band-label").textContent = "1.2";
     applyUniforms();
+    refreshStreamlinesIfStale();
     status("20 °C isotherm — the depth of this surface is tropical cyclone heat potential");
   });
 
@@ -1200,8 +1216,8 @@ async function main(): Promise<void> {
 
   try {
     await loadVolume();
+    // loadVolume already fetched the streamlines for the opening slice.
     el<HTMLInputElement>("currents").checked = state.showCurrents;
-    void loadStreamlines();
     await loadObservations();
     bindGraphicsPanel();
     // Tuned against the real scene, after the volume is on screen. A saved manual

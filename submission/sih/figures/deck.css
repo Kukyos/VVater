@@ -84,7 +84,8 @@ figure { margin: 0; }
 /* ---------------------------------------------------------------- tables */
 table { border-collapse: collapse; width: 100%; }
 th { text-align: left; font-size: 35px; color: var(--navy); font-weight: 600; padding: 0 16px 10px 0;
-  border-bottom: 3px solid var(--navy); text-transform: uppercase; letter-spacing: .03em; }
+  border-bottom: 3px solid var(--navy); text-transform: uppercase; letter-spacing: .03em;
+  white-space: nowrap; }
 td { font-size: 36px; padding: 13px 16px 13px 0; border-bottom: 2px solid var(--rule); vertical-align: top; line-height: 1.3; }
 td:first-child { font-weight: 600; white-space: nowrap; }
 td.alt { color: var(--faint); }

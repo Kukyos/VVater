@@ -19,21 +19,20 @@
       <tr><td>CesiumJS</td><td class="alt">Three.js, deck.gl</td><td class="why">A real globe with
         correct geography, and a built-in voxel raymarcher; we wrote only the colour transfer
         function. Three.js needs both hand-built; deck.gl has no volume layer.</td></tr>
-      <tr><td>TypeScript + Vite</td><td class="alt">React, Angular</td><td class="why">The viewer is
-        one canvas and a panel of controls. A UI framework adds a second render loop next to
-        Cesium's for no gain; typed modern JavaScript is what the brief asks for.</td></tr>
-      <tr><td>FastAPI</td><td class="alt">Flask, Django, Node</td><td class="why">The science stack
+      <tr><td>TypeScript + Vite</td><td class="alt">React, Angular</td><td class="why">No UI framework,
+        on purpose: one Cesium canvas and a control panel. React or Angular would add a second
+        render loop beside Cesium's; typed ES modules do the job.</td></tr>
+      <tr><td>FastAPI</td><td class="alt">Flask, Django</td><td class="why">The science stack
         (xarray, NumPy, TEOS-10) is Python; typed parameters and API docs come free; nothing
         here needs Django's database layer.</td></tr>
       <tr><td>xarray</td><td class="alt">PyNIO</td><td class="why">The brief names both; PyNIO is
         archived and unmaintained, xarray is live and reads CF metadata.</td></tr>
       <tr><td>Raw float32</td><td class="alt">JSON, OPeNDAP</td><td class="why">Bytes go straight
-        into a GPU texture with no parsing: one INCOIS timestep is <b>0.55 MB</b>,
-        fetched in <b>0.062 s</b>.</td></tr>
+        into a GPU texture with no parsing: one full INCOIS timestep is <b>0.55 MB</b>.</td></tr>
       <tr><td>OGC WMS 1.3.0</td><td class="alt">only our own tiles</td><td class="why">The same layers
         open in QGIS or any national portal, as the brief's open-standards clause asks.</td></tr>
       <tr><td>Canvas charts</td><td class="alt">Chart.js, D3</td><td class="why">A profile is two
-        lines and a band; a charting library is a dependency for 200 lines of drawing.</td></tr>
+        lines and a band; a charting library would be a dependency for two polylines.</td></tr>
     </table>
     <h2 style="margin:8px 0 0">How a volume is drawn</h2>
     <ul class="points">
