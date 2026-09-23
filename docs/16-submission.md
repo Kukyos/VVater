@@ -22,6 +22,8 @@ file, not ours, and is not committed.
 - Fills the title page fields from `01-problem-statement.md`, the "IDEA TITLE"
   placeholder, and the team badge on every slide.
 - Replaces each content slide's instruction box with one rendered body image.
+- Fills the empty lower half of the title page's left column with the idea in one line
+  and `shot-workspace.png`, left of the template's own artwork.
 - Drops the template's seventh "important instructions" slide: six is the limit, title
   slide included.
 

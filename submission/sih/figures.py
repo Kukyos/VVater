@@ -165,7 +165,7 @@ def flowchart(empty_pct: str) -> str:
     # everything lands in the API and the viewer
     y = 1290
     box(0, y, W, 130, "5  FastAPI  →  browser (CesiumJS)", [], fill="#1F4E79", edge="#1F4E79", ink="#FFFFFF")
-    s.append(f'<text x="30" y="{y + 100}" font-size="34" fill="#CFE3F5">volumes as raw float32 · OGC WMS · CSV upload  →  Region 3D · Map 2D · Globe · click a float for its profile</text>')
+    s.append(f'<text x="30" y="{y + 100}" font-size="34" fill="#CFE3F5">volumes as float32 · WMS · CSV upload · assistant  →  Simple globe · Region 3D · Map 2D · Fly · profiles</text>')
     arrow([(cx, 1250), (cx, y)])
     arrow([(W - 60, 240), (W - 60, y)])
     s.append("</svg>")

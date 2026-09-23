@@ -141,6 +141,23 @@ def fill_title(slide) -> None:
             run.font.size = Pt(16 if len(value) < 60 else 13)
 
 
+# The lower half of the title page's left column is empty in the template. The idea in one
+# line and a capture of the running build fill it, left of the template's own artwork.
+TITLE_LINE = ("The ocean model and every float and glider in one 3D scene, in a browser "
+              "— and where they disagree.")
+
+
+def add_title_picture(slide) -> None:
+    box = slide.shapes.add_textbox(Inches(0.35), Inches(4.08), Inches(5.9), Inches(0.5))
+    run = box.text_frame.paragraphs[0].add_run()
+    run.text = TITLE_LINE
+    run.font.size = Pt(13)
+    run.font.bold = True
+    box.text_frame.word_wrap = True
+    slide.shapes.add_picture(str(FIGURES / "shot-workspace.png"),
+                             Inches(0.35), Inches(4.72), height=Inches(2.62))
+
+
 def main() -> None:
     if not TEMPLATE.exists():
         raise SystemExit(
@@ -157,6 +174,7 @@ def main() -> None:
     deck = Presentation(str(TEMPLATE))
 
     fill_title(deck.slides[0])
+    add_title_picture(deck.slides[0])
     fill_idea_title(deck.slides[1])
     for slide in deck.slides:
         fill_team_badge(slide)
