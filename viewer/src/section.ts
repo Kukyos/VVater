@@ -94,16 +94,39 @@ export function sectionCanvas(values: Float32Array, errors: Float32Array | null,
   return big;
 }
 
+/** How the global surface meets the Bay's volume, and what land looks like. */
+export interface SurfaceOptions {
+  /** The box the volume occupies. The surface fades to nothing before it reaches it. */
+  hole?: { lon: [number, number]; lat: [number, number] };
+  /**
+   * Width of that fade, in degrees. A hard cut-out left 29 degC surface water (the top of
+   * the palette) abutting a dark 93 m section with a straight line between them; a fade
+   * over a few degrees reads as the surface giving way to the water column.
+   */
+  featherDeg?: number;
+  /** Paint land (NaN) this colour, 0-1 RGB, instead of leaving it to the basemap. */
+  land?: [number, number, number];
+}
+
+/** 0 inside the hole, rising smoothly to 1 at featherDeg outside it. */
+export function fadeOutside(lon: number, lat: number, hole: SurfaceOptions["hole"],
+                            featherDeg: number): number {
+  if (!hole) return 1;
+  const dx = Math.max(hole.lon[0] - lon, 0, lon - hole.lon[1]) * Math.cos(lat * Math.PI / 180);
+  const dy = Math.max(hole.lat[0] - lat, 0, lat - hole.lat[1]);
+  const d = Math.hypot(dx, dy);
+  if (featherDeg <= 0) return d > 0 ? 1 : 0;
+  const t = Math.min(d / featherDeg, 1);
+  return t * t * (3 - 2 * t); // smoothstep
+}
+
 /**
- * The global surface layer (server/ocean/globalsurface.py) as a canvas, coloured with the
- * field's own palette and range so one colour means one temperature everywhere on screen.
- * The region's box is cut out: the volume is drawn there, and a surface image over it
- * would tint the very thing the view exists to show.
+ * A global surface layer (server/ocean/globalsurface.py) as a canvas, coloured with the
+ * given palette and range so one colour means one value everywhere on screen.
  */
 export function surfaceCanvas(values: Float32Array, nx: number, ny: number,
                               lonRange: [number, number], latRange: [number, number],
-                              style: SectionStyle,
-                              hole: { lon: [number, number]; lat: [number, number] }): HTMLCanvasElement {
+                              style: SectionStyle, options: SurfaceOptions = {}): HTMLCanvasElement {
   const stops = paletteStops(byId(style.paletteId), style.reversed, RAMP_STOPS);
   const canvas = document.createElement("canvas");
   canvas.width = nx;
@@ -112,16 +135,21 @@ export function surfaceCanvas(values: Float32Array, nx: number, ny: number,
   const image = context.createImageData(nx, ny);
   const dLon = (lonRange[1] - lonRange[0]) / (nx - 1);
   const dLat = (latRange[1] - latRange[0]) / (ny - 1);
+  const feather = options.featherDeg ?? 0;
+  const land = options.land;
   for (let row = 0; row < ny; row += 1) {
     const lat = latRange[1] - row * dLat;
-    const inLat = lat >= hole.lat[0] && lat <= hole.lat[1];
     for (let x = 0; x < nx; x += 1) {
-      const value = values[row * nx + x];
-      if (Number.isNaN(value)) continue;
-      const lon = lonRange[0] + x * dLon;
-      if (inLat && lon >= hole.lon[0] && lon <= hole.lon[1]) continue;
+      const i = row * nx + x;
+      const value = values[i];
+      if (Number.isNaN(value)) {
+        if (land) image.data.set([land[0] * 255, land[1] * 255, land[2] * 255, 255], i * 4);
+        continue;
+      }
+      const alpha = fadeOutside(lonRange[0] + x * dLon, lat, options.hole, feather);
+      if (alpha <= 0) continue;
       const [r, g, b] = colourAt(value, style, stops);
-      image.data.set([r * 255, g * 255, b * 255, 255], (row * nx + x) * 4);
+      image.data.set([r * 255, g * 255, b * 255, alpha * 255], i * 4);
     }
   }
   context.putImageData(image, 0, 0);
@@ -139,4 +167,9 @@ export function demo(): void {
   console.assert(top[0] === 210 && top[3] === 201, "section: k=0 must be z=nz-1, north row first");
   const bottom = sliceNorthUp(v, dims, 2);  // deepest = z 0
   console.assert(bottom[2] === 0, "section: deepest level must be z=0");
+  const hole = { lon: [80, 90] as [number, number], lat: [0, 10] as [number, number] };
+  console.assert(fadeOutside(85, 5, hole, 4) === 0, "surface: fully clear inside the box");
+  console.assert(fadeOutside(100, 5, hole, 4) === 1, "surface: fully drawn beyond the fade");
+  const half = fadeOutside(92, 5, hole, 4);
+  console.assert(half > 0.4 && half < 0.6, "surface: halfway through the fade is about half");
 }

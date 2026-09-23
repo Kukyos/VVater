@@ -189,24 +189,56 @@ export async function getVolumeData(
   };
 }
 
-/** Global surface temperature for the Globe view (server/ocean/globalsurface.py). */
+/** Whole-Earth surface layers (server/ocean/globalsurface.py). Surface only. */
+export interface GlobalLayer { key: string; title: string; units: string; palette: string; note: string }
+
 export interface GlobalSurfaceMeta {
+  layer: string;
+  title: string;
+  units: string;
+  palette: string;
   dimensions: [number, number];
   lonRange: [number, number];
   latRange: [number, number];
   valueRange: [number, number];
-  provenance: { source: string; variable: string; level_m: number; day: string;
-    horizontal_block: number; note: string };
+  provenance: { source: string; variable: string; level_m: number | null; day: string;
+    display_range: string; note: string };
 }
 
-export async function getGlobalSurface(): Promise<{ meta: GlobalSurfaceMeta; values: Float32Array }> {
-  const meta = await json<GlobalSurfaceMeta>("/api/global/meta");
-  const response = await fetch(`${BASE}/api/global/data`);
-  if (!response.ok) throw new Error(`${response.status} fetching the global surface`);
+export const getGlobalLayers = () =>
+  json<{ days: string[]; layers: GlobalLayer[]; cached: string[] }>("/api/global/layers");
+
+export async function getGlobalSurface(layer: string, day: string):
+    Promise<{ meta: GlobalSurfaceMeta; values: Float32Array }> {
+  const meta = await json<GlobalSurfaceMeta>(`/api/global/meta?layer=${layer}&day=${day}`);
+  const response = await fetch(`${BASE}/api/global/data?layer=${layer}&day=${day}`);
+  if (!response.ok) throw new Error(`${response.status} fetching the global ${layer} layer`);
   const values = new Float32Array(await response.arrayBuffer());
   const [nx, ny] = meta.dimensions;
   if (values.length !== nx * ny) {
-    throw new Error(`global surface is ${values.length} floats, expected ${nx * ny}`);
+    throw new Error(`global ${layer} is ${values.length} floats, expected ${nx * ny}`);
   }
   return { meta, values };
+}
+
+/** The assistant (server/ocean/assistant.py). Actions are whitelisted server-side. */
+export interface ChatAction {
+  action: string; view?: string; mode?: string; layer?: string; depth_m?: number;
+  lat?: number; lon?: number; platform?: string;
+}
+
+export async function chat(messages: { role: string; content: string }[],
+                           context: Record<string, unknown>): Promise<{
+  reply: string; actions: ChatAction[]; tools_used: string[]; unverified: string[];
+}> {
+  const response = await fetch(`${BASE}/api/chat`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ messages, context }),
+  });
+  if (!response.ok) {
+    const detail = await response.json().catch(() => ({ detail: response.statusText }));
+    throw new Error(`assistant unavailable: ${detail.detail}`);
+  }
+  return response.json();
 }

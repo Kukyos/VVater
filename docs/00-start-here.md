@@ -50,7 +50,34 @@ depth-vs-variable chart per cast with QC and provenance.
 the cursor's latitude and longitude. Both docks retract to a rail (`[` and `]`, or the
 chevrons); the viewport follows its grid cell.
 
-**Three views** of the same data (keys `1` `2` `3`, *Reset camera* or `Home` returns to
+**Two modes.** *Simple* is the whole ocean on a globe, one surface layer at a time
+(temperature, salinity, current speed, sea surface height, mixed layer depth, sea ice), a
+vertical colour bar and a timeline over the Bay's analysis dates — the outreach view. It is
+the first thing a new visitor sees; `?mode=advanced` skips it. *Advanced* is everything
+below. Both share one scene; switching hides one set of layers and shows the other.
+
+**Assistant** (`server/ocean/assistant.py`, `viewer/src/chat.ts`): questions about the data
+or the viewer, answered by a Groq-hosted model that can only reach the data through tools
+wrapping the API's own functions (an analysis value at a place and depth, the observation
+list, one cast against the analysis, the harness numbers, a global surface value, the user
+guide). Every number in a reply is checked against the tool results and the question;
+anything untraceable is flagged on screen. It may propose view changes (set a depth, open a
+profile, switch view or mode), whitelisted and clamped on the server and again in the
+browser. The key stays on the server. `docs/17-user-guide.md` is what it reads for the
+interface, and is written for people.
+
+**Cameras** (`viewer/src/camera.ts`): Region 3D uses our own orbit camera (drag to orbit,
+Shift- or right-drag to pan, wheel to zoom; **W A S D** pan, **Q E** turn, **R F** zoom,
+arrows tilt) with the range held between 90 km and 3,600 km and the target near the box.
+Cesium's controller zoomed by distance to a picked point, which on a translucent globe was
+unreliable: one zoom-out and zooming back in barely moved. **Fly** (key `4`) is a
+great-circle flight at a fixed altitude (8–250 km, changed only by R/F), so nobody climbs
+into space. Markers sit on the sea surface with depth testing off.
+
+**Quality:** motion renders at the tuned tier; 350 ms after the scene stops, one frame is
+drawn at full device resolution (up to 2x) and stays until the next change.
+
+**Four views** of the same data (keys `1`–`4`, *Reset camera* or `Home` returns to
 each view's home camera):
 
 - **Region 3D** — the oblique working view. Zoom-out is capped at 4,500 km, because there
@@ -58,12 +85,14 @@ each view's home camera):
 - **Map 2D** — Cesium's 2D mode. The voxel primitive is 3D-only, so the map shows the
   depth slice as a flat section, coloured by the same ramp from the values already in
   memory (`viewer/src/section.ts`).
-- **Globe** — the whole Earth, region in the middle. Outside the box it carries the
-  **global sea-surface temperature** for the same day (GLORYS12 top level, 0.49 m, 3x3
-  block mean to 1/4 deg; `server/ocean/globalsurface.py`), on the field's own colour scale
-  and cut out over the box so it never tints the volume. Surface only, temperature and the
-  analysis layer only, and labelled that way on screen. Also shown around the box in the
-  Region view; the sea surface is translucent only over the box.
+- **Globe** — the whole Earth, region in the middle. Around the box, in every Advanced
+  view, the **global sea-surface temperature** for the analysis date on the slider
+  (Copernicus 1/4° GLORYS12 member, 0.51 m, native resolution;
+  `server/ocean/globalsurface.py`), on the field's own colour scale, fading to nothing over
+  5° before the box (1° on the map) so the surface gives way to the volume instead of
+  meeting it at a hard line. Surface only, temperature and the analysis layer only, and
+  labelled that way on screen. The sea surface is translucent only over the box.
+- **Fly** — see *Cameras* above.
 
 Streamlines are on by default at the opening slice (93 m), coloured light cyan to amber by
 speed, with slow water fainter. Every async layer (volume, streamlines, profile, section,

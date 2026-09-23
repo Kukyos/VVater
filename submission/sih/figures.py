@@ -26,8 +26,8 @@ FIGURES = Path(__file__).resolve().parent / "figures"
 EVAL = ROOT / "data" / "eval-latest.json"
 REPO = "github.com/Kukyos/VVater"
 
-SHOTS = ["shot-workspace.png", "shot-region.png", "shot-map.png", "shot-globe.png",
-         "shot-resid.png", "shot-iso.png"]
+SHOTS = ["shot-workspace.png", "shot-region.png", "shot-map.png", "shot-simple.png",
+         "shot-fly.png", "shot-resid.png"]
 BODIES = ["body-solution", "body-technical", "body-feasibility", "body-impact",
           "body-references"]
 
@@ -239,11 +239,12 @@ def main() -> None:
   </div>
   <div class="col" style="gap:16px">
     <figure class="shot"><img src="shot-workspace.png" style="aspect-ratio: 16 / 9; object-fit: cover; object-position: 100% 45%">
-      <figcaption><b>The working prototype, not a mock-up:</b> temperature as a volume cut at 93 m, currents at that depth, every float and glider; right, one float against the model.</figcaption></figure>
-    <div class="thumbs">
-      <figure><img src="shot-region.png"><figcaption><b>Region 3D</b>the water column, 40× tall</figcaption></figure>
-      <figure><img src="shot-map.png"><figcaption><b>Map 2D</b>a flat section at any depth</figcaption></figure>
-      <figure><img src="shot-globe.png"><figcaption><b>Globe</b>the Bay in world sea temperature</figcaption></figure>
+      <figcaption><b>The working prototype, not a mock-up:</b> the volume cut at 93 m with currents and every float; right, the built-in assistant opened a float for us and compared it with the model from the data.</figcaption></figure>
+    <div class="thumbs" style="grid-template-columns: repeat(4, 1fr)">
+      <figure><img src="shot-simple.png"><figcaption><b>Simple</b>the whole ocean, one layer</figcaption></figure>
+      <figure><img src="shot-region.png"><figcaption><b>Region 3D</b>water column, 40× tall</figcaption></figure>
+      <figure><img src="shot-map.png"><figcaption><b>Map 2D</b>section at any depth</figcaption></figure>
+      <figure><img src="shot-fly.png"><figcaption><b>Fly</b>over the Bay, fixed height</figcaption></figure>
     </div>
   </div>
 </div>
@@ -278,8 +279,9 @@ def main() -> None:
         into a GPU texture with no parsing: one full INCOIS timestep is <b>{n2(field["float32_mb"])} MB</b>.</td></tr>
       <tr><td>OGC WMS 1.3.0</td><td class="alt">only our own tiles</td><td class="why">The same layers
         open in QGIS or any national portal, as the brief's open-standards clause asks.</td></tr>
-      <tr><td>Canvas charts</td><td class="alt">Chart.js, D3</td><td class="why">A profile is two
-        lines and a band; a charting library would be a dependency for two polylines.</td></tr>
+      <tr><td>Groq LLM + tools</td><td class="alt">a plain chatbot</td><td class="why">The model can
+        only answer through our own API functions; every number in a reply is checked against the
+        data it came from, and untraceable ones are flagged on screen.</td></tr>
     </table>
     <h2 style="margin:8px 0 0">How a volume is drawn</h2>
     <ul class="points">
@@ -379,9 +381,9 @@ def main() -> None:
       for more floats — a sentence a policymaker can repeat.</p></div>
     <ul class="points">
       <li><b>True scale in one click</b><span>the Bay really is a film of water: {depth_km:g} km deep, {width_km:,} km wide. Then 40×, to read it</span></li>
-      <li><b>From planet to profile</b><span>globe, to region, to one float's dive, in three clicks</span></li>
+      <li><b>From planet to profile</b><span>a simple globe, then the Bay in 3D, then fly over it, then one float's dive</span></li>
       <li><b>Runs in a school's browser</b><span>exhibitions, e-learning and outreach, as the brief asks</span></li>
-      <li><b>Plain labels, real data</b><span>every colour has a legend, every point a source file</span></li>
+      <li><b>Ask it in plain words</b><span>a built-in assistant answers from the data and moves the view for you</span></li>
     </ul>
     <h2 style="margin:6px 0 0">Where it goes next</h2>
     <ul class="points">
@@ -395,9 +397,9 @@ def main() -> None:
       <figcaption><b>Where the model is wrong.</b> Each block is a place someone measured, coloured
       by measured minus model (red warmer, blue colder). Everything else is empty on purpose:
       {empty_pct}% of the volume.</figcaption></figure>
-    <figure class="shot"><img src="shot-globe.png">
-      <figcaption><b>The context.</b> The Bay's full water column, inside the world's sea-surface
-      temperature on the same day and the same colour scale.</figcaption></figure>
+    <figure class="shot"><img src="shot-simple.png">
+      <figcaption><b>The Simple view, for everyone else.</b> The world's ocean one layer at a
+      time — temperature, salinity, currents, sea level, mixed layer, ice — on a timeline.</figcaption></figure>
   </div>
 </div>
 """)

@@ -84,7 +84,15 @@ Argo analyses have none. And **it is where the volume budget in L1 actually bite
 day of four variables is 23 MB against the INCOIS field's 0.55 MB for thirteen timesteps.
 A 30-day animation is ~700 MB, which is the LRU cache's whole reason for existing.
 
-**Global surface subset** (for the Globe view's context layer, `globalsurface.py`):
+**Global surface layers, current** (`globalsurface.py`): dataset
+`cmems_mod_glo_phy-all_my_0.25deg_P1D-m` (product GLOBAL_MULTIYEAR_PHY_ENS_001_031), the
+`_glor` members of `thetao so uo vo siconc zos mlotst`, depth 0–1 m, 180 W–180 E, 80 S–90 N,
+one file per analysis date. Measured 2026-09-23: **27.5 MB and ~16 s per date**, 1440 x 681,
+native 1/4°, nothing resampled. All 13 dates fetched by `--warm`: ~360 MB in `data/cache`.
+Sea level, mixed layer depth and ice have no depth axis. This replaced the block-meaned
+1/12° subset below.
+
+**Global surface subset, superseded** (the first version of the context layer):
 `thetao`, depth 0-1 m (one level, 0.494 m), 180 W-180 E, 80 S-90 N, one day. Measured
 2026-09-23: **16.84 MB** download, ~25 s cold, cached as
 `data/cache/global_thetao_surface_2018-08-25.nc`; served as a 3x3 block mean, 1440 x 680.

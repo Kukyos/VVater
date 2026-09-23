@@ -17,8 +17,8 @@ from fastapi import FastAPI, HTTPException, Request, Response
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
-from . import (argo, cf, colocate, config, currents, glider, globalsurface, heat, residual,
-               sources, textcast, volume, wms)
+from . import (argo, assistant, cf, colocate, config, currents, glider, globalsurface, heat,
+               residual, sources, textcast, volume, wms)
 
 # Variables that exist as gridded fields but not as instrument measurements. Asking a
 # float for its "observation count" is meaningless, so the in-situ side falls back to
@@ -234,24 +234,55 @@ def streamlines(source: str = "glorys12", time_index: int = 0,
         raise HTTPException(status_code=501, detail=str(exc)) from exc
 
 
-@app.get("/api/global/meta")
-def global_meta() -> dict:
-    """The Globe view's surface temperature layer (globalsurface.py). Surface only."""
+@app.get("/api/global/layers")
+def global_layers() -> dict:
+    """The whole-Earth surface layers and the dates they step through (globalsurface.py)."""
+    return {
+        "days": globalsurface.days(),
+        "layers": [{"key": l.key, "title": l.title, "units": l.units, "palette": l.palette,
+                    "note": l.note} for l in globalsurface.LAYERS.values()],
+        "cached": [d for d in globalsurface.days() if globalsurface.path_for(d).exists()],
+    }
+
+
+def _global(layer: str, day: str | None):
+    if layer not in globalsurface.LAYERS:
+        raise HTTPException(404, f"no global layer {layer!r}; see /api/global/layers")
     try:
-        return globalsurface.surface().meta()
+        return globalsurface.surface(day or config.DEMO_DATE.isoformat(), layer)
     except RuntimeError as exc:
         raise HTTPException(status_code=501, detail=str(exc)) from exc
+
+
+@app.get("/api/global/meta")
+def global_meta(layer: str = "temperature", day: str | None = None) -> dict:
+    """One layer on one day. Surface only."""
+    return _global(layer, day).meta()
 
 
 @app.get("/api/global/data")
-def global_data() -> Response:
+def global_data(layer: str = "temperature", day: str | None = None) -> Response:
     """Raw float32, north row first, NaN over land. Shape from /api/global/meta."""
-    try:
-        values = globalsurface.surface().values
-    except RuntimeError as exc:
-        raise HTTPException(status_code=501, detail=str(exc)) from exc
-    return Response(content=values.tobytes(), media_type="application/octet-stream",
+    return Response(content=_global(layer, day).values.tobytes(),
+                    media_type="application/octet-stream",
                     headers={"Cache-Control": "public, max-age=3600"})
+
+
+@app.post("/api/chat")
+async def chat(request: Request) -> dict:
+    """The assistant (assistant.py). Body: {messages: [{role, content}], context: {...}}.
+
+    Answers carry the tools that were called, any interface actions the model proposed
+    (already whitelisted), and any numbers that could not be traced to a tool result.
+    503 when the model is unreachable: the viewer shows that and carries on.
+    """
+    body = await request.json()
+    try:
+        return assistant.run(body.get("messages", []), body.get("context"))
+    except assistant.AssistantUnavailable as exc:
+        raise HTTPException(status_code=503, detail=str(exc)) from exc
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
 
 
 # Casts uploaded as delimited text, kept as the raw text and parsed per variable on use.

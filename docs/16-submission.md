@@ -57,7 +57,7 @@ refuses to run without them. They are taken headless (puppeteer-core driving the
 Chrome) at 1600 x 900, device scale 2, with Graphics forced to High through
 `localStorage["vvater.graphics.v2"]` — left on Auto, a headless GPU tunes itself down to
 45% resolution and every shot comes out soft. The dev build exposes `window.vvater`
-(`setView`, `setDock`, `showProfile`, `setLayer`, `homeCamera`), which is how each state
+(`setView`, `setDock`, `showProfile`, `setLayer`, `homeCamera`, `setMode`, `orbit`, `flight`), which is how each state
 is reached. All start from the default state: analysis, 2018-08-30 step, slice 93 m,
 currents on.
 
@@ -68,7 +68,8 @@ currents on.
 | map | docks retracted, Map 2D | `#view` |
 | globe | docks retracted, Globe | `#view` |
 | resid | currents off, Residual layer, range −2 to 2, opacity 0.9 | `#view` |
-| iso | currents off, 20 °C isotherm preset | `#view` |
+| simple | Simple mode, sea surface temperature, 2018-08-30 | whole page |
+| fly | Fly view paused at 4.5°N 76.5°E, heading 055°, 110 km, looking 16° down | `#view` |
 
 ## Rules the deck follows
 

@@ -55,6 +55,15 @@ export class Graphics {
   tier: TierName | "custom" = "medium";
   auto = true;
   private burstUntil = 0;
+  /**
+   * Sharpen at rest. The volume is fill-rate bound, so the tuned tier renders motion at a
+   * reduced resolution to hold 60 fps; the moment the scene stops, one frame is drawn at
+   * the display's full pixel density (device pixels, capped at 2x) and stays on screen
+   * until the next change. A still frame costs one render, so the fps target is untouched.
+   */
+  restSharpen = true;
+  private sharp = false;
+  private restTimer?: number;
 
   constructor(private viewer: Viewer) {
     // Keep rendering while a burst is live: voxel tiles, entities and imagery load over
@@ -70,6 +79,25 @@ export class Graphics {
   /** Render continuously for `ms`, then go back to on-demand. Cheap to over-call. */
   kick(ms = 600): void {
     this.burstUntil = Math.max(this.burstUntil, performance.now() + ms);
+    if (this.sharp) {
+      // Back to the tuned resolution for motion.
+      this.sharp = false;
+      this.viewer.useBrowserRecommendedResolution = true;
+      this.viewer.resolutionScale = this.quality.resolution;
+    }
+    window.clearTimeout(this.restTimer);
+    if (this.restSharpen) {
+      this.restTimer = window.setTimeout(() => this.sharpen(), ms + 350);
+    }
+    this.viewer.scene.requestRender();
+  }
+
+  private sharpen(): void {
+    if (!this.restSharpen || !this.quality.onDemand || performance.now() < this.burstUntil) return;
+    this.sharp = true;
+    // resolutionScale then multiplies CSS pixels, so this is true device resolution.
+    this.viewer.useBrowserRecommendedResolution = false;
+    this.viewer.resolutionScale = Math.min(window.devicePixelRatio || 1, 2);
     this.viewer.scene.requestRender();
   }
 
