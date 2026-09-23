@@ -15,8 +15,10 @@ from functools import lru_cache
 import numpy as np
 from fastapi import FastAPI, HTTPException, Request, Response
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
 
-from . import argo, cf, colocate, config, currents, glider, residual, sources, volume, wms
+from . import (argo, cf, colocate, config, currents, glider, globalsurface, heat, residual,
+               sources, textcast, volume, wms)
 
 # Variables that exist as gridded fields but not as instrument measurements. Asking a
 # float for its "observation count" is meaningless, so the in-situ side falls back to
@@ -29,12 +31,30 @@ def _instrument_variable(variable: str) -> str:
 
 app = FastAPI(title="VVater — 3D ocean data", version="0.1.0")
 
+
+# Registered before CORS on purpose: Starlette makes the last-added middleware the
+# outermost, so CORS wraps this one and even a crash reaches the browser as a readable
+# 500. The other way round, every server error showed up in the viewer as a bare
+# "Failed to fetch" with the real message only in the server log.
+@app.middleware("http")
+async def _errors_as_json(request: Request, call_next):
+    try:
+        return await call_next(request)
+    except Exception as exc:  # noqa: BLE001 -- the log keeps the traceback
+        import traceback
+        traceback.print_exc()
+        return JSONResponse({"detail": f"{type(exc).__name__}: {exc}"}, status_code=500)
+
+
 # The viewer runs on Vite's dev server on another port during development. In a real
 # INCOIS deployment both are served from the same origin and this does nothing.
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:5173", "http://127.0.0.1:5173"],
-    allow_methods=["GET"],
+    # 5173 is `npm run dev`, 4173 is `npm run preview` (the production build). Preview
+    # was missing, so the built viewer could not reach the API at all.
+    allow_origins=[f"http://{host}:{port}" for host in ("localhost", "127.0.0.1")
+                   for port in (5173, 4173)],
+    allow_methods=["GET", "POST"],
     allow_headers=["*"],
 )
 
@@ -50,6 +70,14 @@ def _dataset(variable: str, source_key: str, t0: str, t1: str):
 
 @lru_cache(maxsize=32)
 def _volume(variable: str, source_key: str, time_index: int, t0: str, t1: str):
+    if config.SOURCES[source_key].kind == "copernicus":
+        # The time slider is built from the default source's analysis dates. GLORYS is
+        # daily and capped at COPERNICUS_MAX_DAYS per request, so indexing its own short
+        # window with that slider position asked for step 6 of a 3-step file. Fetch the
+        # one day the slider is showing instead.
+        base, _ = _dataset("temperature", config.DEFAULT_SOURCE, t0, t1)
+        day = str(base.time.values[time_index])[:10]
+        t0, t1, time_index = day, day, 0
     ds, names = _dataset(variable, source_key, t0, t1)
     return volume.build(ds, names["value"], time_index, names.get("error"),
                         source_key, canonical=variable)
@@ -172,7 +200,7 @@ def residual_data(variable: str = "temperature",
 
 
 @lru_cache(maxsize=16)
-def _streamlines(source_key: str, time_index: int, depth_index: int, t0: str, t1: str):
+def _streamlines(source_key: str, time_index: int, depth_m: float):
     source = config.SOURCES[source_key]
     if "u" not in source.variables or "v" not in source.variables:
         raise HTTPException(
@@ -184,21 +212,92 @@ def _streamlines(source_key: str, time_index: int, depth_index: int, t0: str, t1
     # for the full analysis window here is how the first version of this hung.
     day = config.DEMO_DATE.isoformat()
     ds, _ = sources.fetch_many(["u", "v"], day, day, source_key=source_key)
+    # Asked for in metres, resolved to the nearest native level here. The viewer's slice
+    # slider indexes the INCOIS grid (24 levels) and GLORYS has 36, so passing the raw
+    # index drew currents from one depth under a label from another (hard rule 4).
+    z_name = "depth" if "depth" in ds.coords else "ZAX"
+    depth_index = int(np.abs(np.asarray(ds[z_name].values, dtype=float) - depth_m).argmin())
     return currents.streamlines(ds, source.variables["u"], source.variables["v"],
                                 time_index, depth_index)
 
 
 @app.get("/api/streamlines")
-def streamlines(source: str = "glorys12", time_index: int = 0, depth_index: int = 0,
-                t0: str | None = None, t1: str | None = None) -> dict:
-    """Current streamlines on one depth level, integrated server-side (L4)."""
-    start, end = _window(t0, t1)
+def streamlines(source: str = "glorys12", time_index: int = 0,
+                depth_m: float = 0.0) -> dict:
+    """Current streamlines at the native level nearest depth_m, integrated server-side (L4).
+    The response's depth_m is the level actually used; label and place from that."""
     try:
-        return _streamlines(source, time_index, depth_index, start, end)
+        return _streamlines(source, time_index, round(depth_m, 1))
     except HTTPException:
         raise
     except RuntimeError as exc:
         raise HTTPException(status_code=501, detail=str(exc)) from exc
+
+
+@app.get("/api/global/meta")
+def global_meta() -> dict:
+    """The Globe view's surface temperature layer (globalsurface.py). Surface only."""
+    try:
+        return globalsurface.surface().meta()
+    except RuntimeError as exc:
+        raise HTTPException(status_code=501, detail=str(exc)) from exc
+
+
+@app.get("/api/global/data")
+def global_data() -> Response:
+    """Raw float32, north row first, NaN over land. Shape from /api/global/meta."""
+    try:
+        values = globalsurface.surface().values
+    except RuntimeError as exc:
+        raise HTTPException(status_code=501, detail=str(exc)) from exc
+    return Response(content=values.tobytes(), media_type="application/octet-stream",
+                    headers={"Cache-Control": "public, max-age=3600"})
+
+
+# Casts uploaded as delimited text, kept as the raw text and parsed per variable on use.
+# In memory and per server process: an upload is for looking at, not an archive. Capped,
+# because this is the one endpoint that takes arbitrary bytes from a client.
+_UPLOADS: dict[str, str] = {}
+# The assumptions the parser made for each file (units, pressure->depth, ...). Hard rule 5:
+# they travel with the casts to the profile panel, not just back to the uploader.
+_UPLOAD_NOTES: dict[str, list[str]] = {}
+UPLOAD_MAX_BYTES = 10_000_000
+UPLOAD_MAX_FILES = 8
+
+
+def _uploaded(variable: str) -> list[argo.Profile]:
+    out = []
+    for name, text in _UPLOADS.items():
+        try:
+            out.extend(textcast.read_text(text, variable, source_name=name)[0])
+        except textcast.TextCastError:
+            continue  # e.g. a temperature-only file asked for salinity
+    return out
+
+
+@app.post("/api/casts")
+async def upload_casts(request: Request, name: str = "upload.csv") -> dict:
+    """Add casts from a delimited-text file (CSV, TSV, whitespace). See textcast.py.
+
+    The brief asks for new observational streams to be ingestible "without significant
+    re-engineering"; this is that, end to end: the casts appear on the globe, and clicking
+    one co-locates it against the analysis like any float. Every cast is data_mode 'U'.
+    """
+    body = await request.body()
+    if len(body) > UPLOAD_MAX_BYTES:
+        raise HTTPException(413, f"file is {len(body)} bytes; the limit is {UPLOAD_MAX_BYTES}")
+    if len(_UPLOADS) >= UPLOAD_MAX_FILES and name not in _UPLOADS:
+        raise HTTPException(409, f"{UPLOAD_MAX_FILES} files already uploaded; restart to clear")
+    text = body.decode("utf-8", errors="replace")
+    safe = "".join(c for c in name if c.isalnum() or c in "._-")[:80] or "upload.csv"
+    try:
+        profiles, notes = textcast.read_text(text, "temperature", source_name=safe)
+    except textcast.TextCastError as exc:
+        raise HTTPException(422, str(exc)) from exc
+    _UPLOADS[safe] = text
+    _UPLOAD_NOTES[safe] = notes
+    return {"name": safe, "casts": len(profiles),
+            "levels": int(sum(p.depth.size for p in profiles)), "notes": notes}
 
 
 @app.get("/api/observations")
@@ -212,7 +311,8 @@ def observations(on: str | None = None, variable: str = "temperature") -> dict:
     variable = _instrument_variable(variable)
     out = []
     for kind, profiles in (("argo", argo.load_window(centre, variable)),
-                           ("glider", glider.load_window(centre, variable))):
+                           ("glider", glider.load_window(centre, variable)),
+                           ("text", _uploaded(variable))):
         for p in profiles:
             out.append({
                 "kind": kind,
@@ -243,7 +343,8 @@ def profile(platform: str, on: str | None = None, variable: str = "temperature",
     variable = _instrument_variable(variable)
 
     found = None
-    for profiles in (argo.load_window(centre, variable), glider.load_window(centre, variable)):
+    for profiles in (argo.load_window(centre, variable), glider.load_window(centre, variable),
+                     _uploaded(variable)):
         for p in profiles:
             if p.platform == platform:
                 found = p
@@ -272,6 +373,9 @@ def profile(platform: str, on: str | None = None, variable: str = "temperature",
         "qc": [str(v) for v in found.qc],
         "error": clean(comparison.error) if comparison.error is not None else None,
         "summary": {k: v for k, v in comparison.summary().items() if k != "per_profile"},
+        # Cyclone heat potential from the same pair, on the same levels (heat.py).
+        "tchp": heat.compare(comparison) if variable == "temperature" else None,
+        "assumptions": _UPLOAD_NOTES.get(found.source_file, []),
     }
 
 

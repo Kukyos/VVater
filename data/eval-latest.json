@@ -1,5 +1,5 @@
 {
-  "generated": "2026-09-22T20:07:47",
+  "generated": "2026-09-23T11:08:53",
   "region": {
     "name": "Bay of Bengal",
     "lon": [
@@ -35,7 +35,7 @@
       "latitude": 19,
       "longitude": 23
     },
-    "fetch_seconds": 0.061,
+    "fetch_seconds": 0.062,
     "float32_mb": 0.545,
     "finite_fraction": 0.4989,
     "min": 2.388,
@@ -44,7 +44,7 @@
   "regrid": {
     "native_levels": 24,
     "output_levels": 24,
-    "resample_ms": 200.2,
+    "resample_ms": 187.1,
     "stretch": "uniform in sqrt(depth)",
     "levels": 24,
     "z_min_m": 5.0,
@@ -1230,6 +1230,29 @@
     "glider_mean_rmse_degC": 1.5754,
     "glider_interpretation": "independent: gliders are not assimilated into this analysis"
   },
+  "tchp": {
+    "argo": {
+      "casts": 33,
+      "with_d26": 29,
+      "mean_observed_kj_cm2": 51.97,
+      "mean_difference_kj_cm2": -3.48,
+      "rmse_kj_cm2": 13.16,
+      "relative_rmse_percent": 25.3
+    },
+    "glider": {
+      "casts": 112,
+      "with_d26": 95,
+      "mean_observed_kj_cm2": 9.46,
+      "mean_difference_kj_cm2": 15.99,
+      "rmse_kj_cm2": 22.57,
+      "relative_rmse_percent": 238.6
+    },
+    "constants": {
+      "rho_kg_m3": 1025.0,
+      "cp_J_kg_K": 3991.86795711963,
+      "threshold_degC": 26.0
+    }
+  },
   "depth_bands": {
     "0-300 m": {
       "argo": {
@@ -1292,7 +1315,14 @@
     "coverage_percent": 4.86,
     "bias": -0.4424,
     "rmse": 1.2776,
-    "build_seconds": 0.43
+    "build_seconds": 0.45
+  },
+  "text_ingest": {
+    "casts_netcdf": 222,
+    "casts_text": 222,
+    "casts_identical": 222,
+    "levels_identical": 24611,
+    "parse_seconds": 0.16
   },
   "currents": {
     "count": 397,
@@ -1301,7 +1331,7 @@
       0.0008631937992834291,
       1.4960088661086222
     ],
-    "seconds": 0.386,
+    "seconds": 0.399,
     "method": "RK2 midpoint, normalised steps of 0.12 deg, max 40 steps",
     "caveat": "Streamlines show the instantaneous flow pattern, not particle trajectories through time."
   }

@@ -16,6 +16,8 @@ throwing it away would be the wasteful choice (docs/03-limitations.md L10).
 
 from dataclasses import dataclass
 
+import warnings
+
 import numpy as np
 import xarray as xr
 
@@ -63,6 +65,25 @@ def _flatten(array: np.ndarray) -> np.ndarray:
     return np.ascontiguousarray(array[::-1].ravel(), dtype=np.float32)
 
 
+# Horizontal cells per axis the viewer is sent. GLORYS12 is 1/12 deg -- 265 x 217 x 36,
+# two million voxels in one tile -- and it froze the browser tab outright. Nothing here
+# upsamples: INCOIS (23 x 19) passes through untouched, and depth is never touched at all
+# (hard rule 3 is about depth levels). The factor used is written into the provenance.
+MAX_HORIZONTAL = 96
+
+
+def _block_mean(a: np.ndarray, k: int) -> np.ndarray:
+    """Mean over k x k blocks of the last two axes, trimming the ragged edge. NaN (land)
+    is skipped, so a coastal block takes the mean of its water cells, and an all-land
+    block stays NaN."""
+    ny, nx = a.shape[-2] // k * k, a.shape[-1] // k * k
+    a = a[..., :ny, :nx]
+    blocks = a.reshape(*a.shape[:-2], ny // k, k, nx // k, k)
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore", RuntimeWarning)  # all-NaN block -> NaN, wanted
+        return np.nanmean(blocks, axis=(-3, -1))
+
+
 def build(ds: xr.Dataset, value_name: str, time_index: int,
           error_name: str | None = None,
           source_key: str = config.DEFAULT_SOURCE,
@@ -96,18 +117,27 @@ def build(ds: xr.Dataset, value_name: str, time_index: int,
     bad, range_report = cf.global_range_check(raw, report.standard_name)
     raw = np.where(bad, np.nan, raw)
 
+    lons = np.asarray(ds[lon_name].values, dtype=float)
+    lats = np.asarray(ds[lat_name].values, dtype=float)
+    raw_errors = (np.asarray(ds[error_name].isel(time=time_index).values, dtype=float)
+                  if error_name and error_name in ds else None)
+
+    # Range-tested at native resolution first, so an impossible cell is counted and
+    # masked before a block mean could dilute it into something plausible.
+    k = max(1, -(-max(lons.size, lats.size) // MAX_HORIZONTAL))
+    if k > 1:
+        raw = _block_mean(raw, k)
+        raw_errors = _block_mean(raw_errors, k) if raw_errors is not None else None
+        lons = lons[:lons.size // k * k].reshape(-1, k).mean(axis=1)
+        lats = lats[:lats.size // k * k].reshape(-1, k).mean(axis=1)
+
     values = regrid.resample(raw, native, grid, depth_axis=0)
 
     errors = None
-    if error_name and error_name in ds:
-        errors = regrid.resample(
-            np.asarray(ds[error_name].isel(time=time_index).values, dtype=float),
-            native, grid, depth_axis=0,
-        )
+    if raw_errors is not None:
+        errors = regrid.resample(raw_errors, native, grid, depth_axis=0)
 
     finite = values[np.isfinite(values)]
-    lons = np.asarray(ds[lon_name].values, dtype=float)
-    lats = np.asarray(ds[lat_name].values, dtype=float)
 
     assumptions = list(report.assumptions)
     if depth_note:
@@ -123,6 +153,7 @@ def build(ds: xr.Dataset, value_name: str, time_index: int,
         "range_test": range_report,
         "masked_cells": int(bad.sum()),
         "cf_assumptions": assumptions,
+        "horizontal_block": k,
     }
 
     return Volume(
@@ -164,8 +195,16 @@ def demo() -> None:
     packed = _flatten(column).reshape(nz, ny, nx)
     assert packed[0].mean() < packed[-1].mean(), "warm surface did not land at the top"
 
+    # Block mean: land (NaN) is skipped, an all-land block stays NaN, edges are trimmed.
+    a = np.array([[[1.0, 3.0, np.nan, np.nan, 9.0],
+                   [5.0, 7.0, np.nan, np.nan, 9.0]]])
+    b = _block_mean(a, 2)
+    assert b.shape == (1, 1, 2), b.shape
+    assert b[0, 0, 0] == 4.0 and np.isnan(b[0, 0, 1]), b
+
     print(f"volume ok: x-fastest and depth-reversed, verified on {nx}x{ny}x{nz}")
 
 
 if __name__ == "__main__":
     demo()
+

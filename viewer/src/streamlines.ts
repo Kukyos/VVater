@@ -20,24 +20,34 @@ import {
   type Scene,
 } from "@cesium/engine";
 import type { Streamlines } from "./api";
-import { byId, paletteStops } from "./colorbar";
 
-const SPEED_PALETTE = "viridis";
+/**
+ * Speed ramp for the lines: light cyan (slow) through white to amber (fast).
+ *
+ * The lines used to take viridis, whose slow end is a dark purple. Deep currents are
+ * slow, so below a few hundred metres every line drew in near-black over a dark sea and
+ * the layer looked as if it had failed to load. Every stop here is light, so a line is
+ * always visible and speed still reads as colour.
+ */
+const SPEED_STOPS: [number, number, number][] = [
+  [0.45, 0.85, 1.0], [0.85, 0.97, 1.0], [1.0, 0.86, 0.45], [1.0, 0.55, 0.25],
+];
 
-/** Colour for a speed, using the same ramp maths the volume shader uses. */
+/** Colour for a speed. sqrt, because currents are mostly slow with a few fast jets. */
 function speedColor(speed: number, lo: number, hi: number, alpha: number): Color {
-  const stops = paletteStops(byId(SPEED_PALETTE), false, 6);
-  const t = Math.min(Math.max((speed - lo) / Math.max(hi - lo, 1e-6), 0), 1);
-  const scaled = t * (stops.length - 1);
-  const index = Math.min(Math.floor(scaled), stops.length - 2);
+  const t = Math.sqrt(Math.min(Math.max((speed - lo) / Math.max(hi - lo, 1e-6), 0), 1));
+  const scaled = t * (SPEED_STOPS.length - 1);
+  const index = Math.min(Math.floor(scaled), SPEED_STOPS.length - 2);
   const frac = scaled - index;
-  const a = stops[index];
-  const b = stops[index + 1];
+  const a = SPEED_STOPS[index];
+  const b = SPEED_STOPS[index + 1];
+  // Slow water fades, fast jets stay bright: 300-odd lines at one alpha buried the
+  // field they were drawn over.
   return new Color(
     a[0] + (b[0] - a[0]) * frac,
     a[1] + (b[1] - a[1]) * frac,
     a[2] + (b[2] - a[2]) * frac,
-    alpha,
+    alpha * (0.4 + 0.6 * t),
   );
 }
 
@@ -55,7 +65,7 @@ export class StreamlineLayer {
    * at zero would imply currents are a surface phenomenon, which is the misconception a
    * depth-resolved tool exists to correct.
    */
-  show(data: Streamlines, height: number, opacity = 0.85): void {
+  show(data: Streamlines, height: number, opacity = 0.9): void {
     this.collection.removeAll();
     const [lo, hi] = data.speedRange;
 
@@ -69,7 +79,7 @@ export class StreamlineLayer {
 
       this.collection.add({
         positions,
-        width: 1.6,
+        width: 1.7,
         material: Material.fromType("Color", {
           color: speedColor(mean, lo, hi, opacity),
         }),

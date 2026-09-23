@@ -1,0 +1,55 @@
+<!doctype html>
+<html><head><meta charset="utf-8">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;600&family=IBM+Plex+Mono&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="deck.css"></head>
+<body><div class="slide">
+<div class="cols grow" style="grid-template-columns: 1fr 1fr 1.05fr; gap: 70px">
+  <div class="col">
+    <h2 style="margin:0">For the cyclone forecaster</h2>
+    <div class="card"><span class="num">+16.0</span><p>kJ/cm² —
+      model minus measured <b>cyclone heat potential</b> along the independent glider track
+      (95 casts, one deployment; measured mean 9.5). Against
+      Argo, which the model already absorbs: &#8722;3.5.</p></div>
+    <ul class="points">
+      <li><b>Fuel, in the unit already used</b><span>heat above 26 °C, per float and per glider cast</span></li>
+      <li><b>20 °C isotherm in one click</b><span>the standard proxy for how deep the warm layer goes</span></li>
+      <li><b>Model and truth side by side</b><span>no second program, no copying numbers between tools</span></li>
+      <li><b>Confidence visible</b><span>uncertain water drawn faint; unmeasured water drawn empty</span></li>
+    </ul>
+    <h2 style="margin:6px 0 0">For INCOIS operations</h2>
+    <ul class="points">
+      <li><b>Search and rescue, fisheries, climate</b><span>currents and temperature at any depth, in the same view</span></li>
+      <li><b>New instruments without re-engineering</b><span>drop a CSV of casts on the globe; it is paired with the model at once</span></li>
+      <li><b>Open standards</b><span>WMS layers open in QGIS and national portals</span></li>
+    </ul>
+  </div>
+  <div class="col">
+    <h2 style="margin:0">For students, public and policy</h2>
+    <div class="card green"><span class="num">4.86%</span><p>of the Bay's
+      water column had a measurement in this window. Shown honestly, that is itself the case
+      for more floats — a sentence a policymaker can repeat.</p></div>
+    <ul class="points">
+      <li><b>True scale in one click</b><span>the Bay really is a film of water: 2 km deep, 2,000+ km wide. Then 40×, to read it</span></li>
+      <li><b>From planet to profile</b><span>globe, to region, to one float's dive, in three clicks</span></li>
+      <li><b>Runs in a school's browser</b><span>exhibitions, e-learning and outreach, as the brief asks</span></li>
+      <li><b>Plain labels, real data</b><span>every colour has a legend, every point a source file</span></li>
+    </ul>
+    <h2 style="margin:6px 0 0">Where it goes next</h2>
+    <ul class="points">
+      <li><b>More regions and years</b><span>the region and window are configuration, not code</span></li>
+      <li><b>More sensors</b><span>CTD, moorings, HF radar, ADCP: each one parser</span></li>
+      <li><b>Machine-learning products</b><span>any gridded output renders as another volume</span></li>
+    </ul>
+  </div>
+  <div class="col" style="gap:20px">
+    <figure class="shot"><img src="shot-resid.png">
+      <figcaption><b>Where the model is wrong.</b> Each block is a place someone measured, coloured
+      by measured minus model (red warmer, blue colder). Everything else is empty on purpose:
+      95% of the volume.</figcaption></figure>
+    <figure class="shot"><img src="shot-globe.png">
+      <figcaption><b>The context.</b> The Bay's full water column, inside the world's sea-surface
+      temperature on the same day and the same colour scale.</figcaption></figure>
+  </div>
+</div>
+</div></body></html>

@@ -193,6 +193,47 @@ field, which matters because this region is full of eddies.
 **Caveat carried in the API response and shown in the UI:** streamlines are the
 instantaneous flow pattern, not particle trajectories through time.
 
+## Tropical cyclone heat potential
+
+The co-located pairs integrated into TCHP (`server/ocean/heat.py`): heat above the 26 °C
+isotherm, the fuel a cyclone draws on, in kJ/cm². Same levels on both sides of each pair.
+Harness output, verbatim:
+
+```
+Tropical cyclone heat potential  (analysis minus observed, kJ/cm^2)
+-------------------------------------------------------------------
+  argo     29/33  casts reach D26   observed mean  51.97   analysis - observed  -3.48   rmse 13.16  (25.3 %)
+  glider   95/112 casts reach D26   observed mean   9.46   analysis - observed +15.99   rmse 22.57  (238.6 %)
+```
+
+- **Against the assimilated floats the analysis is close on average** and scattered per
+  cast. Consistency, not validation, for the same reason as the temperature numbers.
+- **Along the independent glider track the analysis holds more heat than was measured**,
+  in the same direction as the −2.25 °C upper-300 m glider bias above. The relative figure
+  is large because the observed mean is small (cool water off Sri Lanka in the monsoon).
+- **One deployment.** All 112 glider casts are `ru29`: one track,
+  one fortnight. This is a finding about that water, not about the analysis everywhere.
+- Constants: ρ 1025.0 kg/m³, cp 3991.868 J/(kg K)
+  (TEOS-10 cp0) — both in `10-unsourced.md`. Casts that never cool to 26 °C on their
+  accepted levels have no D26 and are excluded, not guessed.
+
+## Delimited-text ingestion
+
+The brief asks for text parsers as well as NetCDF (`server/ocean/textcast.py`). Checked
+by reading the same glider deployment, downloaded from the IOOS DAC as NetCDF and as CSV,
+through both parsers. Harness output, verbatim:
+
+```
+Delimited-text ingestion  (same deployment, NetCDF path vs text path)
+---------------------------------------------------------------------
+  casts            222 NetCDF, 222 text, 222 identical (24611 levels)
+  parse            0.16 s for 2.4 MB of CSV
+```
+
+Separately, by hand on 2026-09-23 and not a harness figure: Argo float 2902596 exported
+as CSV from Ifremer's ERDDAP and uploaded through the viewer co-located to the same bias
+and RMSE as the NetCDF path, to seven decimal places.
+
 ## Assumptions carried on every record
 
 Emitted with each comparison, because the source file does not state them:

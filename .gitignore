@@ -29,4 +29,6 @@ video/out/
 # Submission templates supplied by the portal, kept local
 *.pptx
 *.docx
+# ...but the deck we build from it is ours
+!submission/sih/final/*.pptx
 dist/

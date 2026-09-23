@@ -13,7 +13,7 @@ from pathlib import Path
 
 import requests
 
-from server.ocean import argo, config, sources
+from server.ocean import argo, config, glider, sources
 
 CACHE = Path(__file__).resolve().parents[2] / "data" / "cache"
 
@@ -48,6 +48,13 @@ def main() -> None:
     for p in profiles:
         print(f"        {p.platform}  {p.lat:6.2f},{p.lon:7.2f}  mode={p.data_mode}  "
               f"{p.depth.size} levels, {p.n_rejected} rejected, {p.field_used}")
+
+
+    # The same glider deployment twice, as NetCDF and as CSV: the text parser is
+    # checked by requiring both to produce identical casts (textcast.demo).
+    for fmt in ("nc", "csv"):
+        path = glider.fetch_deployment(config.GLIDER_DEPLOYMENTS[0], CACHE, fmt)
+        print(f"have  {path.name}  {path.stat().st_size / 1e6:.2f} MB")
 
 
 if __name__ == "__main__":

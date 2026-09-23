@@ -3,8 +3,7 @@
 The rule for this file: an idea earns a place only if the **data already supports it**.
 Anything needing a source we do not have goes to `10-unsourced.md` instead.
 
-Three are built. Two are designed and not built. One is named because it is the
-Disaster-Management answer and currently sits behind a generic slider.
+Nine are built. Every number here comes from `13-eval-results.md`.
 
 ---
 
@@ -43,68 +42,93 @@ for the whole platform, and it took one line in `config.py` to surface.
 
 ### N4 · The residual volume
 
-**Built.** 
+`13-eval-results.md` established that the analysis and an independent glider agree below
+300 m (0.35 vs 0.31 °C RMSE) and **disagree badly above it** (1.26 vs 2.89, with a
+−2.25 °C bias). That is the mixed layer and thermocline — the part that decides cyclone
+intensity — and it is **invisible in any pooled statistic**.
 
-`docs/13-eval-results.md` established that the analysis and an independent glider agree
-below 300 m (0.35 vs 0.31 °C RMSE) and **disagree badly above it** (1.26 vs 2.89, with a
-−2.25 °C bias). That is the mixed layer and thermocline — the part that matters for
-cyclone intensity — and it is **invisible in any pooled statistic**.
+So every cast in the window is co-located and **observed − modelled is binned onto the
+grid and rendered as a volume**. Where the analysis is wrong becomes the first thing on
+screen instead of a table in an appendix.
 
-Co-locate every float and glider cast in the window onto the grid and render
-**observed − modelled as a volume**. Where the analysis is wrong becomes the first thing
-on screen instead of a table in an appendix.
+Measured: **127 casts, 21,629 levels, 510 of 10,488 cells — 4.86 %**, pooled bias −0.442,
+RMSE 1.278 °C.
 
-Measured: **127 casts, 21,629 levels, 510 of 10,488 cells (4.86 %)**, pooled bias −0.442
-and RMSE 1.278 °C. Empty cells stay empty — a smooth residual field would imply we know
-the error everywhere, which is the opposite of the point.
+Three deliberate refusals:
 
-It uses the `balance` diverging palette on a range forced symmetric about zero, because a
-residual has a sign and a sequential ramp on signed data is how residual plots get
-misread.
+- **Empty cells stay empty.** A smooth residual field would imply we know the error
+  everywhere. You can only verify where somebody measured, and that is one cell in twenty.
+- **No averaging across depth**, because the entire finding is that the error is
+  depth-dependent.
+- **No timestep.** A ±5-day window over a 10-day cadence spans two analysis steps
+  (2018-08-20 and 2018-08-30). The first version took a `time_index`, used it only for the
+  label, and produced a byte-identical volume carrying whichever date the slider sat on.
 
-**It is a window aggregate, not a timestep**, and it says so: a ±5-day window over a
-10-day cadence spans two analysis steps. The first version took a timestep it did not
-use, which put a date on the picture that the picture did not come from.
-
----
-
-## Designed, not built
-
-### N5 · Vertical exaggeration as a teaching control
-
-**Partly built** — a "true scale" preset exists. What is still missing is the second
-labelled stop and the on-screen line explaining what the comparison means.
-
-The ocean is 4 km deep and 2000 km wide; at true scale the Bay of Bengal is a film of
-water. Exaggeration is already free here (it is the ratio of the voxel shape's height
-bounds, not a mesh transform), so the control exists — but it is presented as a number.
-
-For the outreach mandate it should have **two labelled stops**: "true scale" and
-"readable", with the on-screen depth labels continuing to read true metres through the
-`sqrt(depth)` stretch. The lesson — *this is how thin the layer we depend on actually
-is* — is the whole public-communication argument, and it is currently a slider at 40x.
+It uses the `balance` diverging palette on a range forced symmetric about zero: a residual
+has a sign, and a sequential ramp on signed data is how residual plots get misread.
 
 ### N6 · The 20 °C isotherm
 
-**Built.** The isosurface control was generic; under a Disaster Management theme in the
-Bay of Bengal it has one obvious worked example — the depth of the **20 °C isotherm**,
-the standard proxy for the heat available to a tropical cyclone. A deeper D20 means more
-fuel.
+The isosurface control was generic. Under a Disaster Management theme in the Bay of
+Bengal it has one obvious worked example — the depth of the **20 °C isotherm**, the
+standard proxy for the heat available to a tropical cyclone. A deeper D20 means more fuel.
 
-It now ships as a named preset that sets the threshold and shell width and says what it
+It ships as a named preset that sets the threshold and the shell width and says what it
 is, so the first thing anyone sees the isosurface do is the thing the theme is about.
+
+### N7 · Streamlines integrated on the server
+
+A novelty of method rather than idea. The two usual ways to draw currents are decimated
+glyphs (thousands of primitives, still ugly) and GPU particle advection (a shader project
+with its own silent failure modes). Integrating **RK2 streamlines in numpy** and sending
+polylines is cheaper than both — 397 lines, 386 ms — and, the actual reason, it is
+**testable**.
+
+A wrong integrator draws a picture that looks entirely fine. `currents.demo()` checks it
+against solid-body rotation, where every streamline is a known circle: **0.04 % radius
+drift over 120 steps**, where plain Euler visibly spirals outward. This region is full of
+eddies, so that difference is the whole ballgame.
+
+The honesty cost ships in the API response and on screen: streamlines are the
+instantaneous flow pattern, not particle trajectories through time.
+
+### N8 · The residual in kilojoules per square centimetre
+
+N4 says where the analysis is wrong in degrees. A cyclone forecaster does not consume
+degrees; they consume **tropical cyclone heat potential** — the heat above the 26 °C
+isotherm (Leipper and Volgenau 1972), in kJ/cm². So every co-located pair is also
+integrated into TCHP, on the same levels on both sides (`server/ocean/heat.py`), and the
+clicked cast's panel shows observed against analysis.
+
+The harness result (`13-eval-results.md`): against the assimilated floats the analysis is
+close on average; along the independent glider track it holds **more heat than was
+measured**, in the same direction as the upper-300 m temperature bias. One deployment, so
+a finding about that water — but it is the first number in this project stated in the
+unit of the Disaster Management theme.
+
+Two refusals: a cast that never cools to 26 °C has **unknown** TCHP, not zero and not a
+lower bound; and the constants are a TEOS-10 value and a stated reference density, both
+in `10-unsourced.md`, because operational products disagree on them.
+
+### N9 · Two ingest paths, one answer
+
+The brief asks for delimited-text parsers as well as NetCDF. `server/ocean/textcast.py`
+reads CSV, TSV, semicolon or whitespace tables, units rows, depth or pressure. The novelty
+is the check: the same glider deployment downloaded **as NetCDF and as CSV** must produce
+identical casts through the two parsers — 222 casts, 24,611 levels, asserted equal. And one
+Argo float exported as CSV from a different server co-locates to the same bias and RMSE as
+the NetCDF path, to seven decimal places.
+
+Uploading a file drops its casts onto the globe next to the floats, co-located on click.
+Every one is labelled unevaluated, because a text file carries no QC anyone agreed on.
 
 ---
 
-## N7 · Streamlines integrated on the server
+### N5 · Vertical exaggeration as a teaching control
 
-Not a novelty of idea but of method. The two usual ways to draw currents are decimated
-glyphs (thousands of primitives, still ugly) and GPU particle advection (a shader project
-with its own silent failure modes). Integrating **RK2 streamlines in numpy** and sending
-polylines is cheaper than both, and — the actual reason — it is **testable**: a wrong
-integrator draws a picture that looks fine. `currents.demo()` checks it against
-solid-body rotation where every streamline is a known circle, and gets 0.04 % radius
-drift over 120 steps where plain Euler visibly spirals.
-
-The honesty cost is stated in the API response and on screen: streamlines are the
-instantaneous flow pattern, not particle trajectories through time.
+The ocean in this box is 2,000 m of water under roughly 2,400 km of sea; at true scale
+the Bay of Bengal is a film. Exaggeration is free here — it is the ratio of the voxel
+shape's height bounds, not a mesh transform — so it ships as a labelled pair: **True
+scale** and **Readable (40x)**, each with an on-screen line computed from the volume
+actually drawn ("1 part in N"). The first version of that line said "4 km deep and
+2000 km wide"; neither number was what was on screen, so it is computed now.

@@ -7,6 +7,7 @@ more code to do the same thing, and the same thing is a dict lookup.
 """
 
 import os
+import threading
 import urllib.parse
 from pathlib import Path
 
@@ -14,6 +15,26 @@ import requests
 import xarray as xr
 
 from . import config
+
+# shortcut: one global lock around every fetch. FastAPI runs sync endpoints in a thread
+# pool, so the viewer's prefetch and its real load arrived together and both started the
+# same Copernicus download into the same file, leaving a zero-filled .nc that crashed
+# every later request. Downloads are rare and cached; per-path locks if that changes.
+_FETCH_LOCK = threading.Lock()
+
+
+def _cached(path: Path) -> bool:
+    """True when path holds a file xarray can open. A partial or corrupt file from an
+    interrupted download is deleted, so the caller fetches it again instead of failing
+    on it forever."""
+    if not path.exists():
+        return False
+    try:
+        xr.open_dataset(path).close()
+        return True
+    except (OSError, ValueError):
+        path.unlink(missing_ok=True)
+        return False
 
 
 def _erddap_url(source: config.Source, variables: list[str], t0: str, t1: str) -> str:
@@ -40,7 +61,7 @@ def _fetch_erddap(source: config.Source, variables: list[str], t0: str, t1: str,
     url = _erddap_url(source, variables, t0, t1)
     name = f"{source.id}_{'-'.join(variables)}_{t0}_{t1}.nc".replace(":", "")
     path = cache_dir / name
-    if not path.exists():
+    if not _cached(path):
         cache_dir.mkdir(parents=True, exist_ok=True)
         resp = requests.get(url, timeout=config.HTTP_TIMEOUT)
         # ERDDAP reports query errors as a 404 with a text/plain body that explains
@@ -49,7 +70,11 @@ def _fetch_erddap(source: config.Source, variables: list[str], t0: str, t1: str,
             raise RuntimeError(
                 f"ERDDAP {resp.status_code} for {source.id}: {resp.text[:400]}"
             )
-        path.write_bytes(resp.content)
+        # Written aside and renamed, so a crash mid-write never leaves a half file
+        # under the real name.
+        partial = path.with_suffix(".part")
+        partial.write_bytes(resp.content)
+        partial.replace(path)
     return xr.open_dataset(path)
 
 
@@ -86,7 +111,7 @@ def _fetch_copernicus(source: config.Source, variables: list[str], t0: str, t1: 
 
     name = f"{source.id}_{'-'.join(variables)}_{t0}_{t1}.nc".replace(":", "")
     path = cache_dir / name
-    if not path.exists():
+    if not _cached(path):
         cache_dir.mkdir(parents=True, exist_ok=True)
         copernicusmarine.subset(
             dataset_id=source.id,
@@ -128,7 +153,8 @@ def fetch(variable: str, t0: str, t1: str, source_key: str = config.DEFAULT_SOUR
         wanted.append(names["error"])
 
     cache_dir = cache_dir or Path(__file__).resolve().parents[2] / "data" / "cache"
-    ds = PARSERS[source.kind](source, wanted, t0, t1, cache_dir)
+    with _FETCH_LOCK:
+        ds = PARSERS[source.kind](source, wanted, t0, t1, cache_dir)
     return ds, names
 
 
@@ -148,5 +174,6 @@ def fetch_many(variables: list[str], t0: str, t1: str,
 
     names = {v: source.variables[v] for v in variables}
     cache_dir = cache_dir or Path(__file__).resolve().parents[2] / "data" / "cache"
-    ds = PARSERS[source.kind](source, list(names.values()), t0, t1, cache_dir)
+    with _FETCH_LOCK:
+        ds = PARSERS[source.kind](source, list(names.values()), t0, t1, cache_dir)
     return ds, names

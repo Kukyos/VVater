@@ -1,0 +1,60 @@
+<!doctype html>
+<html><head><meta charset="utf-8">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;600&family=IBM+Plex+Mono&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="deck.css"></head>
+<body><div class="slide">
+<p class="lead" style="font-size:56px">INCOIS knows the ocean in 3D; its forecasters still read it in 2D.
+<b>VVater puts the model and every instrument in one 3D scene, in a browser, and shows where they disagree.</b></p>
+<div class="cols grow" style="grid-template-columns: 1fr 1650px; gap: 60px">
+  <div class="col" style="gap:16px">
+    <h2 style="margin:0">The problem, in plain words</h2>
+    <div class="cards" style="grid-template-columns: repeat(3, 1fr)">
+      <div class="card red"><h3>The ocean has depth</h3><p>A cyclone feeds on a warm layer
+        tens of metres thick. A surface map cannot show how thick, and thickness is the fuel.</p></div>
+      <div class="card grey"><h3>Two versions of truth</h3><p>The <b>model</b> estimates the whole
+        ocean on a grid; <b>floats and gliders</b> actually measure, at a few points. Where they
+        disagree matters most.</p></div>
+      <div class="card grey"><h3>Two separate tools</h3><p>Each is opened in its own desktop
+        program, mostly as flat maps, so comparing them is manual — the gap the brief names.</p></div>
+    </div>
+    <h2 style="margin:4px 0 0">One question, today and with VVater</h2>
+    <div class="journey">
+      <div class="who">Today</div>
+      <div class="step now">Open the model in one desktop tool, pick a depth</div>
+      <div class="step now">Open the float files in another, plot one profile</div>
+      <div class="step now">Line them up by eye; repeat for every depth</div>
+      <div class="who" style="color:var(--navy)">VVater</div>
+      <div class="step vv">Open one link. <b>No install</b>; runs on INCOIS servers</div>
+      <div class="step vv">Whole water column + <b>35 floats, 112 glider casts</b></div>
+      <div class="step vv">Click a float: profile vs model, gap in <b>°C and cyclone fuel</b></div>
+    </div>
+    <h2 style="margin:4px 0 0">What makes it different</h2>
+    <div class="cards" style="grid-template-columns: repeat(2, 1fr); gap:18px">
+      <div class="card"><h3>Shows where the model is wrong</h3><p>Measured minus model as its
+        own 3D layer. Only <b>4.86%</b> was ever measured; the rest stays visibly empty.</p></div>
+      <div class="card"><h3>Shows how sure the model is</h3><p>The analysis ships an error field;
+        water the model is guessing about is drawn faint, not solid.</p></div>
+      <div class="card"><h3>Speaks the forecaster's unit</h3><p>Every comparison also in
+        <b>cyclone heat potential</b> (kJ/cm²); the 20 °C isotherm is one click.</p></div>
+      <div class="card"><h3>Never hides a bad reading</h3><p>Each point carries its QC flag, data
+        mode and source file; rejected levels are drawn red, not deleted.</p></div>
+    </div>
+    <div class="gloss" style="grid-template-columns: repeat(4, 1fr)">
+      <div><b>Argo float</b>a robot that dives to 2,000 m every ten days</div>
+      <div><b>Glider</b>an underwater drone that saw-tooths along a track</div>
+      <div><b>Analysis</b>the model's best 3D estimate, published by INCOIS</div>
+      <div><b>Residual</b>measured minus modelled: how wrong, and where</div>
+    </div>
+  </div>
+  <div class="col" style="gap:16px">
+    <figure class="shot"><img src="shot-workspace.png" style="aspect-ratio: 16 / 9; object-fit: cover; object-position: 100% 45%">
+      <figcaption><b>The working prototype, not a mock-up:</b> temperature as a volume cut at 93 m, currents at that depth, every float and glider; right, one float against the model.</figcaption></figure>
+    <div class="thumbs">
+      <figure><img src="shot-region.png"><figcaption><b>Region 3D</b>the water column, 40× tall</figcaption></figure>
+      <figure><img src="shot-map.png"><figcaption><b>Map 2D</b>a flat section at any depth</figcaption></figure>
+      <figure><img src="shot-globe.png"><figcaption><b>Globe</b>the Bay in world sea temperature</figcaption></figure>
+    </div>
+  </div>
+</div>
+</div></body></html>

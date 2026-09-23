@@ -4,8 +4,8 @@
     python -m server.eval.run_eval --json    # also writes data/eval-latest.json
 
 The JSON dump exists so the trace from a figure in the deck back to the harness is a file
-rather than a copy-paste out of a terminal scroll. Hard rule 1 in CLAUDE.md is only true
-if the numbers are machine-readable.
+rather than a copy-paste out of a terminal scroll. The one architectural rule
+(docs/00-start-here.md) is only true if the numbers are machine-readable.
 """
 
 import json
@@ -17,7 +17,8 @@ from pathlib import Path
 import numpy as np
 import xarray as xr
 
-from server.ocean import argo, cf, colocate, config, currents, glider, regrid, residual, sources
+from server.ocean import (argo, cf, colocate, config, currents, glider, heat, regrid, residual,
+                          sources, textcast)
 
 CACHE = Path(__file__).resolve().parents[2] / "data" / "cache"
 CENTRE = config.DEMO_DATE
@@ -174,6 +175,38 @@ def main(write_json: bool = False) -> None:
         "glider_interpretation": "independent: gliders are not assimilated into this analysis",
     }
 
+    # ---- cyclone heat potential -----------------------------------------
+    # The same co-located pairs, integrated into TCHP (heat.py): the residual restated in
+    # kJ/cm^2, the unit an intensity forecast uses. Casts that never cool to 26 degC on
+    # their accepted levels have no D26 and are counted, not guessed.
+    _rule("Tropical cyclone heat potential  (analysis minus observed, kJ/cm^2)")
+    record["tchp"] = {}
+    for label, casts in (("argo", usable), ("glider", [g for g in gliders if g.accepted.any()])):
+        pairs = [heat.compare(colocate.colocate(p, ds, names["value"], names.get("error")))
+                 for p in casts]
+        diffs = np.array([t["difference_kj_cm2"] for t in pairs
+                          if t["difference_kj_cm2"] is not None])
+        obs = np.array([t["observed_kj_cm2"] for t in pairs
+                        if t["difference_kj_cm2"] is not None])
+        entry = {"casts": len(pairs), "with_d26": int(diffs.size)}
+        if diffs.size:
+            entry.update({
+                "mean_observed_kj_cm2": round(float(obs.mean()), 2),
+                "mean_difference_kj_cm2": round(float(diffs.mean()), 2),
+                "rmse_kj_cm2": round(float(np.sqrt((diffs ** 2).mean())), 2),
+                "relative_rmse_percent": round(float(np.sqrt((diffs ** 2).mean())
+                                                     / obs.mean() * 100), 1),
+            })
+            print(f"  {label:<7} {diffs.size:>3}/{len(pairs):<3} casts reach D26   "
+                  f"observed mean {entry['mean_observed_kj_cm2']:6.2f}   "
+                  f"analysis - observed {entry['mean_difference_kj_cm2']:+6.2f}   "
+                  f"rmse {entry['rmse_kj_cm2']:5.2f}  ({entry['relative_rmse_percent']} %)")
+        else:
+            print(f"  {label:<7} no cast reaches D26 on accepted levels")
+        record["tchp"][label] = entry
+    record["tchp"]["constants"] = {
+        "rho_kg_m3": heat.RHO, "cp_J_kg_K": heat.CP0, "threshold_degC": heat.THRESHOLD}
+
     # ---- depth-matched comparison ---------------------------------------
     # Argo runs to 2000 m and the glider stops near 960 m, so a single pooled number
     # compares "glider in the hard part of the column" against "Argo mostly in the easy
@@ -211,6 +244,35 @@ def main(write_json: bool = False) -> None:
     print(f"  pooled           bias {summary['bias']:+.3f}   rmse {summary['rmse']:.3f}")
     print(f"  build            {residual_s:.1f} s")
     record["residual"] = {**summary, "build_seconds": round(residual_s, 2)}
+
+    # ---- delimited-text ingestion ----------------------------------------
+    # The same glider deployment as NetCDF and as CSV, through the two parsers. Agreement
+    # is counted cast by cast, level by level, rather than asserted, so the number that
+    # goes on a slide is the number measured here.
+    _rule("Delimited-text ingestion  (same deployment, NetCDF path vs text path)")
+    stem = f"glider_{config.GLIDER_DEPLOYMENTS[0]}_bob"
+    nc_path, csv_path = CACHE / f"{stem}.nc", CACHE / f"{stem}.csv"
+    if nc_path.exists() and csv_path.exists():
+        t0 = time.perf_counter()
+        from_text, _ = textcast.read_text(csv_path.read_text(encoding="utf-8"), "temperature",
+                                          source_name=f"{config.GLIDER_DEPLOYMENTS[0]}.csv")
+        text_s = time.perf_counter() - t0
+        from_nc = {q.platform.split("#")[1]: q for q in glider.read_profiles(nc_path)}
+        same = [q for q in from_text
+                if (m := from_nc.get(q.platform.split("#")[1])) is not None
+                and m.depth.size == q.depth.size and np.allclose(m.depth, q.depth)
+                and np.allclose(m.value, q.value, atol=1e-4)]
+        record["text_ingest"] = {
+            "casts_netcdf": len(from_nc), "casts_text": len(from_text),
+            "casts_identical": len(same),
+            "levels_identical": int(sum(q.depth.size for q in same)),
+            "parse_seconds": round(text_s, 2),
+        }
+        print(f"  casts            {len(from_nc)} NetCDF, {len(from_text)} text, "
+              f"{len(same)} identical ({record['text_ingest']['levels_identical']} levels)")
+        print(f"  parse            {text_s:.2f} s for {csv_path.stat().st_size / 1e6:.1f} MB of CSV")
+    else:
+        print("  glider CSV fixture missing; run python -m server.tools.fetch_fixtures")
 
     # ---- currents -------------------------------------------------------
     _rule("Current streamlines")

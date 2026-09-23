@@ -97,7 +97,7 @@ SOURCES: dict[str, Source] = {
         error_variables={"temperature": "T_RMSE", "salinity": "S_RMSE"},
     ),
     # Secondary. Higher resolution and the only source with currents (L4).
-    # ponytail: declared but not wired until credentials exist; model.py raises if used.
+    # shortcut: declared but not wired until credentials exist; model.py raises if used.
     "glorys12": Source(
         id="cmems_mod_glo_phy_my_0.083deg_P1D-m",
         title="Copernicus GLORYS12 reanalysis",

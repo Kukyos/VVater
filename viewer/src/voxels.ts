@@ -36,6 +36,25 @@ import {
 import type { VolumeMeta } from "./api";
 import { RAMP_STOPS, byId, paletteStops } from "./colorbar";
 
+/**
+ * Opacity is defined per this much true water depth, not per raymarch sample.
+ *
+ * Cesium takes roughly one sample per voxel along the ray, so a per-sample alpha makes
+ * the same water more opaque the finer the grid and the smaller the step: GLORYS at
+ * 1/12 deg rendered as a solid slab at the opacity that left INCOIS translucent, and a
+ * finer vertical grid would have made the same water look denser. Scaling by
+ * the distance each step actually travelled makes it independent of sampling. 400 m
+ * was chosen by eye on the INCOIS field at the default 0.35: at 80 m the surface layer
+ * saturated and hid everything beneath it, at 1600 m the column washed out.
+ */
+export const OPACITY_REFERENCE_DEPTH_M = 400;
+
+/**
+ * Stands in for NaN on the residual layer. Only safe on a nearest-sampled volume:
+ * interpolated, a sentinel would smear a -1e30 gradient across every coast.
+ */
+export const EMPTY_SENTINEL = -1e30;
+
 /** Metadata channel names. These become struct fields in the shader, so no GLSL keywords. */
 export const VALUE_FIELD = "oceanValue";
 export const ERROR_FIELD = "uncertainty";
@@ -142,6 +161,10 @@ export function makeOceanShader(meta: VolumeMeta, paletteId: string,
       u_errorWeight: { type: UniformType.FLOAT, value: hasError ? 1.0 : 0.0 },
       u_isoValue: { type: UniformType.FLOAT, value: 0.5 * (lo + hi) },
       u_isoBand: { type: UniformType.FLOAT, value: 0.0 },
+      // Eye-space metres per opacity unit; OPACITY_REFERENCE_DEPTH_M x exaggeration.
+      u_refLength: { type: UniformType.FLOAT, value: OPACITY_REFERENCE_DEPTH_M },
+      // 1 = opacity per sample, for sparse binned layers (the residual). See main.ts.
+      u_perCell: { type: UniformType.FLOAT, value: 0.0 },
     },
     fragmentShaderText: `
       // The colourbar, evaluated rather than sampled. Six stops, linearly interpolated.
@@ -167,7 +190,10 @@ export function makeOceanShader(meta: VolumeMeta, paletteId: string,
         // value != value is the portable NaN test. GLSL ES 1.00 has no isnan(), and
         // which GLSL version Cesium compiles to depends on the browser's WebGL level,
         // so the idiom that works everywhere is the one to use.
-        if (value != value) {
+        // EMPTY_SENTINEL too: on the nearest-sampled residual the NaN test did not
+        // survive (empty bins drew opaque at the palette's low end), so empty residual
+        // bins are sent as a sentinel instead. See EMPTY_SENTINEL.
+        if (value != value || value < -1e29) {
           material.alpha = 0.0;
           return;
         }
@@ -211,7 +237,13 @@ export function makeOceanShader(meta: VolumeMeta, paletteId: string,
         }
         ` : ``}
 
-        material.alpha = clamp(alpha, 0.0, 1.0);
+        // Per-distance, not per-sample (see OPACITY_REFERENCE_DEPTH_M). An isosurface
+        // shell at alpha 1 stays 1; everything else scales with the step travelled.
+        alpha = clamp(alpha, 0.0, 1.0);
+        float steps = fsInput.voxel.travelDistance / max(u_refLength, 1e-3);
+        material.alpha = (alpha >= 1.0 || u_perCell > 0.5)
+          ? alpha
+          : 1.0 - pow(1.0 - alpha, steps);
       }
     `,
   });

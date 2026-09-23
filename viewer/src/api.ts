@@ -41,12 +41,14 @@ export interface VolumeMeta {
     depth_grid: { stretch: string; levels: number; z_min_m: number; z_max_m: number; depths_m: number[] };
     range_test: { checked: boolean; test?: string; failed?: number; checked_cells?: number; failed_range?: [number, number] };
     masked_cells: number;
+    /** k when the server sent a k x k block mean of a finer grid; 1 or absent otherwise. */
+    horizontal_block?: number;
     cf_assumptions: string[];
   };
 }
 
 export interface Observation {
-  kind: "argo" | "glider";
+  kind: "argo" | "glider" | "text";
   platform: string;
   lat: number;
   lon: number;
@@ -69,6 +71,14 @@ export interface ProfileComparison {
   qc: string[];
   error: (number | null)[] | null;
   summary: Record<string, unknown>;
+  /** Cyclone heat potential, observed vs analysis on shared levels (server/ocean/heat.py). */
+  tchp: {
+    observed_kj_cm2: number | null; analysis_kj_cm2: number | null;
+    difference_kj_cm2: number | null; observed_d26_m: number | null;
+    analysis_d26_m: number | null; levels: number; notes: string[];
+  } | null;
+  /** What the text parser assumed for an uploaded cast; empty for Argo and gliders. */
+  assumptions?: string[];
 }
 
 async function json<T>(path: string): Promise<T> {
@@ -92,9 +102,25 @@ export interface Streamlines {
 
 export const getMeta = () => json<Meta>("/api/meta");
 
-export const getStreamlines = (source: string, timeIndex: number, depthIndex: number) =>
+/** Casts from a delimited-text file (server/ocean/textcast.py). */
+export async function uploadCasts(file: File): Promise<{
+  name: string; casts: number; levels: number; notes: string[];
+}> {
+  const response = await fetch(
+    `${BASE}/api/casts?name=${encodeURIComponent(file.name)}`,
+    { method: "POST", body: await file.text(), headers: { "Content-Type": "text/plain" } },
+  );
+  if (!response.ok) {
+    // The parser's refusal says exactly which column it could not find; show that.
+    const detail = await response.json().catch(() => ({ detail: response.statusText }));
+    throw new Error(String(detail.detail));
+  }
+  return response.json();
+}
+
+export const getStreamlines = (source: string, timeIndex: number, depthM: number) =>
   json<Streamlines>(
-    `/api/streamlines?source=${source}&time_index=${timeIndex}&depth_index=${depthIndex}`,
+    `/api/streamlines?source=${source}&time_index=${timeIndex}&depth_m=${depthM}`,
   );
 
 /** No timestep: the residual is a window aggregate (server/ocean/residual.py). */
@@ -117,7 +143,9 @@ export async function getResidualData(
   variable: string, source: string, on: string, voxelCount: number,
 ): Promise<{ values: Float32Array; errors: null }> {
   const response = await fetch(
-    `${BASE}/api/residual/data?variable=${variable}&source=${source}&on=${on}`,
+    // n is ignored by the server. It keys the HTTP cache on the shape the metadata just
+    // promised, so a cached payload of a different shape can never be served against it.
+    `${BASE}/api/residual/data?variable=${variable}&source=${source}&on=${on}&n=${voxelCount}`,
   );
   if (!response.ok) throw new Error(`${response.status} fetching residual data`);
   const all = new Float32Array(await response.arrayBuffer());
@@ -140,7 +168,9 @@ export async function getVolumeData(
   hasError: boolean,
 ): Promise<{ values: Float32Array; errors: Float32Array | null }> {
   const response = await fetch(
-    `${BASE}/api/volume/data?variable=${variable}&source=${source}&time_index=${timeIndex}`,
+    // n: see getResidualData. The shape once changed server-side (GLORYS block mean) and
+    // the browser kept serving the old 2 M-float body against the new 228 k metadata.
+    `${BASE}/api/volume/data?variable=${variable}&source=${source}&time_index=${timeIndex}&n=${voxelCount}`,
   );
   if (!response.ok) {
     throw new Error(`${response.status} fetching volume data`);
@@ -157,4 +187,26 @@ export async function getVolumeData(
     values: all.subarray(0, voxelCount),
     errors: hasError ? all.subarray(voxelCount, voxelCount * 2) : null,
   };
+}
+
+/** Global surface temperature for the Globe view (server/ocean/globalsurface.py). */
+export interface GlobalSurfaceMeta {
+  dimensions: [number, number];
+  lonRange: [number, number];
+  latRange: [number, number];
+  valueRange: [number, number];
+  provenance: { source: string; variable: string; level_m: number; day: string;
+    horizontal_block: number; note: string };
+}
+
+export async function getGlobalSurface(): Promise<{ meta: GlobalSurfaceMeta; values: Float32Array }> {
+  const meta = await json<GlobalSurfaceMeta>("/api/global/meta");
+  const response = await fetch(`${BASE}/api/global/data`);
+  if (!response.ok) throw new Error(`${response.status} fetching the global surface`);
+  const values = new Float32Array(await response.arrayBuffer());
+  const [nx, ny] = meta.dimensions;
+  if (values.length !== nx * ny) {
+    throw new Error(`global surface is ${values.length} floats, expected ${nx * ny}`);
+  }
+  return { meta, values };
 }

@@ -22,15 +22,16 @@ Region is the **Bay of Bengal**. Stack is **CesiumJS** on a **FastAPI** backend.
 | `10-unsourced.md` | Everything we could not source, and where the real thing comes from. | Before quoting any value. |
 | `11-deferred.md` | Everything knowingly incomplete, with what it blocks. | This is the live status doc. |
 | `14-novelties.md` | What this does that the brief did not ask for, and what is designed but unbuilt. | When a new feature idea shows up, and before a pitch. |
+| `16-submission.md` | How the idea deck is built from the template, the harness and real screenshots. | Before touching the deck. |
 
-## What is built, as of 2026-09-22
+## What is built, as of 2026-09-23
 
 The **spine and the viewer**. Ingestion, QC, regrid and co-location are measured; the
 water column renders as a true volume and clicking a float draws it against the analysis.
 
 ```
 python -m server.tools.fetch_fixtures         # real files the tests run against
-python -m pytest server/tests -q              # 4 passed
+python -m pytest server/tests -q              # 5 passed
 python -m server.eval.run_eval --json         # numbers table + data/eval-latest.json
 
 python -m uvicorn server.ocean.api:app --port 8011     # the API
@@ -42,6 +43,49 @@ no network at demo time). Colourbar editor (palette, min/max, log/linear), opaci
 sea-surface translucency, isosurface, vertical exaggeration, time animation with
 prefetch, current streamlines on a depth slice, Argo and glider markers, and a
 depth-vs-variable chart per cast with QC and provenance.
+
+**Workspace:** laid out like a 3D package: a header with the view and layer switches, a
+*Properties* dock on the left (collapsible sections), an *Inspector* dock on the right
+(profile chart, provenance), the viewport with its timeline strip, and a status bar with
+the cursor's latitude and longitude. Both docks retract to a rail (`[` and `]`, or the
+chevrons); the viewport follows its grid cell.
+
+**Three views** of the same data (keys `1` `2` `3`, *Reset camera* or `Home` returns to
+each view's home camera):
+
+- **Region 3D** — the oblique working view. Zoom-out is capped at 4,500 km, because there
+  is nothing to see further out.
+- **Map 2D** — Cesium's 2D mode. The voxel primitive is 3D-only, so the map shows the
+  depth slice as a flat section, coloured by the same ramp from the values already in
+  memory (`viewer/src/section.ts`).
+- **Globe** — the whole Earth, region in the middle. Outside the box it carries the
+  **global sea-surface temperature** for the same day (GLORYS12 top level, 0.49 m, 3x3
+  block mean to 1/4 deg; `server/ocean/globalsurface.py`), on the field's own colour scale
+  and cut out over the box so it never tints the volume. Surface only, temperature and the
+  analysis layer only, and labelled that way on screen. Also shown around the box in the
+  Region view; the sea surface is translucent only over the box.
+
+Streamlines are on by default at the opening slice (93 m), coloured light cyan to amber by
+speed, with slow water fainter. Every async layer (volume, streamlines, profile, section,
+global surface) takes a request ticket, so a slow response can never land on top of a newer
+one.
+
+**Graphics settings** (the *Graphics* button): four quality tiers, and on first load an
+auto-tuner measures real rendered frames and picks the best tier that holds 60 fps. The
+volume is fill-rate bound, so resolution is the lever; MSAA, sky and FXAA are the rest.
+Render-on-demand means an idle globe draws nothing. Measured tiers and the levers that
+did not work are in `viewer/src/settings.ts` and `11-deferred.md` D-16 to D-19.
+
+**Delimited-text casts**: CSV, TSV or whitespace tables with lat, lon, time, depth or
+pressure and temperature are parsed by `server/ocean/textcast.py` and can be dropped onto
+the viewer (or added with *Add casts*). They are co-located like any float and always
+labelled unevaluated.
+
+**Cyclone heat potential** (heat above 26 °C, kJ/cm²) is computed for every co-located
+pair and shown in the profile panel; the harness reports it by instrument.
+
+**Depth slice** clips the volume at the chosen depth, so its top face is a horizontal
+section — the brief asks for depth-slice views by name.
 
 **Four things to look at**, all from the same voxel path:
 
@@ -102,5 +146,6 @@ proposal and the film traces to `13-eval-results.md`, which traces to
 
 ## Start here, today
 
-Both external blockers are cleared. **Phase 2 — the Cesium volume — is next, and nothing
-is in its way.**
+The build is end to end: data, science, API, viewer, deck. What is knowingly incomplete is
+in `11-deferred.md`; the deck is in `submission/sih/final/` and rebuilds from
+`16-submission.md`.

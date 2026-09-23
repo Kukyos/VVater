@@ -84,6 +84,16 @@ Argo analyses have none. And **it is where the volume budget in L1 actually bite
 day of four variables is 23 MB against the INCOIS field's 0.55 MB for thirteen timesteps.
 A 30-day animation is ~700 MB, which is the LRU cache's whole reason for existing.
 
+**Global surface subset** (for the Globe view's context layer, `globalsurface.py`):
+`thetao`, depth 0-1 m (one level, 0.494 m), 180 W-180 E, 80 S-90 N, one day. Measured
+2026-09-23: **16.84 MB** download, ~25 s cold, cached as
+`data/cache/global_thetao_surface_2018-08-25.nc`; served as a 3x3 block mean, 1440 x 680.
+
+NOAA OISST v2.1 on the CoastWatch ERDDAP (`ncdcOisst21Agg_LonPM180`) was probed first for
+the same layer, because it needs no credentials: both it and NCEI's THREDDS timed out from
+this network on 2026-09-23 (curl exit 28, no TCP connection). GLORYS12 was already wired
+in, so the layer uses it and adds no new source.
+
 Unlike the INCOIS product it is properly CF-compliant — `positive="down"` is present, the
 units are UDUNITS, the standard names are real. The defensive normalisation in `cf.py`
 exists for the INCOIS path, not this one.

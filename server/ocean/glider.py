@@ -56,11 +56,14 @@ UNEVALUATED_NOTE = ("QARTOD columns are declared but empty for this deployment, 
                     "data_mode 'U' (unevaluated), never as passing.")
 
 
-def fetch_deployment(dataset_id: str, cache_dir: Path) -> Path:
-    """Download one deployment, already clipped to the configured region."""
+def fetch_deployment(dataset_id: str, cache_dir: Path, fmt: str = "nc") -> Path:
+    """Download one deployment, already clipped to the configured region.
+
+    `fmt="csv"` fetches the same rows as delimited text, which is what textcast.demo()
+    checks the text parser against."""
     lon0, lon1 = config.REGION["lon"]
     lat0, lat1 = config.REGION["lat"]
-    path = cache_dir / f"glider_{dataset_id}_bob.nc"
+    path = cache_dir / f"glider_{dataset_id}_bob.{fmt}"
     if path.exists():
         return path
 
@@ -70,7 +73,7 @@ def fetch_deployment(dataset_id: str, cache_dir: Path) -> Path:
         f"&latitude>={lat0}&latitude<={lat1}"
         f"&longitude>={lon0}&longitude<={lon1}"
     )
-    resp = requests.get(f"{IOOS_BASE}/{dataset_id}.nc?{query}", timeout=config.HTTP_TIMEOUT)
+    resp = requests.get(f"{IOOS_BASE}/{dataset_id}.{fmt}?{query}", timeout=config.HTTP_TIMEOUT)
     if resp.status_code != 200:
         raise RuntimeError(f"IOOS {resp.status_code} for {dataset_id}: {resp.text[:300]}")
     path.write_bytes(resp.content)

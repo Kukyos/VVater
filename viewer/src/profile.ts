@@ -60,6 +60,9 @@ function points(profile: ProfileComparison, series: "observed" | "modelled"): Po
   return out;
 }
 
+/** Round depths, dense near the surface where a sqrt axis spends its space. */
+const DEPTH_TICKS = [0, 50, 100, 200, 300, 500, 1000, 1500, 2000];
+
 export function drawProfile(canvas: HTMLCanvasElement, profile: ProfileComparison,
                             units: string, maxDepth?: number): void {
   const context = canvas.getContext("2d");
@@ -96,7 +99,10 @@ export function drawProfile(canvas: HTMLCanvasElement, profile: ProfileCompariso
   const plotW = width - PAD.left - PAD.right;
   const plotH = height - PAD.top - PAD.bottom;
   const x = (v: number) => PAD.left + ((v - vMin) / (vMax - vMin)) * plotW;
-  const y = (d: number) => PAD.top + (d / dMax) * plotH;
+  // Square-root depth, the same stretch as the voxel grid. On a linear axis the upper
+  // 300 m -- the mixed layer and thermocline, where the analysis and the glider disagree
+  // (docs/13-eval-results.md) -- was squeezed into the top seventh of the chart.
+  const y = (d: number) => PAD.top + Math.sqrt(Math.max(d, 0) / dMax) * plotH;
 
   // --- axes. Depth grows downward; that is not negotiable on a profile chart.
   context.strokeStyle = THEME.axis;
@@ -110,8 +116,7 @@ export function drawProfile(canvas: HTMLCanvasElement, profile: ProfileCompariso
   context.lineTo(PAD.left + plotW, PAD.top + plotH);
   context.stroke();
 
-  for (let i = 0; i <= 4; i += 1) {
-    const depth = (dMax / 4) * i;
+  for (const depth of DEPTH_TICKS.filter((d) => d <= dMax)) {
     const py = y(depth);
     context.globalAlpha = 0.25;
     context.beginPath();
@@ -129,7 +134,7 @@ export function drawProfile(canvas: HTMLCanvasElement, profile: ProfileCompariso
   }
 
   context.textAlign = "left";
-  context.fillText(`depth (m)  ·  ${units}`, PAD.left, 12);
+  context.fillText(`depth (m, √ scale)  ·  ${units}`, PAD.left, 12);
 
   // --- analysis uncertainty band, when the source ships one
   const band = modelled.filter((p) => p.error !== null);
@@ -161,6 +166,17 @@ export function drawProfile(canvas: HTMLCanvasElement, profile: ProfileCompariso
   line(modelled, THEME.modelled);
   line(observed.filter((p) => p.accepted), THEME.observed);
 
+  // 16 of 134 casts in the demo window sit where the analysis has no water (masked
+  // coastal cells) or only above its 5 m top. A chart with no orange line and no reason
+  // reads as "the comparison failed to load"; say what actually happened instead.
+  if (modelled.length === 0) {
+    context.fillStyle = THEME.modelled;
+    context.font = "11px system-ui, sans-serif";
+    context.textAlign = "left";
+    context.fillText("no analysis line: the analysis has no value", PAD.left + 8, PAD.top + plotH - 30);
+    context.fillText("at this cast's location and depths", PAD.left + 8, PAD.top + plotH - 16);
+  }
+
   // --- QC-rejected levels, drawn rather than dropped. Hiding them would make the
   // quality control invisible, which defeats the point of having read it.
   const rejected = observed.filter((p) => !p.accepted);
@@ -174,9 +190,29 @@ export function drawProfile(canvas: HTMLCanvasElement, profile: ProfileCompariso
 }
 
 /** One-line caption under the chart: what this is and what was thrown away. */
+/**
+ * Heat above 26 °C, the fuel a cyclone draws on, from the cast and from the analysis on
+ * the same levels. Unknown (not zero) when the cast never cools to 26 °C.
+ */
+function tchpText(profile: ProfileComparison): string | null {
+  const t = profile.tchp;
+  if (!t) return null;
+  if (t.observed_kj_cm2 === null || t.analysis_kj_cm2 === null) {
+    return "cyclone heat potential: unknown (no 26 °C crossing on the compared levels)";
+  }
+  const d = t.difference_kj_cm2 ?? 0;
+  return `cyclone heat potential: observed ${t.observed_kj_cm2.toFixed(1)}, analysis ` +
+    `${t.analysis_kj_cm2.toFixed(1)} kJ/cm² (${d >= 0 ? "+" : ""}${d.toFixed(1)}); ` +
+    `D26 ${t.observed_d26_m} vs ${t.analysis_d26_m} m`;
+}
+
 export function captionFor(profile: ProfileComparison): string {
   const summary = profile.summary as Record<string, number | string>;
-  const rejected = Number(summary.levels ?? 0) - Number(summary.levels_compared ?? 0);
+  // QC rejections and levels the analysis cannot reach are different things. This was
+  // levels minus compared, so a cast with nothing rejected but five levels above the
+  // grid's 5 m top was captioned "5 rejected" -- a QC claim the data never made.
+  const rejected = Number(summary.levels_rejected ?? 0);
+  const outside = Number(summary.levels ?? 0) - Number(summary.levels_compared ?? 0) - rejected;
   const mode = String(summary.data_mode ?? "?");
   const modeText = mode === "U"
     ? "unevaluated (no QC ever run on this source)"
@@ -194,8 +230,15 @@ export function captionFor(profile: ProfileComparison): string {
     `${profile.time}Z`,
     `${modeText}`,
     `${summary.levels_compared}/${summary.levels} levels compared`,
-    rejected > 0 ? `${rejected} rejected` : null,
+    rejected > 0 ? `${rejected} rejected by QC` : null,
+    outside > 0 ? `${outside} outside the analysis grid` : null,
     stats,
     `analysis step ${summary.analysis_time} (${summary.time_offset_days} d away)`,
+    // Hard rule 2: no observation without its QC, data mode AND source file. The first
+    // two were shown; the file was in the response and never reached the screen.
+    `${summary.field_used} from ${summary.source_file}`,
+    tchpText(profile),
+    // Hard rule 5: what the parser assumed travels with the cast, not just the upload reply.
+    ...(profile.assumptions ?? []).map((a) => `assumed: ${a}`),
   ].filter(Boolean).join("  ·  ");
 }

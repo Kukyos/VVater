@@ -1,0 +1,121 @@
+/* Shared system for the slide bodies.
+   Each body is 4000 x 1710 px = 13.33" x 5.70" at 300 dpi: the area between the SIH
+   2026 template's masthead and its footer bar. White, so it is continuous with the
+   template rather than sitting on top of it.
+
+   Readability floor: nothing below 34 px here, which is 8 pt on the printed slide and
+   the smallest size on the PS 26047 deck this one is held to. figures.py checks the
+   rendered bodies for empty bands, so a slide that leaves white space fails the build. */
+
+:root {
+  --ink:    #16202B;
+  --muted:  #4F5B69;
+  --faint:  #7A8594;
+  --rule:   #D5DCE4;
+  --panel:  #F1F4F8;
+  --panel2: #E6ECF3;
+  --navy:   #1F4E79;  /* the template's own blue */
+  --sky:    #2E86C1;
+  --grey:   #A9B2BE;
+  --red:    #C0392B;
+  --green:  #1E8449;
+  --amber:  #B9770E;
+}
+
+html, body { margin: 0; }
+body {
+  width: 4000px; height: 1710px; background: #fff; color: var(--ink);
+  font-family: "IBM Plex Sans", "Segoe UI", sans-serif; font-size: 40px; line-height: 1.38;
+  overflow: hidden;
+}
+.slide { width: 100%; height: 100%; padding: 34px 110px 30px; box-sizing: border-box;
+  display: flex; flex-direction: column; gap: 30px; }
+.grow { flex: 1; min-height: 0; }
+b { font-weight: 600; }
+.mono { font-family: "IBM Plex Mono", Consolas, monospace; font-size: .9em; color: var(--navy); }
+.muted { color: var(--muted); }
+.red { color: var(--red); }
+
+h2 { font-size: 44px; font-weight: 600; color: var(--navy); margin: 0 0 16px;
+  text-transform: uppercase; letter-spacing: .04em; }
+h3 { font-size: 44px; font-weight: 600; margin: 0 0 8px; }
+p { margin: 0; }
+.lead { font-size: 62px; line-height: 1.2; margin: 0; }
+.lead b { color: var(--navy); }
+
+/* ---------------------------------------------------------------- layout */
+.cols { display: grid; gap: 64px; min-height: 0; }
+.col { display: flex; flex-direction: column; gap: 26px; min-height: 0; }
+
+/* ---------------------------------------------------------------- cards */
+.cards { display: grid; gap: 24px; }
+.card { background: var(--panel); padding: 26px 30px; border-top: 8px solid var(--navy); }
+.card h3 { font-size: 42px; color: var(--navy); }
+.card p { font-size: 36px; color: var(--muted); line-height: 1.36; }
+.card.grey { border-top-color: var(--grey); }
+.card.red { border-top-color: var(--red); }
+.card.green { border-top-color: var(--green); }
+.card .num { font-size: 96px; font-weight: 600; color: var(--navy); line-height: 1; display: block; margin-bottom: 8px; }
+
+/* ---------------------------------------------------------------- stats */
+.stats { display: grid; gap: 22px; }
+.stat { border-top: 6px solid var(--navy); padding-top: 12px; }
+.stat b { display: block; font-size: 88px; line-height: 1; color: var(--navy); }
+.stat span { display: block; font-size: 35px; color: var(--muted); line-height: 1.3; margin-top: 8px; }
+
+/* ---------------------------------------------------------------- shots */
+figure { margin: 0; }
+.shot img { display: block; width: 100%; border: 2px solid #0c0d0f; }
+.shot figcaption { font-size: 34px; color: var(--muted); line-height: 1.35; margin-top: 10px; }
+.shot figcaption b { color: var(--ink); }
+.thumbs { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; }
+.thumbs img { width: 100%; aspect-ratio: 16 / 10; object-fit: cover; display: block; border: 2px solid #0c0d0f; }
+.thumbs figcaption { font-size: 34px; margin-top: 8px; color: var(--muted); line-height: 1.3; }
+.thumbs figcaption b { color: var(--navy); display: block; font-size: 38px; }
+
+/* ---------------------------------------------------------------- before / after strip */
+.journey { display: grid; grid-template-columns: 200px 1fr 1fr 1fr; gap: 14px 16px; align-items: stretch; }
+.journey .who { font-weight: 600; font-size: 38px; display: flex; align-items: center; }
+.journey .step { padding: 18px 22px; font-size: 35px; line-height: 1.3; background: var(--panel2); position: relative; }
+.journey .step.now { background: #EDEFF2; color: var(--muted); }
+.journey .step.vv { background: var(--navy); color: #fff; }
+.journey .step.vv b { color: #9ED8FF; }
+
+/* ---------------------------------------------------------------- tables */
+table { border-collapse: collapse; width: 100%; }
+th { text-align: left; font-size: 35px; color: var(--navy); font-weight: 600; padding: 0 16px 10px 0;
+  border-bottom: 3px solid var(--navy); text-transform: uppercase; letter-spacing: .03em; }
+td { font-size: 36px; padding: 13px 16px 13px 0; border-bottom: 2px solid var(--rule); vertical-align: top; line-height: 1.3; }
+td:first-child { font-weight: 600; white-space: nowrap; }
+td.alt { color: var(--faint); }
+td.why { color: var(--muted); }
+
+/* ---------------------------------------------------------------- lists */
+.points { margin: 0; padding: 0; list-style: none; }
+.points li { padding: 14px 0; border-top: 2px solid var(--rule); font-size: 38px; line-height: 1.3; }
+.points li span { display: block; font-size: 35px; color: var(--muted); margin-top: 2px; }
+
+.gloss { display: grid; grid-template-columns: repeat(4, 1fr); gap: 20px; }
+.gloss div { font-size: 34px; color: var(--muted); line-height: 1.3; border-left: 6px solid var(--sky); padding-left: 16px; }
+.gloss b { color: var(--ink); display: block; font-size: 37px; }
+
+.legend { font-size: 34px; color: var(--muted); display: flex; gap: 18px; align-items: center; flex-wrap: wrap; }
+.legend i { width: 36px; height: 22px; display: inline-block; }
+
+.refs { margin: 0; padding: 0; list-style: none; counter-reset: ref; }
+.refs li { counter-increment: ref; position: relative; padding: 14px 0 14px 64px;
+  border-top: 2px solid var(--rule); font-size: 37px; line-height: 1.32; }
+.refs li::before { content: counter(ref); position: absolute; left: 0; top: 14px; color: var(--navy); font-weight: 600; }
+.refs li .url { display: block; font-family: "IBM Plex Mono", Consolas, monospace; font-size: 32px; color: var(--sky); }
+.refs li .why { color: var(--muted); }
+.banner { background: var(--navy); color: #fff; padding: 22px 34px; display: flex; align-items: center; gap: 40px; font-size: 42px; }
+.banner .mono { color: #9ED8FF; font-size: 48px; }
+.banner .note { font-size: 34px; color: #C9DBEA; margin-left: auto; }
+
+svg text { font-family: "IBM Plex Sans", sans-serif; }
+
+/* Per-slide spacing, set so each body reaches the footer (figures.py --check). */
+.feas td { padding-top: 19px; padding-bottom: 19px; }
+.feas .points li { padding: 19px 0; }
+.refcols .refs li { padding-top: 20px; padding-bottom: 20px; }
+.refcols .refs li::before { top: 20px; }
