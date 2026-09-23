@@ -9,10 +9,30 @@ it look like a Python bug; it is a server misconfiguration.
 intermediate via the certificate's AIA extension. Verification stays fully on — we never
 pass `verify=False` at a trust boundary just because a server is misconfigured.
 
-If this ever fails on a Linux deployment (OpenSSL does not chase AIA as readily), the
-fix is to bundle the intermediate and point `REQUESTS_CA_BUNDLE` at it, not to disable
-verification. Logged in docs/11-deferred.md.
+OpenSSL on Linux (Render) does not chase AIA, so the same request fails there. The
+intermediate (GlobalSign RSA OV SSL CA 2018, fetched from the leaf's AIA URL, expires
+2028-11-21) is bundled in `certs/` and appended to certifi's roots; the combined file is
+what both requests and truststore's Linux backend verify against. It is only an
+intermediate — it still has to chain to a root already in the bundle.
 """
+
+
+def _bundle_intermediate() -> None:
+    import os
+    import tempfile
+    from pathlib import Path
+
+    import certifi
+
+    pem = Path(__file__).with_name("certs") / "globalsign-rsa-ov-ssl-ca-2018.pem"
+    bundle = Path(tempfile.gettempdir()) / "ocean-ca-bundle.pem"
+    bundle.write_text(Path(certifi.where()).read_text() + "\n" + pem.read_text())
+    # setdefault: an operator-supplied bundle wins.
+    os.environ.setdefault("SSL_CERT_FILE", str(bundle))
+    os.environ.setdefault("REQUESTS_CA_BUNDLE", str(bundle))
+
+
+_bundle_intermediate()
 
 try:
     import truststore
