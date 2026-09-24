@@ -143,7 +143,10 @@ async function main(): Promise<void> {
   // first working build rendered a perfect volume that nobody could see. Making the
   // surface translucent is what turns a globe into something you can look into, and it
   // is the single control that makes a depth-resolved field legible at all.
-  viewer.scene.globe.translucency.enabled = true;
+  // Off until the INCOIS Bay volume is turned on (setView enables it then). On from the
+  // start, any failure before the first setView left a dark see-through square over the
+  // Bay on a globe that was about the cube.
+  viewer.scene.globe.translucency.enabled = false;
   viewer.scene.globe.translucency.frontFaceAlpha = 0.25;
   // Looking up from beneath the surface should show the water, not a flat fill colour.
   viewer.scene.globe.undergroundColor = CesiumColor.fromCssColorString("#05131f");
@@ -567,6 +570,7 @@ async function main(): Promise<void> {
   }
 
   async function loadStreamlines(): Promise<void> {
+    if (!showBay) return;
     const ticket = ++streamTicket;
     if (!state.showCurrents) {
       streamlineLayer.hide();
@@ -605,6 +609,8 @@ async function main(): Promise<void> {
   let loadTicket = 0;
 
   async function loadVolume(): Promise<void> {
+    // The INCOIS Bay volume is opt-in ("INCOIS Bay volume"); nothing of it loads before.
+    if (!showBay) return;
     const ticket = ++loadTicket;
     status(state.layer === "residual" ? "co-locating casts…" : "loading volume…", "busy");
 
@@ -1084,6 +1090,7 @@ async function main(): Promise<void> {
 
   async function loadObservations(): Promise<void> {
     viewer.entities.removeAll();
+    if (!showBay) return;
     const { observations } = await api.getObservations(state.meta.demoDate, state.variable);
 
     // A float can surface more than once inside a +/-5 day window, and a glider emits
@@ -1524,6 +1531,18 @@ async function main(): Promise<void> {
     showBay = node.checked;
     el("app").classList.toggle("bay", showBay);
     if (!showBay && state.layer === "residual") await setLayer("field");
+    if (showBay) {
+      if (!globalDays.length) {
+        try {
+          globalDays = (await api.getGlobalLayers()).days;
+        } catch (error) {
+          status(`global layers unavailable: ${(error as Error).message}`, "warn");
+        }
+      }
+      await loadObservations();
+    } else {
+      viewer.entities.removeAll();  // the Bay's floats and gliders go with it
+    }
     if (showBay) {
       state.depthIndex = Math.min(state.depthIndex, 23);
       await setView("region");
@@ -2119,19 +2138,11 @@ async function main(): Promise<void> {
   }
 
   try {
-    await loadVolume();
-    // loadVolume already fetched the streamlines for the opening slice.
     el<HTMLInputElement>("currents").checked = state.showCurrents;
-    await loadObservations();
     bindGraphicsPanel();
-    try {
-      globalDays = (await api.getGlobalLayers()).days;
-    } catch (error) {
-      status(`global layers unavailable: ${(error as Error).message}`, "warn");
-    }
     await setView("region");
-    // The cube is the main view. The Bay volume above stays loaded for the residual and
-    // the co-located profiles, and comes back with "INCOIS Bay volume".
+    // The cube is the viewer. The INCOIS Bay volume, its floats, streamlines and residual
+    // load only when "INCOIS Bay volume" is ticked.
     try {
       await cube.init(await api.getCatalog());
     } catch (error) {

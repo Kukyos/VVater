@@ -20,7 +20,7 @@ const SUGGESTIONS = [
   "Where should I fish near Chennai this week?",
   "Show me the winds",
   "How do I draw my own box?",
-  "Which floats failed quality control?",
+  "Show me INCOIS's fishing advisories",
   "Play the cinematic tour",
 ];
 

@@ -391,12 +391,12 @@
         <label class="check"><input type="checkbox" id="bay-volume" /> Show the INCOIS analysis volume in place, under the sea</label>
       </div></details>
 
-      <details open><summary>Data</summary><div class="sec">
+      <details open class="bay-only"><summary>Data</summary><div class="sec">
         <div class="prop"><label for="source">Source</label><select id="source"></select></div>
         <div class="prop"><label for="variable">Variable</label><select id="variable"></select></div>
       </div></details>
 
-      <details open><summary>Depth slice &amp; currents</summary><div class="sec">
+      <details open class="bay-only"><summary>Depth slice &amp; currents</summary><div class="sec">
         <div class="prop"><label for="slice">Slice depth</label>
           <div class="slider"><input type="range" id="slice" min="0" max="23" step="1" value="0" /><span class="val" id="slice-label">—</span></div></div>
         <div class="hint">Cuts the volume at this depth; in Map 2D it is the section shown.</div>
@@ -420,7 +420,7 @@
         <div id="palette-note"></div>
       </div></details>
 
-      <details open><summary>Volume</summary><div class="sec">
+      <details open class="bay-only"><summary>Volume</summary><div class="sec">
         <div class="prop"><label for="opacity">Opacity</label>
           <div class="slider"><input type="range" id="opacity" min="1" max="100" value="50" /><span class="val" id="opacity-label">0.50</span></div></div>
         <div class="prop"><label for="error-weight">Uncertainty fade</label>
@@ -439,10 +439,10 @@
       </div></details>
 
       <details open><summary>Scene</summary><div class="sec">
-        <label class="check"><input type="checkbox" id="global-sst" checked /> Global sea-surface temperature</label>
-        <div class="hint">Around the box: GLORYS12 at 0.5 m on the same day, same colour
+        <label class="check bay-only"><input type="checkbox" id="global-sst" checked /> Global sea-surface temperature</label>
+        <div class="hint bay-only">Around the box: GLORYS12 at 0.5 m on the same day, same colour
           scale. Surface only — the volume is the Bay.</div>
-        <div class="prop"><label for="sea-surface">Sea surface</label>
+        <div class="prop bay-only"><label for="sea-surface">Sea surface</label>
           <div class="slider"><input type="range" id="sea-surface" min="0" max="100" value="25" /><span class="val" id="sea-surface-label">0.25</span></div></div>
         <div class="prop"><label for="land">Land</label>
           <select id="land">
@@ -454,7 +454,7 @@
           <div class="slider"><input type="range" id="basemap" min="10" max="100" value="55" /><span class="val" id="basemap-label">0.55</span></div></div>
       </div></details>
 
-      <details open><summary>Observations</summary><div class="sec">
+      <details open class="bay-only"><summary>Observations</summary><div class="sec">
         <div id="obs-count">—</div>
         <div class="key"><i class="dot" style="background:#4dd2ff"></i> Argo float</div>
         <div class="key"><i class="dot" style="background:#7ee787"></i> Glider, QC applied</div>
