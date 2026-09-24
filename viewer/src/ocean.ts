@@ -180,13 +180,11 @@ export class OceanLayer {
       this.flow.remove("air");
       return;
     }
-    // The wind record ends yesterday: a cube on today or a forecast day borrows the
-    // newest wind there is, and the note says which day that was.
-    const yesterday = new Date(Date.now() - 86_400_000).toISOString().slice(0, 10);
-    const use = day > yesterday ? yesterday : day;
+    // Observed wind up to yesterday, the GFS forecast after it; the server decides and
+    // the note carries which one it was.
     let got: Awaited<ReturnType<typeof api.getWind>>;
     try {
-      got = await api.getWind(use);
+      got = await api.getWind(day);
     } catch (error) {
       if (ticket !== this.airTicket) return;
       this.airNote = (error as Error).message;
@@ -194,9 +192,9 @@ export class OceanLayer {
       return;
     }
     if (ticket !== this.airTicket) return;
-    this.airNote = `wind at 10 m, ${String(got.meta.provenance.time_utc).replace("T", " ")} UTC` +
-      (use !== day ? ` (the newest there is; ${day} has no wind yet)` : "") +
-      " · satellite scatterometers blended with ECMWF";
+    const p = got.meta.provenance;
+    this.airNote = `wind at 10 m, ${String(p.time_utc).replace("T", " ")} UTC · ` +
+      (p.forecast ? "forecast, NCEP GFS" : "observed, satellite scatterometers blended with ECMWF");
     this.flow.set("air", { ...field(got, 0), style: AIR }, Math.round(this.density * 0.6));
   }
 

@@ -217,6 +217,10 @@
   .spot .hint { grid-column: 1 / -1; }
   .spot .btn { grid-row: 1; grid-column: 3; padding: 1px 10px; }
   #fish-advisory { color: var(--warn); }
+  .pfz-row { display: grid; grid-template-columns: 1fr auto; gap: 1px 8px; font-size: 11px;
+    align-items: center; }
+  .pfz-row .hint { grid-column: 1; }
+  .pfz-row .btn { grid-row: 1 / span 2; grid-column: 2; padding: 1px 10px; }
 
   /* ---- immersive: the globe and nothing else */
   #app.immersive { grid-template-columns: 0 minmax(0, 1fr) 0; grid-template-rows: 0 minmax(0, 1fr) 0;
@@ -369,7 +373,7 @@
         <label class="check"><input type="checkbox" id="fish-on" /> Likely fishing zones &amp; sea state in the cube's box</label>
         <div class="hint">Zones: where warm and cool water meet (the strongest 10% of
           temperature fronts in the box) and there is food (chlorophyll at or above the box's
-          median). Sea state: forecast waves and observed wind at noon UTC. Opens the flat
+          median). Sea state: forecast waves and wind at noon UTC. Opens the flat
           map, where the zones are not hidden under the cube. For a trip, set the cube's day
           to today or a forecast day.</div>
         <div class="key"><i class="dot" style="background:#ff9a1f"></i> likely zone
@@ -378,6 +382,9 @@
         <div id="fish-summary" class="hint"></div>
         <div id="fish-spots" style="display:grid;gap:5px"></div>
         <div id="fish-advisory" class="hint"></div>
+        <label class="check"><input type="checkbox" id="pfz-on" /> Official INCOIS PFZ advisories (India)</label>
+        <div class="key"><i class="dot" style="background:#3de0b0"></i> an INCOIS advisory point, as published</div>
+        <div id="pfz-list" style="display:grid;gap:4px"></div>
       </div></details>
 
       <details id="bay-section"><summary>INCOIS Bay volume</summary><div class="sec">

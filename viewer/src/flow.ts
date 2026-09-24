@@ -5,7 +5,9 @@
  * and Windy: each particle lives in longitude/latitude, is advected on the CPU through the
  * field (bilinear, m/s turned into degrees at its latitude), projected through Cesium's
  * camera each frame, and drawn as a short line from where it was to where it is. Trails
- * come from fading the canvas a little every frame rather than clearing it.
+ * come from fading the canvas a little every frame rather than clearing it. While the
+ * camera moves the canvas is wiped instead, and each trail is redrawn from the last few
+ * positions its particle held.
  *
  * Why not GPU particles inside the Cesium scene: that needs Cesium's private renderer
  * classes (compute commands, framebuffers), which change without deprecation; a plugin that
@@ -18,7 +20,8 @@
  */
 
 import {
-  Cartesian2, Cartesian3, Ellipsoid, Math as CesiumMath, Rectangle, SceneTransforms, type Scene,
+  Cartesian2, Cartesian3, Ellipsoid, Math as CesiumMath, Matrix4, Rectangle, SceneMode,
+  SceneTransforms, type Scene,
 } from "@cesium/engine";
 
 const EARTH_RADIUS = 6_371_000;
@@ -55,10 +58,13 @@ const CURRENTS: FlowStyle = {
   pace: 1,
 };
 
-/** Seconds of motion a trail stands for; while the camera moves it is drawn as one streak. */
-const TRAIL_S = 0.7;
-/** Longest streak on screen, in CSS pixels: a fast zoom-out stretched them into needles. */
-const MAX_STREAK_PX = 12;
+/** Positions kept per particle for the trail drawn while the camera moves ... */
+const HISTORY = 8;
+/** ... one every this many frames: 8 x 4 frames is about the half second a still trail
+ * takes to fade, so a moving trail is as long as a still one. */
+const HISTORY_EVERY = 4;
+/** Pixels past the screen edge a point may sit and still anchor a trail into view. */
+const EDGE_PX = 40;
 
 interface Swarm {
   field: Field;
@@ -66,6 +72,14 @@ interface Swarm {
   lat: Float32Array;
   age: Uint16Array;
   count: number;
+  /** Earth-fixed x, y, z of each particle's last HISTORY_EVERY-th positions, a ring. */
+  hist: Float64Array;
+  /** How many ring entries are valid for a particle; 0 after it is reborn. */
+  histN: Uint8Array;
+  /** Earth-fixed position last frame, and whether it is set (not on a particle's first). */
+  last: Float64Array;
+  lastOk: Uint8Array;
+  frame: number;
 }
 
 const MAX_AGE = 110;
@@ -89,6 +103,12 @@ export class FlowOverlay {
   private viewRect = new Rectangle();
   /** Camera range at the last full reseed; a big zoom since then reseeds everything. */
   private seededRange = 0;
+  /** This frame's view-projection, and whether the matrix path applies (3D only). */
+  private vp = new Matrix4();
+  private direct = false;
+  private cam = new Cartesian3();
+  private camLen = 1;
+  private checked = false;
   /** Visual speed: degrees moved per second per m/s of current, scaled by zoom. */
   speed = 1;
 
@@ -118,8 +138,10 @@ export class FlowOverlay {
   /** Put a field on screen under a name; replacing a name keeps no old particles. */
   set(name: string, field: Field, count: number): void {
     const swarm: Swarm = {
-      field, count,
+      field, count, frame: 0,
       lon: new Float32Array(count), lat: new Float32Array(count), age: new Uint16Array(count),
+      hist: new Float64Array(count * HISTORY * 3), histN: new Uint8Array(count),
+      last: new Float64Array(count * 3), lastOk: new Uint8Array(count),
     };
     for (let i = 0; i < count; i += 1) this.seed(swarm, i, true);
     this.swarms.set(name, swarm);
@@ -179,6 +201,8 @@ export class FlowOverlay {
       break;
     }
     s.age[i] = randomAge ? Math.floor(Math.random() * MAX_AGE) : 0;
+    s.histN[i] = 0;  // a reborn particle has no trail yet
+    s.lastOk[i] = 0;
   }
 
   private inHole(f: Field, lon: number, lat: number): boolean {
@@ -199,15 +223,20 @@ export class FlowOverlay {
     const moved = !Cartesian3.equalsEpsilon(camera.positionWC, this.lastCamera, 0, 1) ||
       !Cartesian3.equalsEpsilon(camera.directionWC, this.lastDirection, 0, 1e-6);
     if (moved || !this.view) this.updateView();
-    // After a zoom by more than half, the particles are still packed where the old view
-    // was (a clump of white from space after a low pass); spread them over the new one.
+    // After a zoom by a factor of three, the particles are still packed where the old view
+    // was (a clump of white from space after a low pass); move a third of them into the
+    // new one each time. Reseeding all of them at once wiped every trail, and a fast climb
+    // crosses a factor of three every few frames: the screen went blank.
     const r = Cartesian3.magnitude(camera.positionWC) - EARTH_RADIUS;
-    if (this.view && (r > this.seededRange * 1.6 || r < this.seededRange / 1.6)) {
+    if (this.view && (r > this.seededRange * 3 || r < this.seededRange / 3)) {
       this.seededRange = r;
-      for (const s of this.swarms.values()) for (let i = 0; i < s.count; i += 1) this.seed(s, i, true);
+      for (const s of this.swarms.values()) {
+        for (let i = 0; i < s.count; i += 1) if (Math.random() < 1 / 3) this.seed(s, i, true);
+      }
     }
     Cartesian3.clone(camera.positionWC, this.lastCamera);
     Cartesian3.clone(camera.directionWC, this.lastDirection);
+    this.beginFrame();
     const g = this.g;
     if (moved) {
       this.clear();
@@ -218,19 +247,26 @@ export class FlowOverlay {
     }
     g.globalCompositeOperation = "source-over";
     const ratio = this.canvas.width / Math.max(this.canvas.clientWidth, 1);
-    // Degrees a particle moves per second for each m/s of current. It scales with the
-    // camera's distance, so on screen a current moves at about the same pixel speed close
-    // up and from space: this is a picture's speed, not the water's.
-    const range = Cartesian3.magnitude(camera.positionWC) - EARTH_RADIUS;
-    const degPerSecond = this.speed * 6 * Math.max(range, 30_000) / 1.0e7;
-    const cam = camera.positionWC;
-    const camLen = Cartesian3.magnitude(cam);
+    // Degrees a particle moves per second for each m/s of current, per metre of distance
+    // from the camera: on screen a current moves at about the same pixel speed near and
+    // far, close up and from space. This is a picture's speed, not the water's. It is each
+    // particle's own distance, not the camera's height: looking along the horizon from
+    // 60 km up, the water is hundreds of km away and paced by height it barely moved.
+    const perMetre = this.speed * 6 / 1.0e7;
+    const c = this.cam;
+    const p = this.scratch;
     g.lineCap = "round";
+    g.lineJoin = "round";
     for (const s of this.swarms.values()) {
       const f = s.field;
       const style = f.style ?? CURRENTS;
-      const step = degPerSecond * style.pace;
+      const pace = perMetre * style.pace;
       const [b0, b1, b2] = style.bands;
+      const record = s.frame % HISTORY_EVERY === 0;
+      const slot = Math.floor(s.frame / HISTORY_EVERY) % HISTORY;
+      // The newest entry already written: this frame's slot is written after drawing.
+      const newest = record ? slot - 1 : slot;
+      s.frame += 1;
       g.lineWidth = 1.2 * ratio;
       // Four brightness bands by speed, one path each: a few draw calls per frame.
       const paths = [new Path2D(), new Path2D(), new Path2D(), new Path2D()];
@@ -245,12 +281,10 @@ export class FlowOverlay {
           continue;
         }
         const cosLat = Math.max(Math.cos(lat * DEG), 0.05);
-        // Standing still, a trail is built up frame by frame on the fading canvas. Moving,
-        // the canvas is wiped every frame, so a one-frame step would be a sub-pixel dot and
-        // the currents vanished in flight: draw the whole trail as one streak instead.
-        const back = moved ? TRAIL_S : 0;
-        const prevOk = this.project(lon - (u / cosLat) * step * back, lat - v * step * back,
-                                    f.height, cam, camLen, this.prevScreen);
+        const L = i * 3;
+        const far = s.lastOk[i]
+          ? Math.hypot(s.last[L] - c.x, s.last[L + 1] - c.y, s.last[L + 2] - c.z) : r;
+        const step = pace * Math.max(far, 30_000);
         lon += (u / cosLat) * step * dt;
         lat += v * step * dt;
         if (lon < f.west || lon > f.east || lat < f.south || lat > f.north ||
@@ -260,29 +294,56 @@ export class FlowOverlay {
         }
         s.lon[i] = lon;
         s.lat[i] = lat;
-        if (!this.project(lon, lat, f.height, cam, camLen, this.screen)) {
+        Cartesian3.fromDegrees(lon, lat, f.height, undefined, p);
+        if (!this.toScreen(p.x, p.y, p.z, this.screen, 0)) {
           // Off screen or behind the planet: reborn where it can be seen.
           if (this.view) this.seed(s, i, true);
           continue;
         }
-        if (!prevOk) continue;
-        if (moved) {
-          const dx = this.prevScreen.x - this.screen.x;
-          const dy = this.prevScreen.y - this.screen.y;
-          const len = Math.hypot(dx, dy);
-          if (len > MAX_STREAK_PX) {
-            this.prevScreen.x = this.screen.x + dx * MAX_STREAK_PX / len;
-            this.prevScreen.y = this.screen.y + dy * MAX_STREAK_PX / len;
-          }
-        }
         const band = speed < b0 ? 0 : speed < b1 ? 1 : speed < b2 ? 2 : 3;
-        const p = paths[band];
-        p.moveTo(this.prevScreen.x * ratio, this.prevScreen.y * ratio);
-        p.lineTo(this.screen.x * ratio, this.screen.y * ratio);
+        const path = paths[band];
+        const n = s.histN[i];
+        if (moved) {
+          // Moving: the canvas was wiped, so redraw the whole trail from the positions this
+          // particle has been at. Straight streaks along today's flow looked like needles.
+          let open = false;
+          for (let k = n - 1; k >= 0; k -= 1) {
+            const h = (i * HISTORY + (newest - k + HISTORY * 2) % HISTORY) * 3;
+            if (this.toScreen(s.hist[h], s.hist[h + 1], s.hist[h + 2], this.prevScreen, EDGE_PX)) {
+              if (open) path.lineTo(this.prevScreen.x * ratio, this.prevScreen.y * ratio);
+              else path.moveTo(this.prevScreen.x * ratio, this.prevScreen.y * ratio);
+              open = true;
+            } else {
+              open = false;
+            }
+          }
+          if (s.lastOk[i] && this.toScreen(s.last[L], s.last[L + 1], s.last[L + 2], this.prevScreen, EDGE_PX)) {
+            if (open) path.lineTo(this.prevScreen.x * ratio, this.prevScreen.y * ratio);
+            else path.moveTo(this.prevScreen.x * ratio, this.prevScreen.y * ratio);
+            open = true;
+          }
+          if (open) path.lineTo(this.screen.x * ratio, this.screen.y * ratio);
+        } else if (s.lastOk[i] &&
+                   this.toScreen(s.last[L], s.last[L + 1], s.last[L + 2], this.prevScreen, EDGE_PX)) {
+          // Still: one segment a frame; the fading canvas builds the trail.
+          path.moveTo(this.prevScreen.x * ratio, this.prevScreen.y * ratio);
+          path.lineTo(this.screen.x * ratio, this.screen.y * ratio);
+        }
+        s.last[L] = p.x;
+        s.last[L + 1] = p.y;
+        s.last[L + 2] = p.z;
+        s.lastOk[i] = 1;
+        if (record) {
+          const h = (i * HISTORY + slot) * 3;
+          s.hist[h] = p.x;
+          s.hist[h + 1] = p.y;
+          s.hist[h + 2] = p.z;
+          s.histN[i] = Math.min(n + 1, HISTORY);
+        }
       }
-      paths.forEach((p, b) => {
+      paths.forEach((path, b) => {
         g.strokeStyle = style.colours[b];
-        g.stroke(p);
+        g.stroke(path);
       });
     }
   };
@@ -306,18 +367,60 @@ export class FlowOverlay {
                   south: d(r.south) - padY, north: d(r.north) + padY };
   }
 
-  /** Screen position of a place, or false when it is behind the planet or off screen. */
-  private project(lon: number, lat: number, height: number, cam: Cartesian3, camLen: number,
-                  out: Cartesian2): boolean {
-    const p = Cartesian3.fromDegrees(lon, lat, height, undefined, this.scratch);
+  /**
+   * This frame's projection. In 3D a point is projected with the camera's own matrices,
+   * a few multiplications; Cesium's per-point helper cost too much for a trail of eight
+   * points on every particle. The 2D map projects the globe differently, so it keeps the
+   * helper (and short trails are fine there: the map does not fly).
+   */
+  private beginFrame(): void {
+    const camera = this.scene.camera;
+    this.direct = this.scene.mode === SceneMode.SCENE3D;
+    if (this.direct) {
+      Matrix4.multiply(camera.frustum.projectionMatrix, camera.viewMatrix, this.vp);
+    }
+    Cartesian3.clone(camera.positionWC, this.cam);
+    this.camLen = Cartesian3.magnitude(this.cam);
+    if (this.direct && !this.checked && import.meta.env.DEV) {
+      // Once, in development: the matrix path must land where Cesium's helper does.
+      this.checked = true;
+      const probe = Cartesian3.add(camera.positionWC,
+        Cartesian3.multiplyByScalar(camera.directionWC, 1000, new Cartesian3()), new Cartesian3());
+      const mine = new Cartesian2();
+      const theirs = SceneTransforms.worldToWindowCoordinates(this.scene, probe);
+      if (theirs && this.project(probe.x, probe.y, probe.z, mine)) {
+        console.assert(Math.hypot(mine.x - theirs.x, mine.y - theirs.y) < 1.5,
+          `flow: matrix projection off by ${mine.x - theirs.x}, ${mine.y - theirs.y} px`);
+      }
+    }
+  }
+
+  /** Window position of an Earth-fixed point, or false when behind the planet or off screen. */
+  private toScreen(x: number, y: number, z: number, out: Cartesian2, edge: number): boolean {
     // Behind the horizon: the angle between the point and the camera, seen from the
     // centre of the Earth, is larger than the horizon's.
-    const pLen = Cartesian3.magnitude(p);
-    const cosAngle = Cartesian3.dot(p, cam) / (pLen * camLen);
-    if (cosAngle < EARTH_RADIUS / camLen) return false;
-    const w = SceneTransforms.worldToWindowCoordinates(this.scene, p, out);
-    return !!w && w.x >= 0 && w.y >= 0 && w.x <= this.canvas.clientWidth &&
-      w.y <= this.canvas.clientHeight;
+    const c = this.cam;
+    const pLen = Math.sqrt(x * x + y * y + z * z);
+    if ((x * c.x + y * c.y + z * c.z) / (pLen * this.camLen) < EARTH_RADIUS / this.camLen) return false;
+    if (!this.project(x, y, z, out)) return false;
+    const w = this.canvas.clientWidth;
+    const h = this.canvas.clientHeight;
+    return out.x >= -edge && out.y >= -edge && out.x <= w + edge && out.y <= h + edge;
+  }
+
+  private project(x: number, y: number, z: number, out: Cartesian2): boolean {
+    if (!this.direct) {
+      const w = SceneTransforms.worldToWindowCoordinates(this.scene, new Cartesian3(x, y, z), out);
+      return !!w;
+    }
+    const m = this.vp;  // column-major
+    const cw = m[3] * x + m[7] * y + m[11] * z + m[15];
+    if (cw <= 0) return false;  // behind the camera
+    const cx = m[0] * x + m[4] * y + m[8] * z + m[12];
+    const cy = m[1] * x + m[5] * y + m[9] * z + m[13];
+    out.x = (cx / cw + 1) * 0.5 * this.canvas.clientWidth;
+    out.y = (1 - cy / cw) * 0.5 * this.canvas.clientHeight;
+    return true;
   }
 }
 

@@ -57,10 +57,10 @@ kept and opens at once.
   ocean and on the cube's top. Faster water is brighter. They show the flow on that one day;
   they are not the path a drifting object would take over time.
 - **Animated winds at 10 m** — amber streaks for the wind just above the sea, on the cube's
-  day at 12:00 UTC. It is measured (satellite scatterometers blended with the ECMWF
-  weather model), so it exists up to yesterday; for today or a forecast day the newest
-  wind is shown and the line under the switch says which day it is. White is water, amber
-  is air.
+  day at 12:00 UTC. Up to yesterday it is measured (satellite scatterometers blended with
+  the ECMWF weather model); for today and up to about two weeks ahead it is the NCEP GFS
+  forecast. The line under the switch says which one you are seeing. White is water,
+  amber is air.
 - **Particles** — how many streaks. Fewer is faster on a slow computer. Streaks are always
   spread over the part of the globe on screen, so a close-up or a low flight is as full as
   the view from space.
@@ -76,9 +76,16 @@ kept and opens at once.
 - **Sea state** — a yellow wash means a small boat should take care (waves of 1.25 m or
   more, or wind of 10.8 m/s, Beaufort 6); red means stay in (waves of 2.5 m or more, or wind
   of 13.9 m/s, Beaufort 7). Waves come from the Copernicus forecast, which runs ten days
-  ahead; wind is measured and ends yesterday. What is missing for the day is said.
+  ahead; wind is measured up to yesterday and the GFS forecast after that. What is missing
+  for the day is said.
 - **Spots** — the five best zone cells, at least half a degree apart, with their front
   strength, chlorophyll and sea state. **Go** flies there.
+- **Official INCOIS PFZ advisories (India)** — INCOIS's own Potential Fishing Zone
+  advisories, read from INCOIS as published, drawn as green dots. Each sector is listed
+  with how many points it has and until when they are valid, or why it has none (usually
+  cloud: the advisory needs a clear satellite view of the sea). Click a dot for its
+  advisory in words: distance, direction and bearing from the landing centre, depth, and
+  position. **Go** flies to a sector. For Indian waters these are the ones to follow.
 - For a trip, set the cube's day to today or a forecast day and draw the box around your
   coast. **This is indicative, not an INCOIS advisory.** Official Potential Fishing Zone
   advisories and ocean state warnings are at incois.gov.in; always follow harbour and IMD
@@ -200,6 +207,7 @@ the data are marked. It can also work the viewer for you:
 - **press buttons** (views, Draw a box, Look at it, Immersive, the cinematic tour),
 - **show you where a control is** — it rings it in orange for five seconds, opening the
   panel it is in, so you learn where it lives ("how do I draw my own box?"),
-- **find fishing spots** near a coast, with their sea state.
+- **find fishing spots**: INCOIS's official advisories for Indian coasts, and the
+  indicative zones with their sea state anywhere.
 
 Every change it makes is listed under its answer.

@@ -39,7 +39,7 @@ import { demo as cubeDataDemo } from "./cube/data";
 import { drawColumn } from "./cube/column";
 import { OceanLayer } from "./ocean";
 import { demo as flowDemo } from "./flow";
-import { FishingLayer, demo as fishingDemo } from "./fishing";
+import { FishingLayer, PfzMarkers, demo as fishingDemo, describePfz } from "./fishing";
 import { Immersive, demo as immersiveDemo } from "./immersive";
 import {
   EMPTY_SENTINEL, OPACITY_REFERENCE_DEPTH_M, OceanVoxelProvider, addVolume, applyRamp,
@@ -287,6 +287,12 @@ async function main(): Promise<void> {
   /** The whole ocean follows the cube: its variable, its day, its top face's depth. */
   function refreshOcean(): void {
     if (!cubeActive() || !cube.request || !cube.variable) return;
+    // Immersive has its own surface layers and no cube; a cube that finishes loading
+    // meanwhile waits for the workspace, which calls this again on exit.
+    if (immersive.active) {
+      cube.setVisible(false);
+      return;
+    }
     const top = cube.currentCut()!.top;
     void ocean.showSurface(cube.variable.key, cube.request.day, top, cube.style());
     const d = cube.data!;
@@ -361,7 +367,7 @@ async function main(): Promise<void> {
       void renderSection();
       refreshOcean();
     },
-    aim: () => void aimAtCube(),
+    aim: () => { if (!immersive.active) void aimAtCube(); },
     // Drawing a box needs the drag for itself. Turning the orbit camera off used to hand
     // the mouse back to Cesium's own controller, so the drag drew and moved the globe.
     navigation: (enabled) => {
@@ -1036,6 +1042,11 @@ async function main(): Promise<void> {
   handler.setInputAction(async (movement: { position: unknown }) => {
     const picked = viewer.scene.pick(movement.position as never);
     const entity = picked?.id;
+    const advisory = pfz.pointOf(picked);
+    if (advisory) {
+      status(describePfz(advisory.pfz, advisory.sector));
+      return;
+    }
     const cast = cubeActive() ? cube.castLayer.castOf(picked) : undefined;
     if (cast) {
       await showCubeProfile(cast);
@@ -1246,6 +1257,44 @@ async function main(): Promise<void> {
   });
   // The zones are painted on the sea surface, which the standing cube covers: they are
   // read on the flat map, where the cube is its own top face.
+  // INCOIS's own advisories: every sector, with its status (most days some are under cloud).
+  const pfz = new PfzMarkers(viewer, (ms) => graphics.kick(ms));
+  bind("pfz-on", "change", async (node) => {
+    const list = el("pfz-list");
+    if (!node.checked) {
+      pfz.hide();
+      list.replaceChildren();
+      return;
+    }
+    list.textContent = "reading INCOIS's advisories…";
+    let got: Awaited<ReturnType<typeof pfz.show>>;
+    try {
+      got = await pfz.show();
+    } catch (error) {
+      list.textContent = (error as Error).message;
+      return;
+    }
+    list.replaceChildren(...got.sectors.map((s) => {
+      const row = document.createElement("div");
+      row.className = "pfz-row";
+      const head = document.createElement("span");
+      head.innerHTML = `<b>${s.name}</b> · ${s.status === "ok" ? `${s.points.length} points` : s.status}`;
+      const note = document.createElement("span");
+      note.className = "hint";
+      note.textContent = s.status === "ok" ? `valid till ${s.valid_till ?? "?"}` : (s.note ?? "");
+      row.append(head, note);
+      if (s.points.length) {
+        const go = document.createElement("button");
+        go.className = "btn";
+        go.textContent = "Go";
+        const mid = (k: "lat" | "lon") => s.points.reduce((a, p) => a + p[k], 0) / s.points.length;
+        go.addEventListener("click", () => void flyTo(mid("lon"), mid("lat"), 400_000));
+        row.append(go);
+      }
+      return row;
+    }));
+    status(`INCOIS PFZ advisories: ${got.points} points, fetched ${got.fetched_utc}`);
+  });
   bind("fish-on", "change", async (node) => {
     if (node.checked && state.view !== "map" && !immersive.active) await setView("map");
     void refreshFishing();
@@ -1691,6 +1740,7 @@ async function main(): Promise<void> {
       await setView("globe");
       cube.setVisible(false);
       if (primitive) primitive.show = false;
+      viewer.entities.show = false;  // the Bay's float and glider markers
       fishing.setVisible(false);
       ocean.setVisible(true);
       ocean.flow.ignoreHoles = true;
@@ -1706,6 +1756,7 @@ async function main(): Promise<void> {
       if (!ocean.windOn) ocean.dropWind();
       if (!ocean.airOn) void ocean.showAir("");
       fishing.setVisible(true);
+      viewer.entities.show = true;
       await setView(viewBeforeImmersive);
       if (cubeActive() && viewBeforeImmersive === "region") await aimAtCube();
       refreshOcean();
@@ -1761,7 +1812,7 @@ async function main(): Promise<void> {
       bay_volume: showBay ? { layer: state.layer, depth_m: Math.round(sliceDepth()) } : null,
       open_profile: el("profile-panel").classList.contains("hidden")
         ? null : el("profile-title").textContent,
-      on: ["ocean-surface", "ocean-wind", "cube-wind", "ocean-air", "fish-on"]
+      on: ["ocean-surface", "ocean-wind", "cube-wind", "ocean-air", "fish-on", "pfz-on"]
         .filter((id) => el<HTMLInputElement>(id).checked),
     };
   };

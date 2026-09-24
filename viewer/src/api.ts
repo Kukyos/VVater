@@ -424,6 +424,23 @@ export async function getFishing(q: { lon0: number; lon1: number; lat0: number; 
   return response.json();
 }
 
+export interface PfzPoint {
+  coast: string; direction: string; bearing_deg: number; distance_km: [number, number];
+  depth_m: [number, number]; lat: number; lon: number;
+}
+
+export interface PfzSector {
+  sector: string; name: string; status: "ok" | "none" | "error"; note?: string;
+  valid_till: string | null; source: string; points: PfzPoint[];
+}
+
+/** INCOIS's own Potential Fishing Zone advisories, as published (server/ocean/pfz.py). */
+export async function getPfz(): Promise<{ fetched_utc: string; points: number; sectors: PfzSector[] }> {
+  const response = await fetch(`${BASE}/api/pfz`);
+  if (!response.ok) throw await failure(response, "INCOIS advisories unavailable");
+  return response.json();
+}
+
 /** The assistant (server/ocean/assistant.py). Actions are whitelisted server-side. */
 export interface ChatAction {
   action: string; view?: string; layer?: string; depth_m?: number;

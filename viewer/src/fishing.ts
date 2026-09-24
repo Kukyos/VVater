@@ -9,8 +9,8 @@
  */
 
 import {
-  ImageryLayer, Rectangle, SingleTileImageryProvider, TextureMagnificationFilter,
-  TextureMinificationFilter,
+  Cartesian3, Color, ImageryLayer, NearFarScalar, PointPrimitiveCollection, Rectangle,
+  SingleTileImageryProvider, TextureMagnificationFilter, TextureMinificationFilter,
 } from "@cesium/engine";
 import type { Viewer } from "@cesium/widgets";
 
@@ -98,10 +98,70 @@ export class FishingLayer {
   }
 }
 
+/**
+ * INCOIS's own advisory points (server/ocean/pfz.py), drawn as published: one green dot per
+ * point, carrying its sector, landing centre, bearing, distance, depth and validity.
+ */
+export class PfzMarkers {
+  private points = new PointPrimitiveCollection();
+  data?: Awaited<ReturnType<typeof api.getPfz>>;
+
+  constructor(viewer: Viewer, private kick: (ms?: number) => void) {
+    viewer.scene.primitives.add(this.points);
+  }
+
+  async show(): Promise<Awaited<ReturnType<typeof api.getPfz>>> {
+    this.data ??= await api.getPfz();
+    this.points.removeAll();
+    for (const sector of this.data.sectors) {
+      for (const p of sector.points) {
+        this.points.add({
+          position: Cartesian3.fromDegrees(p.lon, p.lat, 0),
+          color: Color.fromCssColorString("#3de0b0"),
+          outlineColor: Color.fromCssColorString("#06201a"), outlineWidth: 1.5,
+          pixelSize: 8, scaleByDistance: new NearFarScalar(2e5, 1.4, 8e6, 0.6),
+          disableDepthTestDistance: Number.POSITIVE_INFINITY,
+          id: { pfz: p, sector },
+        });
+      }
+    }
+    this.points.show = true;
+    this.kick(500);
+    return this.data;
+  }
+
+  hide(): void {
+    this.points.show = false;
+    this.kick();
+  }
+
+  /** The advisory point under a pick, if it is one of ours. */
+  pointOf(picked: unknown): { pfz: api.PfzPoint; sector: api.PfzSector } | undefined {
+    const id = (picked as { id?: { pfz?: api.PfzPoint; sector?: api.PfzSector } } | undefined)?.id;
+    return id?.pfz && id.sector ? { pfz: id.pfz, sector: id.sector } : undefined;
+  }
+}
+
+/** One advisory point in words, the way INCOIS gives it to a fisherman. */
+export function describePfz(p: api.PfzPoint, s: api.PfzSector): string {
+  const ns = p.lat >= 0 ? "N" : "S";
+  const ew = p.lon >= 0 ? "E" : "W";
+  return `INCOIS PFZ, ${s.name}: ${p.distance_km[0]}-${p.distance_km[1]} km ${p.direction} ` +
+    `(${p.bearing_deg}°) of ${p.coast}, depth ${p.depth_m[0]}-${p.depth_m[1]} m, ` +
+    `${Math.abs(p.lat).toFixed(3)}°${ns} ${Math.abs(p.lon).toFixed(3)}°${ew}` +
+    (s.valid_till ? `, valid till ${s.valid_till}` : "");
+}
+
 /** The byte decoding, checked once in development. */
 export function demo(): void {
   console.assert(cellColour(255)[3] === 0, "fishing: land is transparent");
   console.assert(cellColour(1 | (2 << 1)) === ZONE, "fishing: a zone shows as a zone whatever the sea");
   console.assert(cellColour(2 << 1)[0] === 255 && cellColour(2 << 1)[1] === 95, "fishing: stay in is red");
   console.assert(cellColour(0)[3] === 0, "fishing: fit water has no wash");
+  const line = describePfz(
+    { coast: "Jakhau", direction: "SW", bearing_deg: 250, distance_km: [46, 51], depth_m: [16, 21],
+      lat: 23.1242, lon: 68.2381 },
+    { sector: "SEC001", name: "Gujarat", status: "ok", valid_till: "25 SEP 2026", source: "", points: [] });
+  console.assert(line.includes("46-51 km SW (250°) of Jakhau") && line.includes("23.124°N"),
+    `fishing: advisory in words (${line})`);
 }
