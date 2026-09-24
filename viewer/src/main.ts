@@ -33,7 +33,6 @@ import { captionFor, drawProfile } from "./profile";
 import { Graphics, TIER_ORDER, type TierName } from "./settings";
 import { demo as sectionDemo, sectionCanvas, surfaceCanvas } from "./section";
 import { FlightCamera, OrbitCamera, demo as cameraDemo, typingInto } from "./camera";
-import { SimpleUI } from "./simple";
 import { ChatPanel } from "./chat";
 import {
   EMPTY_SENTINEL, OPACITY_REFERENCE_DEPTH_M, OceanVoxelProvider, addVolume, applyRamp,
@@ -77,8 +76,6 @@ interface State {
   range: [number, number];
   volumeMeta?: VolumeMeta;
   view: ViewName;
-  /** Simple: the whole ocean, one surface layer. Advanced: the Bay volume and instruments. */
-  mode: "simple" | "advanced";
   /** The loaded volume's channels, kept for the 2D section. */
   values?: Float32Array;
   errors?: Float32Array | null;
@@ -202,9 +199,7 @@ async function main(): Promise<void> {
       // Straight down from far enough that the whole disk fits the viewport.
       controller.maximumZoomDistance = 40_000_000;
       viewer.camera.setView({
-        // Further out in Simple: no docks, a taller viewport, and the whole disk is the picture.
-        destination: Cartesian3.fromDegrees(centreLon, centreLat,
-          state.mode === "simple" ? 20_000_000 : 12_500_000),
+        destination: Cartesian3.fromDegrees(centreLon, centreLat, 12_500_000),
         orientation: { heading: 0, pitch: CesiumMath.toRadians(-90), roll: 0 },
       });
     }
@@ -232,7 +227,6 @@ async function main(): Promise<void> {
     isoValue: 20,
     range: [0, 30],
     view: "region",
-    mode: "advanced",
   };
 
   let primitive: ReturnType<typeof addVolume> | undefined;
@@ -295,7 +289,7 @@ async function main(): Promise<void> {
 
   /** Put the lines at their depth in the current exaggeration. No request. */
   function placeStreamlines(): void {
-    if (!state.showCurrents || !streamData || state.mode === "simple") {
+    if (!state.showCurrents || !streamData) {
       streamlineLayer.hide();
       return;
     }
@@ -386,7 +380,7 @@ async function main(): Promise<void> {
     shader = makeOceanShader(volumeMeta, state.paletteId, state.reversed);
     primitive = addVolume(viewer.scene, provider, shader);
     // Cesium's voxels are 3D-only; the map shows the section instead.
-    primitive.show = state.view !== "map" && state.mode === "advanced";
+    primitive.show = state.view !== "map";
     // Nearest, not interpolated, for the residual: its filled bins sit among empty (NaN)
     // ones, and interpolating toward a NaN neighbour turns most of a bin into NaN, so
     // each measurement rendered as a sliver. A bin is a bin; it should look like one.
@@ -518,11 +512,9 @@ async function main(): Promise<void> {
   }
 
   /**
-   * Whole-Earth surface layers (server/ocean/globalsurface.py). In Advanced they are the
-   * surface temperature around the Bay, on the field's own colour scale, for the date the
-   * time slider is on, fading out before the box so the surface gives way to the volume
-   * instead of meeting it at a hard line. In Simple they are the whole picture, each layer
-   * on its own scale, with land drawn flat from the data's own mask.
+   * Whole-Earth surface temperature (server/ocean/globalsurface.py) around the Bay, on the
+   * field's own colour scale, for the date the time slider is on, fading out before the box
+   * so the surface gives way to the volume instead of meeting it at a hard line.
    */
   type GlobalData = Awaited<ReturnType<typeof api.getGlobalSurface>>;
   let globalLayer: ImageryLayer | undefined;
@@ -530,7 +522,6 @@ async function main(): Promise<void> {
   let globalTicket = 0;
   let globalDays: string[] = [];
   const globalCache = new Map<string, Promise<GlobalData>>();
-  const LAND: [number, number, number] = [0.84, 0.86, 0.89];
 
   function loadGlobal(layer: string, day: string): Promise<GlobalData> {
     const key = `${layer}|${day}`;
@@ -554,24 +545,16 @@ async function main(): Promise<void> {
   async function renderGlobal(): Promise<void> {
     const ticket = ++globalTicket;
     const m = state.volumeMeta;
-    let layer: string;
-    let day: string;
-    if (state.mode === "simple" && simple) {
-      layer = simple.layer;
-      day = simple.day;
-    } else {
-      const date = meta.times[state.timeIndex].slice(0, 10);
-      // In Map 2D too: the section fills the box, the world's surface surrounds it.
-      const wanted = el<HTMLInputElement>("global-sst").checked &&
-        state.layer === "field" && state.variable === "temperature" && !!m &&
-        globalDays.includes(date);
-      if (!wanted) {
-        clearGlobal();
-        renderHud();
-        return;
-      }
-      layer = "temperature";
-      day = date;
+    const layer = "temperature";
+    const day = meta.times[state.timeIndex].slice(0, 10);
+    // In Map 2D too: the section fills the box, the world's surface surrounds it.
+    const wanted = el<HTMLInputElement>("global-sst").checked &&
+      state.layer === "field" && state.variable === "temperature" && !!m &&
+      globalDays.includes(day);
+    if (!wanted) {
+      clearGlobal();
+      renderHud();
+      return;
     }
     const pending = !globalCache.has(`${layer}|${day}`);
     if (pending) status(`loading the global ${layer.replace("_", " ")} layer for ${day}…`, "busy");
@@ -586,29 +569,23 @@ async function main(): Promise<void> {
     }
     if (ticket !== globalTicket) return;
     const g = data.meta;
-    const simpleMode = state.mode === "simple";
-    const canvas = simpleMode
-      ? surfaceCanvas(data.values, g.dimensions[0], g.dimensions[1], g.lonRange, g.latRange, {
-          paletteId: g.palette, reversed: false, range: g.valueRange, logScale: false,
-          errorWeight: 0, blocky: false,
-        }, { land: LAND })
-      : surfaceCanvas(data.values, g.dimensions[0], g.dimensions[1], g.lonRange, g.latRange, {
-          paletteId: state.paletteId, reversed: state.reversed, range: state.range,
-          logScale: state.logScale, errorWeight: 0, blocky: false,
-        // 5 degrees in 3D, where the surface gives way to a volume seen at an angle; 1 on
-        // the map, which frames the box with only a few degrees to spare.
-        }, { hole: { lon: m!.lonRange, lat: m!.latRange },
-             featherDeg: state.view === "map" ? 1 : 5 });
+    const canvas = surfaceCanvas(data.values, g.dimensions[0], g.dimensions[1], g.lonRange,
+      g.latRange, {
+        paletteId: state.paletteId, reversed: state.reversed, range: state.range,
+        logScale: state.logScale, errorWeight: 0, blocky: false,
+      // 5 degrees in 3D, where the surface gives way to a volume seen at an angle; 1 on
+      // the map, which frames the box with only a few degrees to spare.
+      }, { hole: { lon: m!.lonRange, lat: m!.latRange },
+           featherDeg: state.view === "map" ? 1 : 5 });
     const provider = await SingleTileImageryProvider.fromUrl(canvas.toDataURL(), {
       rectangle: Rectangle.fromDegrees(g.lonRange[0], g.latRange[0], g.lonRange[1], g.latRange[1]),
     });
     if (ticket !== globalTicket) return;
     const previous = globalLayer;
     globalLayer = viewer.imageryLayers.addImageryProvider(provider);
-    globalLayer.alpha = simpleMode ? 1 : 0.9;
+    globalLayer.alpha = 0.9;
     lastGlobal = g;
     if (previous) viewer.imageryLayers.remove(previous);
-    if (simpleMode) simple?.legend(g);
     if (pending) status(`${g.title} · ${g.provenance.day} · ${g.provenance.source}`);
     renderHud();
     graphics.kick(800);
@@ -666,7 +643,7 @@ async function main(): Promise<void> {
     const when = state.layer === "residual" && res
       ? `${res.casts} casts near ${meta.demoDate} vs analysis ${res.analysis_steps.join(" & ")}`
       : meta.times[state.timeIndex].slice(0, 10);
-    const g = state.mode === "advanced" && lastGlobal?.provenance;
+    const g = lastGlobal?.provenance;
     el("hud").innerHTML = [
       `<b>${VIEW_TITLES[state.view]}</b> · ${state.variable}` +
         (state.layer === "residual" ? " · residual, observed − analysis" : ""),
@@ -707,12 +684,10 @@ async function main(): Promise<void> {
       scene.morphTo3D(0);
       await morphed;
     }
-    const advanced = state.mode === "advanced";
-    if (primitive) primitive.show = view !== "map" && advanced;
-    // A flat map has no underside to look through, so the surface goes opaque there; the
-    // Simple globe has no volume under it to see.
+    if (primitive) primitive.show = view !== "map";
+    // A flat map has no underside to look through, so the surface goes opaque there.
     scene.globe.translucency.enabled =
-      view !== "map" && advanced && scene.globe.translucency.frontFaceAlpha < 1;
+      view !== "map" && scene.globe.translucency.frontFaceAlpha < 1;
     homeCamera(view);
     if (view === "region") orbit.enable();
     placeStreamlines();
@@ -1234,51 +1209,12 @@ async function main(): Promise<void> {
     syncGraphicsPanel();
   }
 
-  // ---- modes ---------------------------------------------------------------
-
-  let simple: SimpleUI | undefined;
-
-  /**
-   * Simple is the whole ocean on a globe, one layer at a time, for a first look or an
-   * exhibition screen. Advanced is the Bay's volume with every instrument. They share one
-   * scene, so switching hides one set of primitives and shows the other; every loader keeps
-   * its ticket, so a response for the mode just left cannot draw into this one.
-   */
-  async function setMode(mode: "simple" | "advanced"): Promise<void> {
-    if (mode === "simple" && !simple) {
-      status("the Simple view needs the global layers, which are unavailable", "warn");
-      mode = "advanced";
-    }
-    state.mode = mode;
-    app.classList.toggle("simple", mode === "simple");
-    el("mode-simple").classList.toggle("on", mode === "simple");
-    el("mode-advanced").classList.toggle("on", mode === "advanced");
-    try {
-      localStorage.setItem("vvater.mode", mode);
-    } catch {
-      // Storage unavailable: the mode still switches, it is just not remembered.
-    }
-    simple?.setPlaying(false);
-    setPlaying(false);
-    // Simple draws land from the data's own mask; the blurry basemap would sit under it.
-    if (basemap) basemap.show = mode === "advanced";
-    // The ground haze washes a surface field towards white; Simple is all surface field.
-    graphics.apply();
-    if (mode === "simple") viewer.scene.globe.showGroundAtmosphere = false;
-    viewer.entities.show = mode === "advanced";
-    clearGlobal();
-    placeChat();
-    await setView(mode === "simple" ? "globe" : "region");
-    viewer.resize();
-  }
-
   // ---- assistant ----------------------------------------------------------
 
   /** What the assistant is told the user is looking at, so "here" and "this" resolve. */
   const chatContext = () => {
     const c = viewer.camera.positionCartographic;
     return {
-      mode: state.mode,
       view: state.view,
       variable: state.variable,
       layer: state.layer,
@@ -1287,8 +1223,6 @@ async function main(): Promise<void> {
       slice_depth_m: Math.round(sliceDepth()),
       open_profile: el("profile-panel").classList.contains("hidden")
         ? null : el("profile-title").textContent,
-      simple_layer: simple?.layer,
-      simple_day: simple?.day,
       camera: {
         lat: +CesiumMath.toDegrees(c.latitude).toFixed(2),
         lon: +CesiumMath.toDegrees(c.longitude).toFixed(2),
@@ -1303,21 +1237,11 @@ async function main(): Promise<void> {
       // Checked again here: the browser applies only what it recognises, clamped.
       const clamp = (v: number | undefined, lo: number, hi: number) =>
         Math.min(Math.max(Number(v), lo), hi);
-      const advanced = async () => { if (state.mode === "simple") await setMode("advanced"); };
-      if (a.action === "set_mode" && (a.mode === "simple" || a.mode === "advanced")) {
-        await setMode(a.mode);
-      } else if (a.action === "set_view" && ALL_VIEWS.includes(a.view as ViewName)) {
-        await advanced();
+      if (a.action === "set_view" && ALL_VIEWS.includes(a.view as ViewName)) {
         await setView(a.view as ViewName);
       } else if (a.action === "set_layer" && (a.layer === "field" || a.layer === "residual")) {
-        await advanced();
         await setLayer(a.layer);
-      } else if (a.action === "set_global_layer" && simple && a.layer) {
-        if (state.mode === "advanced") await setMode("simple");
-        document.querySelector<HTMLButtonElement>(
-          `#s-layers button[data-layer="${CSS.escape(a.layer)}"]`)?.click();
       } else if (a.action === "set_depth") {
-        await advanced();
         const depths = state.volumeMeta?.provenance.depth_grid.depths_m ?? [];
         const want = clamp(a.depth_m, 0, 2000);
         // The nearest level of the grid, never a raw index (hard rule 4).
@@ -1332,31 +1256,16 @@ async function main(): Promise<void> {
       } else if (a.action === "fly_to") {
         const lat = clamp(a.lat, -80, 80);
         const lon = clamp(a.lon, -180, 180);
-        if (state.mode === "simple") {
-          viewer.camera.flyTo({ destination: Cartesian3.fromDegrees(lon, lat, 9_000_000) });
-        } else {
-          if (state.view !== "region") await setView("region");
-          orbit.lookAt(lon, lat, 900_000);
-        }
+        if (state.view !== "region") await setView("region");
+        orbit.lookAt(lon, lat, 900_000);
       } else if (a.action === "open_profile" && a.platform) {
-        await advanced();
         await showProfile(a.platform);
       } else if (a.action === "isotherm_20") {
-        await advanced();
         el("preset-d20").click();
       }
     },
   });
-
-  /** One panel, moved to wherever the current mode keeps it. */
-  function placeChat(): void {
-    el(state.mode === "simple" ? "s-chat" : "chat-dock").append(assistant.root);
-  }
-  el("s-ask").addEventListener("click", () => el("s-chat").classList.toggle("hidden"));
-
-  el("mode-simple").addEventListener("click", () => void setMode("simple"));
-  el("mode-advanced").addEventListener("click", () => void setMode("advanced"));
-  el("s-dive").addEventListener("click", () => void setMode("advanced"));
+  el("chat-dock").append(assistant.root);
 
   // ---- workspace: docks, views, keys, cursor ------------------------------
 
@@ -1431,8 +1340,7 @@ async function main(): Promise<void> {
   if (import.meta.env.DEV) {
     (window as unknown as Record<string, unknown>).vvater = {
       viewer, state, graphics, getPrimitive: () => primitive, getShader: () => shader,
-      setView, setDock, showProfile, setLayer, homeCamera, setMode, getSimple: () => simple,
-      orbit, flight,
+      setView, setDock, showProfile, setLayer, homeCamera, orbit, flight,
     };
   }
 
@@ -1443,21 +1351,11 @@ async function main(): Promise<void> {
     await loadObservations();
     bindGraphicsPanel();
     try {
-      const catalogue = await api.getGlobalLayers();
-      globalDays = catalogue.days;
-      simple = new SimpleUI(catalogue.layers, catalogue.days, meta.demoDate, () => renderGlobal());
+      globalDays = (await api.getGlobalLayers()).days;
     } catch (error) {
       status(`global layers unavailable: ${(error as Error).message}`, "warn");
     }
-    // A first visit opens on the Simple globe; a returning visitor gets the mode they left
-    // in. ?mode=advanced in the address overrides both.
-    let startMode: string | null = new URLSearchParams(location.search).get("mode");
-    try {
-      startMode ??= localStorage.getItem("vvater.mode");
-    } catch {
-      // Storage unavailable: first-visit behaviour.
-    }
-    await setMode(startMode === "advanced" ? "advanced" : "simple");
+    await setView("region");
     // Tuned against the real scene, after the volume is on screen. A saved manual
     // choice is respected; "auto" re-measures every start, because the same browser
     // profile can be on a laptop's integrated GPU today and a monitor tomorrow.

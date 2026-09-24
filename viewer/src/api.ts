@@ -223,7 +223,7 @@ export async function getGlobalSurface(layer: string, day: string):
 
 /** The assistant (server/ocean/assistant.py). Actions are whitelisted server-side. */
 export interface ChatAction {
-  action: string; view?: string; mode?: string; layer?: string; depth_m?: number;
+  action: string; view?: string; layer?: string; depth_m?: number;
   lat?: number; lon?: number; platform?: string;
 }
 

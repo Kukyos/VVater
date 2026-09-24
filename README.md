@@ -9,16 +9,10 @@ that test it can be seen, and compared, together. No install, no plug-in, no acc
 
 ![The workspace: the Bay of Bengal volume cut at 93 m, currents at that depth, every float, and the assistant comparing one float with the model](submission/sih/figures/shot-workspace.png)
 
-## Two modes
+## Views
 
-**Simple** — the whole ocean on a globe, one layer at a time (sea surface temperature,
-salinity, current speed, sea surface height, mixed layer depth, sea ice), a colour bar and a
-timeline. For a first look, an exhibition screen or a classroom.
-
-![Simple mode: global sea surface temperature on a globe with a layer list, colour bar and timeline](submission/sih/figures/shot-simple.png)
-
-**Advanced** — the Bay of Bengal as a volume, 5–2,000 m, with the instruments, the controls
-and the inspector. Four views of the same data:
+The Bay of Bengal as a volume, 5–2,000 m, with the instruments, the controls and the
+inspector. Four views of the same data:
 
 | Region 3D | Map 2D |
 |---|---|
@@ -41,7 +35,7 @@ and the inspector. Four views of the same data:
   layer. Only a few percent of the volume was ever measured; the rest stays visibly empty.
 - **Cyclone heat potential** — every comparison is also given in kJ/cm².
 - **Currents** — streamlines at the slice depth, integrated on the server.
-- **The world around it** — global surface layers at 1/4°, on the Bay's timeline.
+- **The world around it** — global sea-surface temperature at 1/4°, on the Bay's timeline.
 - **Assistant** — ask about the data or any control in plain words. It answers through the
   same functions the API serves, every number it states is checked against the data it came
   from, and it can move the view for you (set a depth, open a float, switch views).

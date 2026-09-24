@@ -12,8 +12,8 @@ export interface ChatHooks {
   apply: (action: ChatAction) => Promise<void>;
 }
 
-const ALLOWED = new Set(["set_view", "set_mode", "set_layer", "set_global_layer", "set_depth",
-  "fly_to", "open_profile", "isotherm_20"]);
+const ALLOWED = new Set(["set_view", "set_layer", "set_depth", "fly_to", "open_profile",
+  "isotherm_20"]);
 
 const SUGGESTIONS = [
   "How warm is the water at 100 m in the middle of the Bay?",

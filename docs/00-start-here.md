@@ -50,11 +50,9 @@ depth-vs-variable chart per cast with QC and provenance.
 the cursor's latitude and longitude. Both docks retract to a rail (`[` and `]`, or the
 chevrons); the viewport follows its grid cell.
 
-**Two modes.** *Simple* is the whole ocean on a globe, one surface layer at a time
-(temperature, salinity, current speed, sea surface height, mixed layer depth, sea ice), a
-vertical colour bar and a timeline over the Bay's analysis dates — the outreach view. It is
-the first thing a new visitor sees; `?mode=advanced` skips it. *Advanced* is everything
-below. Both share one scene; switching hides one set of layers and shows the other.
+**Simple mode was removed on 2026-09-24.** It was a surface picture on a globe, the same
+thing Copernicus MyOcean already does better. The v2 rebuild (branch `v2`) replaces it with
+a global 3D ocean you can cut into; this page is rewritten when that lands.
 
 **Assistant** (`server/ocean/assistant.py`, `viewer/src/chat.ts`): questions about the data
 or the viewer, answered by a Groq-hosted model that can only reach the data through tools
@@ -85,8 +83,7 @@ each view's home camera):
 - **Map 2D** — Cesium's 2D mode. The voxel primitive is 3D-only, so the map shows the
   depth slice as a flat section, coloured by the same ramp from the values already in
   memory (`viewer/src/section.ts`).
-- **Globe** — the whole Earth, region in the middle. Around the box, in every Advanced
-  view, the **global sea-surface temperature** for the analysis date on the slider
+- **Globe** — the whole Earth, region in the middle. Around the box, in every view, the **global sea-surface temperature** for the analysis date on the slider
   (Copernicus 1/4° GLORYS12 member, 0.51 m, native resolution;
   `server/ocean/globalsurface.py`), on the field's own colour scale, fading to nothing over
   5° before the box (1° on the map) so the surface gives way to the volume instead of

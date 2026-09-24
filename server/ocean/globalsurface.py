@@ -1,9 +1,8 @@
-"""Global surface fields: the whole-Earth layers behind the Globe and the Simple view.
+"""Global surface fields: the whole-Earth sea surface around the Bay in every view.
 
-The volume, the observations and the residual are all Bay of Bengal. Doing them for the
-whole ocean is a different project (tiling, streaming, a global Argo index). What a
-globe needs is much smaller: the ocean's surface state on each date the Bay's timeline
-steps through, so the region sits inside the world and the Simple view can animate it.
+The volume, the observations and the residual are all Bay of Bengal. What the globe needs
+around them is much smaller: the ocean's surface state on each date the Bay's timeline
+steps through, so the region sits inside the world.
 
 Source: Copernicus GLOBAL_MULTIYEAR_PHY_ENS_001_031, dataset
 `cmems_mod_glo_phy-all_my_0.25deg_P1D-m`, the `_glor` members (GLORYS12 regridded to

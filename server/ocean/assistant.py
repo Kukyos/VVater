@@ -35,7 +35,7 @@ from typing import Callable
 
 import numpy as np
 
-from . import config
+from . import config, globalsurface
 
 ROOT = Path(__file__).resolve().parents[2]
 GUIDE = ROOT / "docs" / "17-user-guide.md"
@@ -53,9 +53,7 @@ class AssistantUnavailable(RuntimeError):
 # ------------------------------------------------------------------ UI actions
 
 VIEWS = {"region", "map", "globe", "fly"}
-MODES = {"simple", "advanced"}
 LAYERS = {"field", "residual"}
-GLOBAL_LAYERS = {"temperature", "salinity", "currents", "sea_level", "mixed_layer", "sea_ice"}
 
 
 def check_action(action: str, args: dict) -> dict | None:
@@ -64,11 +62,7 @@ def check_action(action: str, args: dict) -> dict | None:
     try:
         if action == "set_view" and args.get("view") in VIEWS:
             return {"action": action, "view": args["view"]}
-        if action == "set_mode" and args.get("mode") in MODES:
-            return {"action": action, "mode": args["mode"]}
         if action == "set_layer" and args.get("layer") in LAYERS:
-            return {"action": action, "layer": args["layer"]}
-        if action == "set_global_layer" and args.get("layer") in GLOBAL_LAYERS:
             return {"action": action, "layer": args["layer"]}
         if action == "set_depth":
             return {"action": action, "depth_m": num("depth_m", 0, 2000)}
@@ -247,7 +241,7 @@ TOOLS: dict[str, tuple[Callable[..., dict], dict]] = {
         "description": "Global sea-surface value anywhere on Earth (temperature, salinity, "
                        "currents speed, sea_level, mixed_layer depth, sea_ice).",
         "parameters": {"type": "object", "properties": {
-            "layer": {"type": "string", "enum": sorted(GLOBAL_LAYERS)},
+            "layer": {"type": "string", "enum": sorted(globalsurface.LAYERS)},
             "lat": {"type": "number"}, "lon": {"type": "number"},
             "day": {"type": "string"}}, "required": ["layer", "lat", "lon"]}}),
     "user_guide": (tool_user_guide, {
@@ -258,12 +252,11 @@ TOOLS: dict[str, tuple[Callable[..., dict], dict]] = {
     "ui_action": (tool_ui_action, {
         "description": "Propose a change to the viewer, applied when the user's browser "
                        "receives the answer. set_view{view: region|map|globe|fly}, "
-                       "set_mode{mode: simple|advanced}, set_layer{layer: field|residual}, "
-                       "set_global_layer{layer}, set_depth{depth_m}, fly_to{lat, lon}, "
-                       "open_profile{platform}, isotherm_20{}.",
+                       "set_layer{layer: field|residual}, set_depth{depth_m}, "
+                       "fly_to{lat, lon}, open_profile{platform}, isotherm_20{}.",
         "parameters": {"type": "object", "properties": {
             "action": {"type": "string"}, "view": {"type": "string"},
-            "mode": {"type": "string"}, "layer": {"type": "string"},
+            "layer": {"type": "string"},
             "depth_m": {"type": "number"}, "lat": {"type": "number"},
             "lon": {"type": "number"}, "platform": {"type": "string"}},
             "required": ["action"]}}),
@@ -417,7 +410,7 @@ def demo() -> None:
     assert check_action("set_depth", {"depth_m": 99999}) == {"action": "set_depth", "depth_m": 2000.0}
     assert check_action("run_shell", {}) is None
     assert check_action("set_view", {"view": "space"}) is None
-    assert "Views (Advanced; keys 1 to 4)" in tool_user_guide("fly")["sections"]
+    assert "Views (keys 1 to 4)" in tool_user_guide("fly")["sections"]
     print("assistant demo ok")
 
 

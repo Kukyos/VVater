@@ -3,17 +3,7 @@
 What every control does and what every word on screen means. Written for someone who
 has never used an ocean data tool. The in-app assistant answers from this page.
 
-## Two modes
-
-- **Simple** — the whole ocean on a globe, one layer at a time: sea surface temperature,
-  salinity, current speed, sea surface height, mixed layer depth, sea ice. A colour bar on
-  the right gives the value of each colour; the timeline at the bottom steps through the
-  dates, and ▶ plays them. Surface only. *Dive into the Bay of Bengal in 3D* switches to
-  Advanced.
-- **Advanced** — the Bay of Bengal as a 3D volume, 5 to 2,000 m deep, with every float and
-  glider, the controls on the left and the inspector on the right.
-
-## Views (Advanced; keys 1 to 4)
+## Views (keys 1 to 4)
 
 - **Region 3D** (1) — the working view. Drag to orbit, Shift- or right-drag to pan, scroll
   to zoom. Keyboard: **W A S D** move, **Q E** turn, **R F** zoom in and out, **↑ ↓** tilt.
@@ -27,7 +17,7 @@ has never used an ocean data tool. The in-app assistant answers from this page.
 
 Panels fold away with **[** and **]**.
 
-## Layers (Advanced)
+## Layers
 
 - **Analysis** — the model's best estimate of the ocean, from INCOIS: temperature or
   salinity at every grid cell and depth. An estimate, not a measurement.

@@ -168,47 +168,6 @@
   kbd { font: 10px ui-monospace, monospace; color: var(--muted); border: 1px solid var(--line);
     border-radius: 2px; padding: 0 3px; }
 
-  /* ---- simple mode: the globe, a layer list, a colour bar, a timeline */
-  #app.simple { --left: 0px; --right: 0px; }
-  #app.simple #left, #app.simple #right, #app.simple .adv, #app.simple #hud,
-  #app.simple #timeline, #app.simple #flight-hud { display: none !important; }
-  #app:not(.simple) #simple { display: none; }
-  #simple { position: absolute; inset: 0; pointer-events: none; color: #e8eef5; }
-  #simple > * { pointer-events: auto; position: absolute; }
-  #s-layers { left: 22px; top: 50%; transform: translateY(-50%); display: grid; gap: 2px; width: 250px; }
-  #s-layers button { display: flex; gap: 14px; align-items: center; background: none; border: 0;
-    border-bottom: 1px solid rgba(255,255,255,.08); padding: 12px 6px; text-align: left;
-    cursor: pointer; color: rgba(232,238,245,.45); }
-  #s-layers button:hover { color: rgba(232,238,245,.8); }
-  #s-layers button.on { color: #fff; }
-  #s-layers button.on svg { color: var(--accent); }
-  #s-layers svg { width: 30px; height: 30px; flex: none; }
-  #s-layers b { display: block; font-size: 15px; font-weight: 500; }
-  #s-layers i { display: block; font-style: normal; font-size: 9.5px; letter-spacing: .1em;
-    text-transform: uppercase; opacity: .6; margin-top: 2px; }
-  #s-legend { right: 22px; top: 50%; transform: translateY(-50%); display: grid;
-    grid-template-columns: auto 22px; gap: 4px 10px; padding: 14px 14px 12px;
-    background: rgba(14, 22, 30, .72); border: 1px solid rgba(255,255,255,.1); border-radius: 8px; }
-  #s-ticks { display: flex; flex-direction: column; justify-content: space-between;
-    font-size: 12px; text-align: right; font-variant-numeric: tabular-nums; }
-  #s-bar { width: 22px; height: 300px; border-radius: 3px; }
-  #s-units { grid-column: 1 / -1; text-align: right; font-size: 14px; font-weight: 600; margin-top: 6px; }
-  #s-time { left: 50%; transform: translateX(-50%); bottom: 22px; width: min(820px, calc(100% - 360px));
-    display: grid; grid-template-columns: auto auto auto 1fr auto; gap: 10px; align-items: center; }
-  #s-time > button { width: 34px; height: 34px; border-radius: 50%; border: 1px solid rgba(255,255,255,.25);
-    background: rgba(14,22,30,.7); color: #fff; cursor: pointer; font-size: 12px; }
-  #s-time > button:hover { border-color: var(--accent); }
-  #s-track { position: relative; padding-bottom: 16px; }
-  #s-months { position: absolute; left: 0; right: 0; bottom: 0; height: 14px; font-size: 10.5px;
-    color: rgba(232,238,245,.55); }
-  #s-months span { position: absolute; transform: translateX(-50%); }
-  #s-date { font-variant-numeric: tabular-nums; font-size: 15px; min-width: 104px; text-align: right; }
-  #s-note { left: 22px; bottom: 24px; max-width: 300px; font-size: 10.5px; color: rgba(232,238,245,.5);
-    line-height: 1.4; }
-  #s-dive { right: 22px; bottom: 22px; background: rgba(14,22,30,.72); color: #fff; cursor: pointer;
-    border: 1px solid var(--accent); border-radius: 18px; padding: 8px 16px; font-size: 12.5px; }
-  #s-dive:hover { background: var(--accent); color: var(--accent-ink); }
-
   /* ---- assistant */
   .chat { display: grid; gap: 8px; }
   .chat-log { max-height: 320px; overflow-y: auto; display: grid; gap: 8px; scrollbar-width: thin; }
@@ -227,13 +186,6 @@
   .chat-form { display: grid; grid-template-columns: 1fr auto; gap: 6px; }
   .chat-form textarea { resize: none; background: var(--field); border: 1px solid var(--seam);
     border-radius: 3px; color: var(--text); padding: 5px 7px; font: inherit; }
-  #s-ask { right: 22px; bottom: 70px; background: rgba(14,22,30,.72); color: #fff; cursor: pointer;
-    border: 1px solid rgba(255,255,255,.25); border-radius: 18px; padding: 8px 16px; font-size: 12.5px; }
-  #s-ask:hover { border-color: var(--accent); }
-  #s-chat { right: 120px; bottom: 116px; width: 360px; max-height: calc(100% - 170px); padding: 12px; background: rgba(20, 24, 30, .94);
-    border: 1px solid rgba(255,255,255,.12); border-radius: 8px; }
-  #s-chat.hidden { display: none; }
-  #app.simple #s-legend { top: 38%; }
 
   @media (max-width: 1400px) { .brand span { display: none; } }
   @media (max-width: 900px) {
@@ -247,25 +199,21 @@
 
   <header id="top">
     <div class="brand">VVater<span>3D ocean model &amp; in-situ observations · Bay of Bengal</span></div>
-    <div class="seg" role="group" aria-label="Mode">
-      <button id="mode-simple" title="The whole ocean, one layer at a time">Simple</button>
-      <button id="mode-advanced" class="on" title="The Bay of Bengal volume and every instrument">Advanced</button>
-    </div>
-    <span class="tag adv">View</span>
-    <div class="seg adv" role="group" aria-label="View">
+    <span class="tag">View</span>
+    <div class="seg" role="group" aria-label="View">
       <button id="view-region" class="on" title="Oblique 3D view of the region (1)">Region 3D</button>
       <button id="view-map" title="Flat map of the depth slice (2)">Map 2D</button>
       <button id="view-globe" title="Whole Earth, region in the centre (3)">Globe</button>
       <button id="view-fly" title="Fly over the surface at a fixed altitude (4)">Fly</button>
     </div>
-    <button id="reset-view" class="tool adv" title="Back to this view's home camera (Home)">Reset camera</button>
-    <span class="tag adv">Layer</span>
-    <div class="seg adv" role="group" aria-label="Layer">
+    <button id="reset-view" class="tool" title="Back to this view's home camera (Home)">Reset camera</button>
+    <span class="tag">Layer</span>
+    <div class="seg" role="group" aria-label="Layer">
       <button id="layer-field" class="on">Analysis</button>
       <button id="layer-residual">Residual vs observed</button>
     </div>
     <div class="spacer"></div>
-    <span id="view-hint" class="tag adv"><kbd>1</kbd>–<kbd>4</kbd> views · <kbd>WASD</kbd> move · <kbd>[</kbd> <kbd>]</kbd> docks</span>
+    <span id="view-hint" class="tag"><kbd>1</kbd>–<kbd>4</kbd> views · <kbd>WASD</kbd> move · <kbd>[</kbd> <kbd>]</kbd> docks</span>
   </header>
 
   <!-- ================================================================ properties -->
@@ -377,23 +325,6 @@
     <div id="globe"></div>
     <div id="hud"></div>
     <div id="flight-hud" class="hidden"></div>
-    <div id="simple">
-      <nav id="s-layers" aria-label="Layer"></nav>
-      <aside id="s-legend"><div id="s-ticks"></div><canvas id="s-bar" width="22" height="300"></canvas>
-        <div id="s-units"></div></aside>
-      <div id="s-time">
-        <button id="s-prev" title="Previous date">⏮</button>
-        <button id="s-play" title="Play">▶</button>
-        <button id="s-next" title="Next date">⏭</button>
-        <div id="s-track"><input type="range" id="s-day" min="0" max="1" step="1" aria-label="Date" />
-          <div id="s-months"></div></div>
-        <span id="s-date">—</span>
-      </div>
-      <div id="s-note"></div>
-      <button id="s-ask" title="Ask the assistant">Ask about the ocean</button>
-      <div id="s-chat" class="hidden"></div>
-      <button id="s-dive" title="Switch to the Advanced view of the Bay of Bengal">Dive into the Bay of Bengal in 3D →</button>
-    </div>
     <div id="timeline">
       <button id="play" class="btn">▶ Play</button>
       <input type="range" id="time" min="0" max="1" step="1" aria-label="Analysis time step" />
