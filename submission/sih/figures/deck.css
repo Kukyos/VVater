@@ -123,3 +123,6 @@ svg text { font-family: "IBM Plex Sans", sans-serif; }
 .novel { display: flex; flex-direction: column; }
 .novel h3 { color: var(--navy); font-size: 46px; margin: 0 0 14px; }
 .novel figcaption { font-size: 36px; }
+.points.big li { padding: 22px 0; font-size: 42px; }
+.points.big li span { font-size: 38px; }
+.risks td { font-size: 40px; padding-top: 30px; padding-bottom: 30px; }

@@ -266,93 +266,51 @@ def main() -> None:
     on screen, labelled.</p>
   </div>
   <div class="col" style="gap:22px">
-    <h2 style="margin:0">Stack — each choice against what we did not pick</h2>
-    <table>
-      <tr><th>Chosen</th><th>Instead of</th><th>Why</th></tr>
-      <tr><td>CesiumJS</td><td class="alt">Three.js, deck.gl</td><td class="why">A real globe with
-        correct geography, and a built-in voxel raymarcher; we wrote only the colour transfer
-        function. Three.js needs both hand-built; deck.gl has no volume layer.</td></tr>
-      <tr><td>TypeScript + Vite</td><td class="alt">React, Angular</td><td class="why">No UI framework,
-        on purpose: one Cesium canvas and a control panel. React or Angular would add a second
-        render loop beside Cesium's; typed ES modules do the job.</td></tr>
-      <tr><td>FastAPI</td><td class="alt">Flask, Django</td><td class="why">The science stack
-        (xarray, NumPy, TEOS-10) is Python; typed parameters and API docs come free; nothing
-        here needs Django's database layer.</td></tr>
-      <tr><td>xarray</td><td class="alt">PyNIO</td><td class="why">The brief names both; PyNIO is
-        archived and unmaintained, xarray is live and reads CF metadata.</td></tr>
-      <tr><td>Raw float32</td><td class="alt">JSON, OPeNDAP</td><td class="why">Bytes go straight
-        into a GPU texture with no parsing: one full INCOIS timestep is <b>{n2(field["float32_mb"])} MB</b>.</td></tr>
-      <tr><td>OGC WMS 1.3.0</td><td class="alt">only our own tiles</td><td class="why">The same layers
-        open in QGIS or any national portal, as the brief's open-standards clause asks.</td></tr>
-      <tr><td>Groq LLM + tools</td><td class="alt">a plain chatbot</td><td class="why">The model can
-        only answer through our own API functions; every number in a reply is checked against the
-        data it came from, and untraceable ones are flagged on screen.</td></tr>
-    </table>
-    <h2 style="margin:8px 0 0">How a volume is drawn</h2>
-    <ul class="points">
-      <li><b>Opacity per metre of water, not per sample</b><span>so a coarse and a fine grid of the same sea look the same</span></li>
-      <li><b>Depth levels spaced by √depth, never more than the source has</b><span>{levels} levels, 5–2000 m; inventing levels would invent a thermocline</span></li>
-      <li><b>New sensor = one parser function and one line of config</b><span>the same glider as CSV and as NetCDF gives {text["casts_identical"]} of {text["casts_netcdf"]} casts identical</span></li>
+    <h2 style="margin:0">What we used, and why</h2>
+    <ul class="points big">
+      <li><b>CesiumJS</b><span>a real 3D globe with a built-in volume renderer</span></li>
+      <li><b>TypeScript + Vite</b><span>the viewer; no heavy UI framework</span></li>
+      <li><b>Python: FastAPI + xarray</b><span>reads the NetCDF and text files the brief names</span></li>
+      <li><b>Raw float32 volumes</b><span>one full 3D timestep is {n2(field["float32_mb"])} MB, straight to the GPU</span></li>
+      <li><b>OGC WMS</b><span>the same layers open in QGIS or any national portal</span></li>
+      <li><b>Groq LLM + our own tools</b><span>the assistant can only answer through our data API</span></li>
     </ul>
+    <figure class="shot" style="margin-top:10px"><img src="shot-resid.png" style="height: 500px; object-fit: cover; object-position: 50% 45%">
+      <figcaption><b>Step 4 on screen:</b> each block is a place someone measured, coloured by
+      measured minus model (red warmer, blue colder). Unmeasured water stays empty.</figcaption></figure>
   </div>
 </div>
 """)
 
     # ============================================================ 4 feasibility
     page("body-feasibility", f"""
-<div class="stats" style="grid-template-columns: repeat(6, 1fr)">
-  <div class="stat"><b>{argo["profiles"]}</b><span>Argo profiles in the demo window, {argo["data_modes"]["D"]} scientist-checked (delayed mode)</span></div>
-  <div class="stat"><b>{glider["casts"]}</b><span>glider casts, {glider["levels"]:,} levels, from an independent instrument</span></div>
-  <div class="stat"><b>{n2(field["float32_mb"])} MB</b><span>one full 3D timestep, temperature and its error, as sent to the browser</span></div>
-  <div class="stat"><b>{res["build_seconds"]} s</b><span>to pair {res["casts"]} casts with the model and build the residual volume</span></div>
-  <div class="stat"><b>{cur["count"]}</b><span>current streamlines integrated in {int(float(cur["seconds"]) * 1000)} ms on the server</span></div>
-  <div class="stat"><b>{text["casts_identical"]}/{text["casts_netcdf"]}</b><span>casts identical read from CSV and from NetCDF — {text["levels_identical"]:,} levels</span></div>
+<div class="stats" style="grid-template-columns: repeat(3, 1fr); gap: 60px">
+  <div class="stat"><b>{argo["profiles"]} + {glider["casts"]}</b><span>Argo float profiles and glider casts, paired with the model</span></div>
+  <div class="stat"><b>{n2(field["float32_mb"])} MB</b><span>one full 3D timestep, as sent to the browser</span></div>
+  <div class="stat"><b>{res["build_seconds"]} s</b><span>to compare {res["casts"]} casts with the model and build the 3D error layer</span></div>
 </div>
-<div class="cols grow feas" style="grid-template-columns: 1180px 1fr 1.25fr; gap: 70px">
+<div class="cols grow feas" style="grid-template-columns: 1.1fr 1fr; gap: 110px">
   <div class="col" style="gap:14px">
     <h2 style="margin:0">Measured finding: model error by depth</h2>
-    {band_chart(bands, height=900)}
+    {band_chart(bands, width=2000, height=1230)}
     <div class="legend"><i style="background:#A9B2BE"></i>Argo (the model already used them)
       <i style="background:#1F4E79"></i>Glider (independent)</div>
-    <p style="font-size:35px" class="muted">Below 300 m model and instruments agree
-    ({n2(deep["argo"]["rmse"])} vs {n2(deep["glider"]["rmse"])} °C). In the top 300 m — the warm layer a
-    cyclone feeds on — the independent glider finds <b class="red">{n2(shallow["glider"]["rmse"])} °C</b>.
-    That is the gap this tool makes visible.</p>
-  </div>
-  <div class="col" style="gap:14px">
-    <h2 style="margin:0">Runs on what INCOIS has</h2>
-    <ul class="points">
-      <li><b>One Python process + static files</b><span>no database server, no container required</span></li>
-      <li><b>Any modern browser</b><span>no plug-in, no install, no account</span></li>
-      <li><b>No third-party service at demo time</b><span>offline basemap, no map-tile token, data cached after first fetch</span></li>
-      <li><b>INCOIS data needs no credentials</b><span>public ERDDAP; Copernicus is optional, for currents</span></li>
-      <li><b>Graphics tuned to the machine</b><span>four quality tiers, picked by measuring real frames at start-up</span></li>
-      <li><b>Every claim reproducible</b><span>one command regenerates every number on these slides</span></li>
-    </ul>
-    <h2 style="margin:10px 0 0">Model vs two instruments</h2>
-    <table>
-      <tr><th>Against</th><th>Casts</th><th>Bias</th><th>RMSE</th></tr>
-      <tr><td>Argo</td><td>{coloc["profiles_compared"]}</td><td>{signed(coloc["mean_bias_degC"], 2)} °C</td><td>{n2(coloc["mean_rmse_degC"])} °C</td></tr>
-      <tr><td>Glider</td><td>{coloc["glider_casts_compared"]}</td><td>{signed(coloc["glider_mean_bias_degC"], 2)} °C</td><td>{n2(coloc["glider_mean_rmse_degC"])} °C</td></tr>
-    </table>
-    <p class="muted" style="font-size:34px">Argo is a consistency check (the model assimilates it);
-    the glider is the independent test.</p>
+    <p style="font-size:38px" class="muted">Below 300 m the model and the instruments agree. In the
+    top 300 m — the warm layer a cyclone feeds on — the independent glider finds an error of
+    <b class="red">{n2(shallow["glider"]["rmse"])} °C</b>. VVater makes that gap visible.</p>
   </div>
   <div class="col" style="gap:14px">
     <h2 style="margin:0">Risks we hit, and what we did</h2>
-    <table>
+    <table class="risks">
       <tr><th>Risk</th><th>Handled by</th></tr>
-      <tr><td>Brief's data links are dead</td><td class="why">Both are <span class="mono">ftp://</span>; port 21 is blocked. Replaced with tested HTTPS mirrors.</td></tr>
-      <tr><td>Impossible values in the model</td><td class="why">{rng["failed"]} of {rng["checked_cells"]:,} cells fail the Argo range test; masked and counted, not drawn.</td></tr>
-      <tr><td>Files not quite CF-standard</td><td class="why">Units like <span class="mono">degs</span> read defensively; each assumption shown with the data.</td></tr>
-      <tr><td>Bad float levels</td><td class="why">{argo["levels_rejected"]} of {argo["levels"]:,} levels rejected by QC; drawn red, never dropped.</td></tr>
-      <tr><td>Volume API is experimental</td><td class="why">Cesium version pinned exactly; re-tested on each upgrade.</td></tr>
-      <tr><td>INCOIS TLS chain incomplete</td><td class="why">OS trust store, not disabled verification.</td></tr>
-      <tr><td>Grid too large for a browser</td><td class="why">Display-only block mean, factor recorded; depth never resampled up.</td></tr>
-      <tr><td>Copernicus needs an account</td><td class="why">INCOIS is the default and needs none; only currents use Copernicus.</td></tr>
-      <tr><td>Unknown GPUs at INCOIS</td><td class="why">Quality tiers, chosen by measuring real frames on that machine.</td></tr>
-      <tr><td>A cast with no model value</td><td class="why">Profile still drawn, with the reason printed; nothing filled in.</td></tr>
+      <tr><td>Brief's data links are dead</td><td class="why">Both are <span class="mono">ftp://</span> and blocked; replaced with tested HTTPS mirrors.</td></tr>
+      <tr><td>Bad float readings</td><td class="why">{argo["levels_rejected"]} of {argo["levels"]:,} levels fail QC; drawn red, never dropped.</td></tr>
+      <tr><td>Files not quite standard</td><td class="why">Odd units and axes read defensively; every fix recorded with the data.</td></tr>
+      <tr><td>Unknown GPUs at INCOIS</td><td class="why">Four quality tiers, picked by measuring real frames at start-up.</td></tr>
+      <tr><td>Copernicus needs an account</td><td class="why">INCOIS data needs none and is the default; Copernicus only adds currents.</td></tr>
     </table>
+    <div class="card" style="margin-top:14px"><h3>Runs on what INCOIS has</h3><p>One Python
+    process and static files. Any modern browser, no install, no account.</p></div>
   </div>
 </div>
 """)

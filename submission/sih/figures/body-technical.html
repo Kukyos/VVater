@@ -13,34 +13,18 @@
     on screen, labelled.</p>
   </div>
   <div class="col" style="gap:22px">
-    <h2 style="margin:0">Stack — each choice against what we did not pick</h2>
-    <table>
-      <tr><th>Chosen</th><th>Instead of</th><th>Why</th></tr>
-      <tr><td>CesiumJS</td><td class="alt">Three.js, deck.gl</td><td class="why">A real globe with
-        correct geography, and a built-in voxel raymarcher; we wrote only the colour transfer
-        function. Three.js needs both hand-built; deck.gl has no volume layer.</td></tr>
-      <tr><td>TypeScript + Vite</td><td class="alt">React, Angular</td><td class="why">No UI framework,
-        on purpose: one Cesium canvas and a control panel. React or Angular would add a second
-        render loop beside Cesium's; typed ES modules do the job.</td></tr>
-      <tr><td>FastAPI</td><td class="alt">Flask, Django</td><td class="why">The science stack
-        (xarray, NumPy, TEOS-10) is Python; typed parameters and API docs come free; nothing
-        here needs Django's database layer.</td></tr>
-      <tr><td>xarray</td><td class="alt">PyNIO</td><td class="why">The brief names both; PyNIO is
-        archived and unmaintained, xarray is live and reads CF metadata.</td></tr>
-      <tr><td>Raw float32</td><td class="alt">JSON, OPeNDAP</td><td class="why">Bytes go straight
-        into a GPU texture with no parsing: one full INCOIS timestep is <b>0.55 MB</b>.</td></tr>
-      <tr><td>OGC WMS 1.3.0</td><td class="alt">only our own tiles</td><td class="why">The same layers
-        open in QGIS or any national portal, as the brief's open-standards clause asks.</td></tr>
-      <tr><td>Groq LLM + tools</td><td class="alt">a plain chatbot</td><td class="why">The model can
-        only answer through our own API functions; every number in a reply is checked against the
-        data it came from, and untraceable ones are flagged on screen.</td></tr>
-    </table>
-    <h2 style="margin:8px 0 0">How a volume is drawn</h2>
-    <ul class="points">
-      <li><b>Opacity per metre of water, not per sample</b><span>so a coarse and a fine grid of the same sea look the same</span></li>
-      <li><b>Depth levels spaced by √depth, never more than the source has</b><span>24 levels, 5–2000 m; inventing levels would invent a thermocline</span></li>
-      <li><b>New sensor = one parser function and one line of config</b><span>the same glider as CSV and as NetCDF gives 222 of 222 casts identical</span></li>
+    <h2 style="margin:0">What we used, and why</h2>
+    <ul class="points big">
+      <li><b>CesiumJS</b><span>a real 3D globe with a built-in volume renderer</span></li>
+      <li><b>TypeScript + Vite</b><span>the viewer; no heavy UI framework</span></li>
+      <li><b>Python: FastAPI + xarray</b><span>reads the NetCDF and text files the brief names</span></li>
+      <li><b>Raw float32 volumes</b><span>one full 3D timestep is 0.55 MB, straight to the GPU</span></li>
+      <li><b>OGC WMS</b><span>the same layers open in QGIS or any national portal</span></li>
+      <li><b>Groq LLM + our own tools</b><span>the assistant can only answer through our data API</span></li>
     </ul>
+    <figure class="shot" style="margin-top:10px"><img src="shot-resid.png" style="height: 500px; object-fit: cover; object-position: 50% 45%">
+      <figcaption><b>Step 4 on screen:</b> each block is a place someone measured, coloured by
+      measured minus model (red warmer, blue colder). Unmeasured water stays empty.</figcaption></figure>
   </div>
 </div>
 </div></body></html>
