@@ -37,7 +37,7 @@ dashboard after the blueprint creates the service; they're deliberately not comm
 | `MALLOC_ARENA_MAX` | set in `render.yaml` | `2`. Keeps glibc from giving each of the 32 zarr reader threads its own memory arena. |
 | `ZARR_CONCURRENCY` | set in `render.yaml` | `8` (default 32). Fewer chunk reads in flight: slower cube loads, lower peak memory. |
 
-**Memory.** Measured locally over a realistic session (the Bay cube, whole ocean, winds,
+**Memory.** From an empty cache (as on Render after every deploy), `/api/catalog` plus one Bay temperature cube peaks at 233 MB; before the stores shared one boto3 client the catalog alone reached 582 MB and Render killed the process. Measured earlier, locally, over a realistic session (the Bay cube, whole ocean, winds,
 fishing zones, PFZ advisories, a second cube in the Gulf Stream, immersive): 126 MB idle,
 377 MB at peak. Render's free plan allows 512 MB. It fits, but each new cube adds to the
 caches: a long session with many different cubes can be restarted by Render for memory.

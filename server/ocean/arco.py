@@ -140,6 +140,12 @@ def _make_store_class():
             self._cache_dir = cache_dir
             self._forecast = forecast
 
+        def _get_session(self):
+            # The toolbox builds a boto3 client per store, about 12 MB each (every client
+            # loads the S3 service model again). All stores share one endpoint, and a boto3
+            # client is thread-safe, so one does for all of them.
+            return _shared_session(self._endpoint)
+
         async def get(self, key, prototype, byte_range=None):
             # Byte-range reads are not used by these stores (every chunk is read whole);
             # passing one through uncached keeps the cache simple and never wrong.
@@ -159,6 +165,22 @@ def _make_store_class():
             return buffer
 
     return CachedStore
+
+
+_session_lock = threading.Lock()
+
+
+@lru_cache(maxsize=None)
+def _shared_session_locked(endpoint: str):
+    from copernicusmarine.core_functions.sessions import ConfiguredBoto3Session
+
+    return ConfiguredBoto3Session(endpoint, ["GetObject", "HeadObject", "ListObjectsV2"])
+
+
+def _shared_session(endpoint: str):
+    # Building a boto3 client is not thread-safe; using one is.
+    with _session_lock:
+        return _shared_session_locked(endpoint)
 
 
 @lru_cache(maxsize=1)
