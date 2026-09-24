@@ -34,6 +34,9 @@ import { Graphics, TIER_ORDER, type TierName } from "./settings";
 import { demo as sectionDemo, sectionCanvas, surfaceCanvas } from "./section";
 import { FlightCamera, OrbitCamera, demo as cameraDemo, typingInto } from "./camera";
 import { ChatPanel } from "./chat";
+import { CubeController, formatValue, shiftDay } from "./cube/controller";
+import { demo as cubeDataDemo } from "./cube/data";
+import { drawColumn } from "./cube/column";
 import {
   EMPTY_SENTINEL, OPACITY_REFERENCE_DEPTH_M, OceanVoxelProvider, addVolume, applyRamp,
   makeOceanShader,
@@ -99,6 +102,7 @@ async function main(): Promise<void> {
   if (import.meta.env.DEV) {
     sectionDemo();
     cameraDemo();
+    cubeDataDemo();
   }
 
   const viewer = new Viewer("globe", {
@@ -168,11 +172,12 @@ async function main(): Promise<void> {
   const centreLat = (lat0 + lat1) / 2;
 
   // Region and Fly are driven by our own cameras (camera.ts); Globe and Map keep Cesium's.
-  const bounds = { lon: [lon0, lon1] as [number, number], lat: [lat0, lat1] as [number, number] };
-  const orbit = new OrbitCamera(viewer, bounds, {
+  const bayBounds = { lon: [lon0, lon1] as [number, number], lat: [lat0, lat1] as [number, number] };
+  const bayHome = {
     lon: centreLon, lat: centreLat, heading: 0,
     pitch: CesiumMath.toRadians(PITCH), range: HEIGHT / Math.sin(CesiumMath.toRadians(-PITCH)),
-  }, () => graphics.kick(250));
+  };
+  const orbit = new OrbitCamera(viewer, bayBounds, bayHome, () => graphics.kick(250));
   const flight = new FlightCamera(viewer, {
     // Steep enough to read the colours: at a glancing angle the volume's opacity integrates
     // along a very long path and the whole field turns one flat haze.
@@ -191,15 +196,21 @@ async function main(): Promise<void> {
       flight.disable();
       flight.enable();
     } else if (view === "map") {
-      controller.maximumZoomDistance = 9_000_000;
+      controller.maximumZoomDistance = 20_000_000;
+      const d = cubeActive() ? cube.data! : undefined;
+      const wrapLon = (v: number) => (v > 180 ? v - 360 : v);
       viewer.camera.setView({
-        destination: Rectangle.fromDegrees(lon0 - 3, lat0 - 2, lon1 + 3, lat1 + 2),
+        destination: d
+          ? Rectangle.fromDegrees(wrapLon(d.west - 3), d.south - 2, wrapLon(d.east + 3), d.north + 2)
+          : Rectangle.fromDegrees(lon0 - 3, lat0 - 2, lon1 + 3, lat1 + 2),
       });
     } else {
       // Straight down from far enough that the whole disk fits the viewport.
       controller.maximumZoomDistance = 40_000_000;
+      const d = cubeActive() ? cube.data! : undefined;
       viewer.camera.setView({
-        destination: Cartesian3.fromDegrees(centreLon, centreLat, 12_500_000),
+        destination: Cartesian3.fromDegrees(d ? (d.west + d.east) / 2 : centreLon,
+          d ? (d.south + d.north) / 2 : centreLat, 12_500_000),
         orientation: { heading: 0, pitch: CesiumMath.toRadians(-90), roll: 0 },
       });
     }
@@ -232,6 +243,13 @@ async function main(): Promise<void> {
   let primitive: ReturnType<typeof addVolume> | undefined;
   let shader: ReturnType<typeof makeOceanShader> | undefined;
   const streamlineLayer = new StreamlineLayer(viewer.scene);
+  /**
+   * The INCOIS analysis volume, drawn in place under the sea surface, is the v1 view and
+   * stays available for the Bay (its residual and co-location are the measured results).
+   * It is off by default: the Ocean Cube is the main view, and the two are never shown
+   * together, so the colour controls always describe exactly one thing on screen.
+   */
+  let showBay = false;
 
   // Render-on-demand plus a quality tier (settings.ts). Any control the user touches
   // asks for a frame; camera movement already does on its own.
@@ -240,6 +258,47 @@ async function main(): Promise<void> {
   orbit.enable();
   for (const type of ["input", "change", "click"]) {
     document.addEventListener(type, () => graphics.kick(), true);
+  }
+
+  // ---- the Ocean Cube: any water, any day, anywhere (cube/*.ts) -----------------
+
+  const cube = new CubeController({
+    viewer,
+    status,
+    kick: (ms) => graphics.kick(ms),
+    onLoaded: () => {
+      syncColourControls();
+      renderCubeProvenance();
+      syncCubeTimeline();
+      renderHud();
+      void renderSection();
+    },
+    aim: () => void aimAtCube(),
+    navigation: (enabled) => {
+      if (state.view !== "region") return;
+      if (enabled) orbit.enable(); else orbit.disable();
+    },
+  });
+  cube.onRepaint = () => {
+    renderHud();
+    placeMarkers();
+    if (state.view === "map") void renderSection();
+  };
+
+  /** Orbit the cube's middle, from the south-west, far enough to see all of it. */
+  async function aimAtCube(): Promise<void> {
+    if (!cube.data) return;
+    if (state.view !== "region") await setView("region");
+    const e = cube.scene.extent();
+    const d = cube.data;
+    const span = Math.max(e.widthM, e.heightM);
+    orbit.retarget(
+      { lon: [d.west, d.east], lat: [d.south, d.north] },
+      { lon: e.lon, lat: e.lat, heading: CesiumMath.toRadians(28),
+        pitch: CesiumMath.toRadians(-22), range: span * 1.6 },
+      { minRange: span * 0.15, maxRange: span * 6, targetHeight: e.mid },
+    );
+    graphics.kick(1500);
   }
 
   /**
@@ -289,7 +348,7 @@ async function main(): Promise<void> {
 
   /** Put the lines at their depth in the current exaggeration. No request. */
   function placeStreamlines(): void {
-    if (!state.showCurrents || !streamData) {
+    if (!state.showCurrents || !streamData || !showBay) {
       streamlineLayer.hide();
       return;
     }
@@ -380,7 +439,7 @@ async function main(): Promise<void> {
     shader = makeOceanShader(volumeMeta, state.paletteId, state.reversed);
     primitive = addVolume(viewer.scene, provider, shader);
     // Cesium's voxels are 3D-only; the map shows the section instead.
-    primitive.show = state.view !== "map";
+    primitive.show = state.view !== "map" && showBay;
     // Nearest, not interpolated, for the residual: its filled bins sit among empty (NaN)
     // ones, and interpolating toward a NaN neighbour turns most of a bin into NaN, so
     // each measurement rendered as a sliver. A bin is a bin; it should look like one.
@@ -469,8 +528,12 @@ async function main(): Promise<void> {
    */
   function syncControls(): void {
     const [lo, hi] = state.range;
-    el<HTMLInputElement>("range-min").value = lo.toFixed(1);
-    el<HTMLInputElement>("range-max").value = hi.toFixed(1);
+    // The colour controls describe the cube while it is on screen; a Bay reload in the
+    // background must not overwrite them.
+    if (!cubeActive()) {
+      el<HTMLInputElement>("range-min").value = lo.toFixed(1);
+      el<HTMLInputElement>("range-max").value = hi.toFixed(1);
+    }
     const iso = el<HTMLInputElement>("iso");
     iso.min = String(lo);
     iso.max = String(hi);
@@ -548,7 +611,7 @@ async function main(): Promise<void> {
     const layer = "temperature";
     const day = meta.times[state.timeIndex].slice(0, 10);
     // In Map 2D too: the section fills the box, the world's surface surrounds it.
-    const wanted = el<HTMLInputElement>("global-sst").checked &&
+    const wanted = showBay && el<HTMLInputElement>("global-sst").checked &&
       state.layer === "field" && state.variable === "temperature" && !!m &&
       globalDays.includes(day);
     if (!wanted) {
@@ -597,6 +660,19 @@ async function main(): Promise<void> {
   async function renderSection(): Promise<void> {
     const ticket = ++sectionTicket;
     const m = state.volumeMeta;
+    if (state.view === "map" && cubeActive()) {
+      // The cube's top face, flat: the map is the section at the cut's top depth.
+      const section = cube.mapSection()!;
+      const provider = await SingleTileImageryProvider.fromUrl(section.canvas.toDataURL(), {
+        rectangle: Rectangle.fromDegrees(section.west, section.south, section.east, section.north),
+      });
+      if (ticket !== sectionTicket) return;
+      const previous = sectionLayer;
+      sectionLayer = viewer.imageryLayers.addImageryProvider(provider);
+      if (previous) viewer.imageryLayers.remove(previous);
+      graphics.kick(800);
+      return;
+    }
     if (state.view !== "map" || !m || !state.values) {
       if (sectionLayer) viewer.imageryLayers.remove(sectionLayer);
       sectionLayer = undefined;
@@ -636,6 +712,21 @@ async function main(): Promise<void> {
   }
 
   function renderHud(): void {
+    if (cubeActive()) {
+      const p = cube.data!.meta.provenance;
+      const cut = cube.currentCut()!;
+      el("hud").innerHTML = [
+        `<b>${VIEW_TITLES[state.view]}</b> · ${p.title}` +
+          (p.forecast ? ' · <span style="color:var(--warn)">FORECAST</span>' : ""),
+        `${p.day} · ${Math.round(cut.top)}–${Math.round(cut.bottom)} m · ` +
+          `${cube.stretched ? "stretched depth" : "linear depth"}` +
+          (state.view === "map" ? ` · section at ${Math.round(cut.top)} m`
+            : ` · vertical ×${Math.round(cube.scene.exaggeration)}`),
+        `${p.sources.map((s) => `${s.source}, ${s.era}`).filter((v, i, a) => a.indexOf(v) === i).join(" · ")}` +
+          (p.horizontal.block > 1 ? ` · ${p.horizontal.block}:1 block mean for display` : ""),
+      ].join("<br>");
+      return;
+    }
     if (!state.volumeMeta) return;
     // The residual pools casts around the demo date against the analysis steps either
     // side of it; label it with exactly those, not with the whole data window.
@@ -684,10 +775,12 @@ async function main(): Promise<void> {
       scene.morphTo3D(0);
       await morphed;
     }
-    if (primitive) primitive.show = view !== "map";
-    // A flat map has no underside to look through, so the surface goes opaque there.
+    if (primitive) primitive.show = view !== "map" && showBay;
+    // A flat map has no underside to look through, so the surface goes opaque there. The
+    // cube stands on the surface, so only the in-place Bay volume needs a see-through sea.
     scene.globe.translucency.enabled =
-      view !== "map" && scene.globe.translucency.frontFaceAlpha < 1;
+      view !== "map" && showBay && scene.globe.translucency.frontFaceAlpha < 1;
+    cube.scene.show(!showBay && view !== "map");
     homeCamera(view);
     if (view === "region") orbit.enable();
     placeStreamlines();
@@ -698,12 +791,57 @@ async function main(): Promise<void> {
   }
 
   function renderLegendStrip(): void {
+    const c = activeColour();
     const host = el("legend-strip");
-    host.replaceChildren(renderLegend(byId(state.paletteId), state.reversed, 240, 12));
-    el("legend-min").textContent = state.range[0].toFixed(1);
-    el("legend-max").textContent = state.range[1].toFixed(1);
-    el("legend-units").textContent = state.volumeMeta?.provenance.units ?? "";
-    el("palette-note").textContent = byId(state.paletteId).note ?? "";
+    host.replaceChildren(renderLegend(byId(c.paletteId), c.reversed, 240, 12));
+    el("legend-min").textContent = formatValue(c.range[0]);
+    el("legend-max").textContent = formatValue(c.range[1]);
+    el("legend-units").textContent = cubeActive()
+      ? `${cube.variable!.units}${c.log ? " · log" : ""}`
+      : state.volumeMeta?.provenance.units ?? "";
+    el("palette-note").textContent = byId(c.paletteId).note ?? "";
+  }
+
+  /** The colour-map controls edit whichever layer is on screen: the cube, or the Bay. */
+  const cubeActive = () => !showBay && !!cube.data;
+  function activeColour(): { paletteId: string; reversed: boolean; log: boolean;
+                             range: [number, number] } {
+    return cubeActive() ? cube.colour
+      : { paletteId: state.paletteId, reversed: state.reversed, log: state.logScale,
+          range: state.range };
+  }
+
+  /** Put the active layer's colour state into the controls. */
+  function syncColourControls(): void {
+    const c = activeColour();
+    paletteSelect.value = c.paletteId;
+    el<HTMLInputElement>("reverse").checked = c.reversed;
+    el<HTMLInputElement>("log").checked = c.log;
+    el<HTMLInputElement>("range-min").value = formatValue(c.range[0]);
+    el<HTMLInputElement>("range-max").value = formatValue(c.range[1]);
+    renderLegendStrip();
+  }
+
+  function renderCubeProvenance(): void {
+    const p = cube.data!.meta.provenance;
+    const lines = [
+      ...p.sources.map((s) => `source: ${s.source} (${s.era}${s.forecast ? ", FORECAST" : ""})\n` +
+        `  dataset ${s.dataset}, variable ${s.variable} (${s.standard_name}), ${s.units}`),
+      p.derived ? `derived from ${p.derived.from.join(" and ")}: ${p.derived.formula}` : "",
+      `day: ${p.day}`,
+      `depth: ${p.native_levels} native levels; ${p.depth_note}`,
+      `faces: ${cube.native ? "native levels, nearest cell" : "interpolated between native levels and cells, for display"}; ` +
+        `${cube.stretched ? "depth axis stretched as sqrt(depth)" : "depth axis linear"}`,
+      `horizontal: ${p.horizontal.note} (native ${p.horizontal.native_step_deg}°, shown ${p.horizontal.display_step_deg}°)`,
+      ...Object.entries(p.range_test).map(([name, t]) => t.checked
+        ? `range test (${name}): ${t.failed} of ${t.checked_cells} cells fail ${t.test}` +
+          (t.masked_cells ? `; ${t.masked_cells} masked` : "")
+        : `range test (${name}): not applicable (${t.reason})`),
+      `sea floor: ${p.seafloor}`,
+      ...p.cf_assumptions.map((a) => `assumed: ${a}`),
+      p.note ? `note: ${p.note}` : "",
+    ].filter(Boolean);
+    el("provenance").textContent = lines.join("\n");
   }
 
   function renderProvenance(volumeMeta: VolumeMeta): void {
@@ -769,18 +907,59 @@ async function main(): Promise<void> {
     const text = observations.length - argo - glider;
     el("obs-count").textContent = `${argo} Argo · ${glider} glider casts` +
       (text ? ` · ${text} uploaded` : "");
+    placeMarkers();
     graphics.kick(1000);
+  }
+
+  /**
+   * Where the observation markers go. With the Bay volume: on the sea surface, seen
+   * through everything. With the cube: only those inside its footprint, sitting on its
+   * top face (the cube's top is the sea surface, lifted), and hidden behind its walls
+   * like anything else in the scene. The observations are the Bay's until global Argo
+   * is wired (docs/11-deferred.md D-34), so outside the Bay a cube shows none.
+   */
+  function placeMarkers(): void {
+    const onCube = cubeActive();
+    const top = onCube ? cube.scene.heightOf(cube.currentCut()!.top) + 1_500 : 0;
+    for (const entity of viewer.entities.values) {
+      const obs = entity.properties?.observation?.getValue?.() as api.Observation | undefined;
+      if (!obs || !entity.point) continue;
+      entity.show = !onCube || cube.contains(obs.lon, obs.lat);
+      entity.position = Cartesian3.fromDegrees(obs.lon, obs.lat, top) as never;
+      entity.point.disableDepthTestDistance = (onCube ? 0 : Number.POSITIVE_INFINITY) as never;
+    }
+    graphics.kick(300);
   }
 
   const handler = new ScreenSpaceEventHandler(viewer.canvas);
   handler.setInputAction(async (movement: { position: unknown }) => {
     const picked = viewer.scene.pick(movement.position as never);
     const entity = picked?.id;
-    if (!entity?.id) return;
+    if (!entity?.id) {
+      // Not a float: if it is the cube, pin that place's whole column.
+      const hit = cubeActive() ? cube.columnAt(movement.position as never) : undefined;
+      if (hit) showColumn(hit);
+      return;
+    }
     // Entity ids are made unique for repeat casts; the API wants the platform.
     const platform = entity.properties?.platform?.getValue?.() ?? String(entity.id).split("@")[0];
     await showProfile(String(platform));
   }, ScreenSpaceEventType.LEFT_CLICK);
+
+  /** The cube's column at a clicked place, native levels, in the Probe panel. */
+  function showColumn(hit: { lon: number; lat: number; column: { depth: number; value: number }[] }): void {
+    const chart = el<HTMLCanvasElement>("probe-chart");
+    chart.classList.remove("hidden");
+    setDock("right", true);
+    const v = cube.variable!;
+    drawColumn(chart, hit.column, {
+      units: v.units, title: `${v.title} at ${Math.abs(hit.lat).toFixed(2)}°${hit.lat >= 0 ? "N" : "S"} ` +
+        `${Math.abs(hit.lon > 180 ? hit.lon - 360 : hit.lon).toFixed(2)}°${(hit.lon > 180 ? hit.lon - 360 : hit.lon) >= 0 ? "E" : "W"}`,
+      axis: cube.stretched ? "stretched" : "linear",
+      bottom: cube.data!.maxDepth, range: cube.colour.range,
+      paletteId: cube.colour.paletteId, reversed: cube.colour.reversed,
+    });
+  }
 
   // Clicking a second float before the first profile arrived could draw the first one
   // under the second one's name. Same ticket as the volume.
@@ -887,21 +1066,42 @@ async function main(): Promise<void> {
     await loadObservations();
   });
 
+  /** A colour change on the cube: repaint it and the legend. */
+  const recolourCube = () => {
+    cube.repaint();
+    renderLegendStrip();
+  };
+
   paletteSelect.addEventListener("change", () => {
+    if (cubeActive()) {
+      cube.colour.paletteId = paletteSelect.value;
+      recolourCube();
+      return;
+    }
     state.paletteId = paletteSelect.value;
     setPalette();
   });
 
   bind("reverse", "change", (node) => {
+    if (cubeActive()) {
+      cube.colour.reversed = node.checked;
+      recolourCube();
+      return;
+    }
     state.reversed = node.checked;
     setPalette();
   });
 
   bind("log", "change", (node) => {
-    const allowed = logScaleAllowed(state.range[0]);
+    const allowed = logScaleAllowed(activeColour().range[0]);
     if (node.checked && !allowed.ok) {
       node.checked = false;
       status(allowed.reason ?? "log scale unavailable", "warn");
+      return;
+    }
+    if (cubeActive()) {
+      cube.colour.log = node.checked;
+      recolourCube();
       return;
     }
     state.logScale = node.checked;
@@ -951,15 +1151,46 @@ async function main(): Promise<void> {
   });
 
   bind("range-min", "change", (node) => {
+    if (cubeActive()) {
+      cube.colour.range = [Number(node.value), cube.colour.range[1]];
+      recolourCube();
+      return;
+    }
     state.range = [Number(node.value), state.range[1]];
     applyUniforms();
     renderLegendStrip();
   });
 
   bind("range-max", "change", (node) => {
+    if (cubeActive()) {
+      cube.colour.range = [cube.colour.range[0], Number(node.value)];
+      recolourCube();
+      return;
+    }
     state.range = [state.range[0], Number(node.value)];
     applyUniforms();
     renderLegendStrip();
+  });
+
+  // The INCOIS volume and the cube are never on screen together (see showBay).
+  bind("bay-volume", "change", async (node) => {
+    showBay = node.checked;
+    if (showBay) {
+      state.depthIndex = Math.min(state.depthIndex, 23);
+      await setView("region");
+      orbit.retarget(bayBounds, bayHome);
+      await loadVolume();
+      await loadStreamlines();
+    } else {
+      await setView("region");
+      await aimAtCube();
+    }
+    syncColourControls();
+    if (showBay && state.volumeMeta) renderProvenance(state.volumeMeta);
+    else if (cube.data) renderCubeProvenance();
+    syncCubeTimeline();
+    placeMarkers();
+    renderHud();
   });
 
   // Vertical exaggeration changes the voxel bounds, so it rebuilds the provider rather
@@ -970,8 +1201,37 @@ async function main(): Promise<void> {
     await loadVolume();
   });
 
+  /**
+   * One timeline for whichever layer is on screen. For the cube it spans every day the
+   * variable has, reanalysis through forecast, one step per day; for the Bay volume, the
+   * INCOIS analysis steps.
+   */
+  const daysBetween = (a: string, b: string) =>
+    Math.round((Date.parse(`${b}T00:00:00Z`) - Date.parse(`${a}T00:00:00Z`)) / 86_400_000);
+  function syncCubeTimeline(): void {
+    if (cubeActive() && cube.request) {
+      const day = el<HTMLInputElement>("cube-day");
+      timeSlider.max = String(daysBetween(day.min, day.max));
+      timeSlider.value = String(daysBetween(day.min, cube.request.day));
+      el("time-label").textContent = cube.request.day;
+    } else {
+      timeSlider.max = String(meta.times.length - 1);
+      timeSlider.value = String(state.timeIndex);
+      el("time-label").textContent = meta.times[state.timeIndex].slice(0, 10);
+    }
+  }
+  const sliderDay = () => shiftDay(el<HTMLInputElement>("cube-day").min, Number(timeSlider.value));
+
+  timeSlider.addEventListener("input", () => {
+    if (cubeActive()) el("time-label").textContent = sliderDay();
+  });
+
   timeSlider.addEventListener("change", async () => {
     setPlaying(false);
+    if (cubeActive()) {
+      await cube.setDay(sliderDay());
+      return;
+    }
     state.timeIndex = Number(timeSlider.value);
     el("time-label").textContent = meta.times[state.timeIndex].slice(0, 10);
     await loadVolume();
@@ -986,6 +1246,14 @@ async function main(): Promise<void> {
   // (the first version) fired regardless, so a slow step stacked requests and frames
   // could arrive out of order.
   async function step(): Promise<void> {
+    if (cubeActive() && cube.request) {
+      const max = el<HTMLInputElement>("cube-day").max;
+      const next = cube.request.day >= max ? el<HTMLInputElement>("cube-day").min
+        : shiftDay(cube.request.day, 1);
+      await cube.setDay(next);
+      if (state.playing) timer = window.setTimeout(() => { void step(); }, FRAME_MS);
+      return;
+    }
     state.timeIndex = (state.timeIndex + 1) % meta.times.length;
     timeSlider.value = String(state.timeIndex);
     el("time-label").textContent = meta.times[state.timeIndex].slice(0, 10);
@@ -1356,6 +1624,16 @@ async function main(): Promise<void> {
       status(`global layers unavailable: ${(error as Error).message}`, "warn");
     }
     await setView("region");
+    // The cube is the main view. The Bay volume above stays loaded for the residual and
+    // the co-located profiles, and comes back with "INCOIS Bay volume".
+    try {
+      await cube.init(await api.getCatalog());
+    } catch (error) {
+      status(`the ocean cube is unavailable: ${(error as Error).message}`, "error");
+    }
+    // ?view=map|globe|fly opens a view directly, for links and for headless checks.
+    const startView = new URLSearchParams(location.search).get("view") as ViewName | null;
+    if (startView && ALL_VIEWS.includes(startView) && startView !== "region") await setView(startView);
     // Tuned against the real scene, after the volume is on screen. A saved manual
     // choice is respected; "auto" re-measures every start, because the same browser
     // profile can be on a laptop's integrated GPU today and a monitor tomorrow.

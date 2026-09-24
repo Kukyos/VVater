@@ -221,6 +221,92 @@ export async function getGlobalSurface(layer: string, day: string):
   return { meta, values };
 }
 
+// ---- the global cube (server/ocean/catalog.py, cube.py) ------------------------
+
+export interface CatalogEra { name: string; dataset: string; source: string; from: string; to: string }
+
+export interface CatalogVariable {
+  key: string; title: string; units: string; palette: string;
+  group: "physics" | "biogeochemistry" | "surface";
+  depth: boolean; signed: boolean; log: boolean;
+  derived: string[]; formula: string; note: string;
+  eras: CatalogEra[];
+}
+
+export interface Scenario {
+  key: string; title: string; box: [number, number, number, number]; day: string;
+  variable: string; depthMax: number; why: string;
+}
+
+export interface Catalog { variables: CatalogVariable[]; today: string; scenarios: Scenario[] }
+
+export const getCatalog = () => json<Catalog>("/api/catalog");
+
+export interface CubeProvenance {
+  variable: string; title: string; units: string; day: string; forecast: boolean;
+  sources: { dataset: string; source: string; era: string; variable: string; day: string;
+             forecast: boolean; standard_name: string; units: string }[];
+  derived: { from: string[]; formula: string } | null;
+  native_levels: number | null;
+  depth_note: string;
+  horizontal: { native_step_deg: number; block: number; display_step_deg: number; note: string };
+  range_test: Record<string, { checked: boolean; test?: string; failed?: number;
+                               checked_cells?: number; failed_range?: [number, number];
+                               masked_cells: number; reason?: string }>;
+  cf_assumptions: string[];
+  note: string;
+  seafloor: string;
+}
+
+export interface CubeMeta {
+  shape: number[];
+  /** [nx, ny, nz]; nz is 1 for a 2D field. */
+  dimensions: [number, number, number];
+  /** Cell centres. Longitudes may run past 180 for a box across the antimeridian. */
+  lons: number[];
+  lats: number[];
+  /** Native levels, metres, shallow first. null for a 2D field. */
+  depths: number[] | null;
+  valueRange: [number, number];
+  provenance: CubeProvenance;
+}
+
+export interface CubeRequest {
+  variable: string; lon0: number; lon1: number; lat0: number; lat1: number;
+  day: string; depthMax: number;
+}
+
+const cubeQuery = (q: CubeRequest) =>
+  `variable=${q.variable}&lon0=${q.lon0}&lon1=${q.lon1}&lat0=${q.lat0}&lat1=${q.lat1}` +
+  `&day=${q.day}&depth_max=${q.depthMax}`;
+
+/** An error body from the API says why (no data that day, box too big); keep it. */
+async function failure(response: Response, what: string): Promise<Error> {
+  const detail = await response.json().catch(() => ({ detail: response.statusText }));
+  return new Error(`${what}: ${detail.detail ?? response.status}`);
+}
+
+/**
+ * One cube: metadata, then float32 values (depth, lat, lon; shallow and south first,
+ * x fastest) followed by float32 sea-floor depth (lat, lon).
+ */
+export async function getCube(q: CubeRequest): Promise<{
+  meta: CubeMeta; values: Float32Array; seafloor: Float32Array;
+}> {
+  const metaResponse = await fetch(`${BASE}/api/cube/meta?${cubeQuery(q)}`);
+  if (!metaResponse.ok) throw await failure(metaResponse, "cube unavailable");
+  const meta = (await metaResponse.json()) as CubeMeta;
+  const [nx, ny, nz] = meta.dimensions;
+  // n keys the HTTP cache on the shape just promised (see getVolumeData).
+  const response = await fetch(`${BASE}/api/cube/data?${cubeQuery(q)}&n=${nx * ny * nz}`);
+  if (!response.ok) throw await failure(response, "cube data unavailable");
+  const all = new Float32Array(await response.arrayBuffer());
+  if (all.length !== nx * ny * nz + nx * ny) {
+    throw new Error(`cube payload is ${all.length} floats, expected ${nx * ny * nz + nx * ny}`);
+  }
+  return { meta, values: all.subarray(0, nx * ny * nz), seafloor: all.subarray(nx * ny * nz) };
+}
+
 /** The assistant (server/ocean/assistant.py). Actions are whitelisted server-side. */
 export interface ChatAction {
   action: string; view?: string; layer?: string; depth_m?: number;

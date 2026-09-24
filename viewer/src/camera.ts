@@ -49,9 +49,30 @@ export class OrbitCamera {
   static readonly MIN_RANGE = 90_000;
   static readonly MAX_RANGE = 3_600_000;
 
+  private minRange = OrbitCamera.MIN_RANGE;
+  private maxRange = OrbitCamera.MAX_RANGE;
+  /** Height of the point the camera orbits: 0 is the sea surface; a raised cube is aimed
+   * at its middle, so orbiting turns it about its own centre rather than its base. */
+  private targetHeight = 0;
+
   constructor(private viewer: Viewer, private bounds: Bounds,
               private home: OrbitPose, private onMove: () => void) {
     this.pose = { ...home };
+  }
+
+  /**
+   * Aim at something else: a new box, home pose and range limits. The limits scale with
+   * the box, because a 100-degree cube cannot be seen whole from the Bay's 3,600 km.
+   */
+  retarget(bounds: Bounds, home: OrbitPose,
+           opts: { minRange?: number; maxRange?: number; targetHeight?: number } = {}): void {
+    this.bounds = bounds;
+    this.home = { ...home };
+    this.minRange = opts.minRange ?? OrbitCamera.MIN_RANGE;
+    this.maxRange = opts.maxRange ?? OrbitCamera.MAX_RANGE;
+    this.targetHeight = opts.targetHeight ?? 0;
+    this.pose = { ...home };
+    if (this.active) this.apply();
   }
 
   enable(): void {
@@ -102,11 +123,11 @@ export class OrbitCamera {
     const { lon, lat } = this.bounds;
     p.lon = Math.min(Math.max(p.lon, lon[0] - this.margin), lon[1] + this.margin);
     p.lat = Math.min(Math.max(p.lat, lat[0] - this.margin), lat[1] + this.margin);
-    p.range = Math.min(Math.max(p.range, OrbitCamera.MIN_RANGE), OrbitCamera.MAX_RANGE);
+    p.range = Math.min(Math.max(p.range, this.minRange), this.maxRange);
     // Down to straight overhead; up to 12 degrees below the target, which puts the camera
     // inside the water column looking up through it.
     p.pitch = Math.min(Math.max(p.pitch, -89.5 * DEG), 12 * DEG);
-    this.viewer.camera.lookAt(Cartesian3.fromDegrees(p.lon, p.lat, 0),
+    this.viewer.camera.lookAt(Cartesian3.fromDegrees(p.lon, p.lat, this.targetHeight),
       new HeadingPitchRange(p.heading, p.pitch, p.range));
     this.onMove();
   }

@@ -158,6 +158,36 @@ The brief asks for new sources "with minimal code change." A **dict of parsers k
 format**, in one file, satisfies that completely. No plugin framework for two parsers.
 Documented as a judgement call so it does not read as laziness.
 
+## L13 · Faces of the Ocean Cube — a display interpolation, logged (v2, 2026-09-24)
+
+The v2 cube (`viewer/src/cube/`) is sent on the dataset's **native levels only**
+(`server/ocean/cube.py`), so the data obeys L2 exactly. Its faces are images, and an image
+has more rows than the ocean has levels: a 512-row wall over 40 native levels has to put
+something in the rows between them.
+
+> **Decision:** by default a face is **interpolated linearly between native levels and
+> bilinearly between cells**, which is how oceanographic sections are conventionally
+> drawn. This is a display choice over the same native values, never a new level in the
+> data, and every provenance panel says so. **"Native levels only"** switches every face
+> to the level whose cell contains each depth, nearest grid cell horizontally: the data as
+> it is, in bands.
+
+Two refusals, both in `cube/data.ts`: nothing is drawn below the deepest native level
+with water (between the last water level and the next it holds to the midpoint, then the
+sea floor begins), and a coastal pixel takes its nearest water neighbour rather than
+blending towards land.
+
+**The depth axis** of a face is linear or `sqrt(depth)`-stretched (default, so the upper
+few hundred metres are readable). Every tick, slider label and probe readout is computed
+from metres through that mapping and back (`depthToT` / `tToDepth`), never from a pixel or
+voxel index — hard rule 4.
+
+**The cube stands on the sea surface** rather than sitting below it where the water is.
+Below the surface it needed a translucent globe, disabled collision detection and a
+clipped translucency rectangle, and at glancing angles it turned to haze. The footprint is
+exactly the box's; only the vertical is re-placed, and `CubeScene.depthOf` maps every
+height back to a depth.
+
 ## L12 · Python 3.14 — resolved, not a limitation
 
 Probed: `copernicusmarine 2.4.1`, `xarray 2026.7.0`, `netCDF4 1.7.4`, `gsw 3.6.23`,

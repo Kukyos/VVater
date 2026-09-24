@@ -143,7 +143,7 @@ VARIABLES: dict[str, Variable] = {v.key: v for v in [
              _bgc("si", BGC_NUT_ANFC)),
     Variable("primary_production", "Net primary production", "mg C/m³/day", "algae",
              "biogeochemistry", _bgc("nppv", BGC_BIO_ANFC), log=True),
-    Variable("ph", "pH", "", "balance_ph", "biogeochemistry",
+    Variable("ph", "pH", "", "viridis", "biogeochemistry",
              (Era("analysis-forecast", BGC_CAR_ANFC, "ph"),),
              note="daily pH is published only by the analysis & forecast, from late 2021"),
     Variable("dic", "Dissolved inorganic carbon", "mol/m³", "matter", "biogeochemistry",

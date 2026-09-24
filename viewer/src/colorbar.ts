@@ -63,6 +63,71 @@ export const PALETTES: Palette[] = [
       [239, 185, 168], [216, 118, 96], [170, 52, 46], [103, 0, 31],
     ],
   },
+  // The rest of the cmocean family, for the variables the global cube adds. Approximated
+  // from published anchor points like thermal and haline (docs/10-unsourced.md).
+  {
+    id: "speed",
+    label: "Speed",
+    note: "cmocean speed — for current speed and sound speed",
+    stops: [
+      [255, 253, 205], [222, 224, 149], [176, 200, 97], [122, 177, 59], [67, 151, 43],
+      [27, 120, 43], [20, 86, 39], [17, 55, 31], [23, 35, 19],
+    ],
+  },
+  {
+    id: "dense",
+    label: "Dense",
+    note: "cmocean dense — for density",
+    stops: [
+      [230, 241, 241], [182, 216, 229], [142, 190, 225], [118, 160, 227], [114, 125, 221],
+      [117, 89, 196], [111, 57, 154], [91, 33, 104], [54, 14, 36],
+    ],
+  },
+  {
+    id: "algae",
+    label: "Algae",
+    note: "cmocean algae — for chlorophyll and phytoplankton",
+    stops: [
+      [215, 249, 208], [171, 222, 160], [123, 196, 113], [73, 171, 71], [30, 144, 54],
+      [17, 114, 51], [18, 85, 44], [19, 58, 34], [18, 36, 20],
+    ],
+  },
+  {
+    id: "oxy",
+    label: "Oxy",
+    note: "cmocean oxy — red marks the oxygen-poor end, yellow the supersaturated end",
+    stops: [
+      [64, 5, 5], [136, 14, 14], [92, 91, 90], [128, 127, 126], [166, 165, 164],
+      [206, 205, 204], [241, 240, 238], [233, 232, 69], [248, 248, 169],
+    ],
+  },
+  {
+    id: "matter",
+    label: "Matter",
+    note: "cmocean matter — for nutrients and carbon",
+    stops: [
+      [253, 237, 176], [246, 197, 138], [237, 157, 108], [224, 117, 93], [202, 82, 93],
+      [170, 55, 97], [132, 35, 95], [90, 24, 82], [47, 15, 62],
+    ],
+  },
+  {
+    id: "deep",
+    label: "Deep",
+    note: "cmocean deep — for depths, such as the mixed layer",
+    stops: [
+      [253, 254, 204], [176, 227, 180], [101, 196, 170], [65, 158, 168], [64, 120, 159],
+      [62, 82, 144], [60, 50, 107], [48, 32, 68], [40, 26, 44],
+    ],
+  },
+  {
+    id: "ice",
+    label: "Ice",
+    note: "cmocean ice — for sea ice",
+    stops: [
+      [4, 6, 19], [29, 31, 64], [54, 55, 114], [62, 89, 158], [70, 127, 178],
+      [100, 164, 195], [146, 197, 210], [196, 229, 230], [234, 253, 253],
+    ],
+  },
   {
     id: "grey",
     label: "Greyscale",
@@ -107,6 +172,32 @@ export function renderLegend(palette: Palette, reversed: boolean,
 
 export const byId = (id: string): Palette =>
   PALETTES.find((p) => p.id === id) ?? PALETTES[0];
+
+/** True when a palette id names a real palette. byId falls back to thermal silently,
+ * which would draw chlorophyll in temperature colours; callers that take ids from the
+ * server check with this first and say so. */
+export const hasPalette = (id: string): boolean => PALETTES.some((p) => p.id === id);
+
+/**
+ * The palette as a 256-entry RGBA lookup table, for painting on the CPU. The cube's faces
+ * use this rather than the six-stop shader ramp (D-10): they are painted in JavaScript,
+ * so the full palette costs nothing and sharp palettes such as oxy keep their edges.
+ */
+export function paletteLut(palette: Palette, reversed = false): Uint8ClampedArray {
+  const stops = reversed ? [...palette.stops].reverse() : palette.stops;
+  const lut = new Uint8ClampedArray(256 * 4);
+  for (let i = 0; i < 256; i += 1) {
+    const position = (i / 255) * (stops.length - 1);
+    const lower = Math.floor(position);
+    const upper = Math.min(lower + 1, stops.length - 1);
+    const frac = position - lower;
+    for (let c = 0; c < 3; c += 1) {
+      lut[i * 4 + c] = stops[lower][c] + (stops[upper][c] - stops[lower][c]) * frac;
+    }
+    lut[i * 4 + 3] = 255;
+  }
+  return lut;
+}
 
 /**
  * A log scale needs a strictly positive lower bound, and sea temperature in this region
