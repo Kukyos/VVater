@@ -84,6 +84,30 @@ resolution, on its top face. A picture of one day's flow, not trajectories (D-13
 **Views** (keys `1`–`4`): Region 3D orbits the cube; Map 2D shows the cube's top section
 flat; Globe; Fly.
 
+**Winds and waves** (`server/ocean/marine.py`). 10 m wind animated in amber over the
+currents: observed (Copernicus L4, reprocessed before July 2020, near-real-time to
+yesterday), then the NCEP GFS forecast through UCAR THREDDS, with a labelled stand-in when
+UCAR is slow. Wave height from the Copernicus forecast, ten days ahead.
+
+**For fishermen** (`server/ocean/fishing.py`, `pfz.py`, `viewer/src/fishing.ts`). INCOIS's
+own Potential Fishing Zone advisories for all fourteen sectors, read as published (clouded-out
+sectors say so), as green points; and an indicative zone layer anywhere (strongest SST
+fronts with chlorophyll) with a sea state from waves and wind. The indicator is labelled
+not-an-advisory everywhere.
+
+**Immersive** (key `I`, `?immersive=1`). The globe, its currents and winds, nothing else;
+*Cinematic* (key `C`) is a five-shot camera tour with the real dawn sun.
+
+**The assistant drives the viewer**: builds cubes anywhere, sets any listed control, presses
+buttons, rings a control in orange for five seconds to show where it is, answers fishing
+questions from INCOIS's advisories first (`server/ocean/assistant.py` `CONTROLS`).
+
+**Land**: NASA GIBS Blue Marble relief (grey or colour) over the offline Natural Earth base;
+optional Cesium World Terrain in Fly and immersive when `VITE_CESIUM_ION_TOKEN` is set.
+
+**The INCOIS Bay volume is opt-in.** Nothing of v1 loads, draws or shows its controls until
+*INCOIS Bay volume* is ticked.
+
 ## The Bay of Bengal flagship: the INCOIS volume
 
 The v1 viewer is still here under *INCOIS Bay volume*: the INCOIS analysis drawn as a true
@@ -208,8 +232,17 @@ proposal and the film traces to `13-eval-results.md`, which traces to
 
 ## Start here, today
 
-v2 is end to end on the `v2` branch and runs locally: global data, cube, floats, whole
-ocean, currents. What is knowingly incomplete is in `11-deferred.md` (D-31 to D-36 are
-v2's). The deck in `submission/sih/final/` still shows v1 and is rebuilt from
-`16-submission.md` with v2 screenshots before submission; `main` and the deployed site
-stay on v1 until `v2` is merged.
+**2026-09-24, evening.** `v2` was fast-forwarded into `main` (commit `206e864`) and both
+hosts redeployed from it.
+
+- **Vercel** (`v-vater.vercel.app`): built and serving the v2 viewer, pointed at
+  `https://vvater-api.onrender.com` (checked in the bundle; no `127.0.0.1` left in it).
+- **Render** (`vvater-api.onrender.com`): the v2 backend came up at 22:07 (`/api/pfz` 200 in
+  about 1 s). About twenty minutes later **every route returned 502**, including ones that
+  had answered: the process was down or restarting, not refusing the site. Not yet
+  diagnosed. **First job next session: read the Render logs** (see `18-deploy.md`,
+  "When the live site cannot reach the API").
+
+Everything runs locally end to end. What is knowingly incomplete is in `11-deferred.md`.
+The deck in `submission/sih/final/` still shows v1 and is rebuilt from `16-submission.md`
+with v2 screenshots before submission.

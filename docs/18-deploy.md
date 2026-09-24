@@ -49,6 +49,51 @@ every deploy or restart. Open the site a few minutes before a demo and load the 
 `.env` (gitignored, read once at import by `server/ocean/__init__.py`) still works for
 local dev; a real deployment sets these in the host's own env config instead.
 
+## Cesium ion (optional: 3D terrain in Fly and immersive)
+
+Visitors never need an account; the token is built into the site.
+
+1. At **ion.cesium.com**, open **Access Tokens** (not *Developer → OAuth applications*: the
+   form asking for an app name and a redirect URL is for apps that log users in, and is not
+   needed here; cancel it).
+2. **Create token.** Name: `vvater-web`. Scopes: leave the defaults (`assets:read`,
+   `geocode`). Resources: *All assets*, or just *Cesium World Terrain* (asset 1).
+3. **Allowed URLs**: choose *Selected URLs* and add `https://v-vater.vercel.app` and
+   `http://localhost:5173` (add preview domains too if they should work). This is what stops
+   anyone else spending the quota: the token itself is public in the bundle.
+4. Copy the token. Locally, create `viewer/.env.local` (gitignored) with
+   `VITE_CESIUM_ION_TOKEN=<token>` and restart `npm run dev`.
+5. On Vercel: Project → Settings → Environment Variables → add `VITE_CESIUM_ION_TOKEN` for
+   Production and Preview, then **redeploy** (Vite bakes it in at build time).
+
+The free Community plan is for non-commercial use with a monthly cap; enough for a demo and
+judging. Without the variable the globe stays smooth and nothing calls ion.
+
+## When the live site cannot reach the API
+
+Check, in order:
+
+1. **Is the backend up?** `curl -i https://vvater-api.onrender.com/api/meta`. A **502**
+   from Render means the process is down or restarting (a crash, a failed deploy, or the
+   free plan's 512 MB exceeded); read Render → the service → **Logs** and **Events**. An
+   `Out of memory` event means the plan (see Memory above). A Python traceback at start
+   means a deploy problem: `render.yaml` builds with `pip install -r
+   server/requirements.txt` and starts `uvicorn server.ocean.api:app`. A long wait then
+   200 is a cold start.
+2. **Is the site allowed?** `curl -s -D - -o /dev/null -H "Origin: https://v-vater.vercel.app"
+   https://vvater-api.onrender.com/api/meta` must return
+   `access-control-allow-origin: https://v-vater.vercel.app`. If not, set `ALLOWED_ORIGINS`
+   on Render (and `ALLOWED_ORIGIN_REGEX` for preview domains) and restart.
+3. **Is the site pointed at it?** The built bundle must contain the Render URL:
+   `curl -s https://v-vater.vercel.app/ | grep -o 'assets/index-[^"]*\.js'`, then grep that
+   file for `onrender.com`. If it shows `127.0.0.1`, `VITE_API_BASE` is missing on Vercel.
+
+Checked on 2026-09-24: step 3 passes (bundle points at `vvater-api.onrender.com`); the
+backend answered after the v2 deploy and then returned 502 on every route. Environment
+variables the v2 backend needs are the ones above; Copernicus credentials are **not**
+needed (anonymous ARCO access, checked). `MALLOC_ARENA_MAX=2` is in `render.yaml`; if the
+service was not created from the blueprint, add it by hand.
+
 ## Verify a build locally
 
 ```
