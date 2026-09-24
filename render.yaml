@@ -16,3 +16,7 @@ services:
         sync: false
       - key: PYTHON_VERSION
         value: 3.14.0
+      # glibc gives each thread its own memory arena; with 32 zarr reader threads that
+      # inflated the process towards the free plan's 512 MB. Two arenas is plenty here.
+      - key: MALLOC_ARENA_MAX
+        value: "2"

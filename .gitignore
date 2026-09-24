@@ -3,6 +3,8 @@ CLAUDE.md
 
 # Secrets
 .env
+.env.local
+*.local
 
 # Data cache — large NetCDF slabs, regenerable
 data/cache/

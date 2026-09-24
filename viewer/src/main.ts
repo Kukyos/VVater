@@ -17,6 +17,8 @@ import {
   SceneMode,
   ScreenSpaceEventHandler,
   ScreenSpaceEventType,
+  CesiumTerrainProvider,
+  EllipsoidTerrainProvider,
   SingleTileImageryProvider,
   TileMapServiceImageryProvider,
   UrlTemplateImageryProvider,
@@ -48,10 +50,13 @@ import {
   makeOceanShader,
 } from "./voxels";
 
-// Cesium Ion is not used: no token, no account, no network dependency on a third party
-// at demo time. Imagery falls back to a plain ellipsoid if the offline tiles are absent,
-// which is fine — the data is the point, not the basemap.
-Ion.defaultAccessToken = "";
+// Cesium ion is optional. With no VITE_CESIUM_ION_TOKEN at build time nothing touches it
+// and the globe is the smooth ellipsoid, as it always was. With one, Fly and immersive get
+// Cesium World Terrain: real mountains and coasts. The token ships in the public bundle
+// (that is how ion tokens work); it is restricted to this site's URLs in the ion
+// dashboard, and visitors need no account.
+const ION_TOKEN = (import.meta.env.VITE_CESIUM_ION_TOKEN as string | undefined)?.trim() ?? "";
+Ion.defaultAccessToken = ION_TOKEN;
 
 type Layer = "field" | "residual";
 
@@ -221,6 +226,29 @@ async function main(): Promise<void> {
     }
     if (basemap) basemap.brightness = brightness;
     graphics.kick(800);
+  }
+
+  // ---- terrain: only where the camera is low and the data is not standing on the sea --
+  //
+  // The cube and the Bay volume sit at sea level on an exact ellipsoid; raised terrain
+  // would push through their coastal edges. So the workspace views stay flat and only
+  // Fly and immersive, which are about the planet, get the mountains.
+  let worldTerrain: Promise<CesiumTerrainProvider> | undefined;
+  const flatTerrain = new EllipsoidTerrainProvider();
+  async function setTerrain(on: boolean): Promise<void> {
+    if (!ION_TOKEN) return;
+    if (!on) {
+      viewer.scene.terrainProvider = flatTerrain;
+      return;
+    }
+    worldTerrain ??= CesiumTerrainProvider.fromIonAssetId(1, { requestVertexNormals: true });
+    try {
+      viewer.scene.terrainProvider = await worldTerrain;
+      graphics.kick(1500);
+    } catch (error) {
+      worldTerrain = undefined;
+      status(`Cesium World Terrain unavailable (${(error as Error).message}); the globe stays smooth`, "warn");
+    }
   }
 
   const [lon0, lon1] = meta.region.lon;
@@ -943,6 +971,8 @@ async function main(): Promise<void> {
     if (view !== "fly") flight.disable();
     // Fly always has a sky, whatever the graphics tier: a horizon against black read as the
     // edge of a hole. Leaving Fly puts the tier's own choice back.
+    // Immersive turns terrain on itself once it has switched to the globe.
+    void setTerrain(view === "fly");
     if (view === "fly") {
       if (viewer.scene.skyAtmosphere) viewer.scene.skyAtmosphere.show = true;
       viewer.scene.globe.showGroundAtmosphere = true;
@@ -1829,6 +1859,7 @@ async function main(): Promise<void> {
       ocean.setVisible(true);
       ocean.flow.ignoreHoles = true;
       ocean.dropCubeWind();
+      await setTerrain(true);
     },
     exit: async () => {
       ocean.flow.ignoreHoles = false;
