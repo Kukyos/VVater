@@ -30,6 +30,18 @@ file, not ours, and is not committed.
 - Drops the template's seventh "important instructions" slide: six is the limit, title
   slide included.
 
+## The Canva copy
+
+`python submission/sih/build_canva.py` writes `final/VVater-SIH2026-canva.pptx`, the same
+six slides with every block editable: text boxes, cards and rules as rectangles, the
+flowchart as shapes and arrows, the bar chart as rectangles. Only the screenshots and the
+logo are pictures. Canva → Create a design → Import file → pick it.
+
+It re-typesets nothing by hand. Headless Chrome lays out each `figures/body-*.html` with
+Arial swapped in (present here and in Canva, so the measured widths hold), a probe script
+reads back every box, text run, image and svg element, and each becomes a shape at the
+same position. Rewording is an edit to `figures.py`, then both builds.
+
 Body text is part of an image, so it is not selectable and does not depend on the fonts
 of whatever machine opens the file. Rewording is an edit to `figures.py` and a rerun.
 
