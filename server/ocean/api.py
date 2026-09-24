@@ -19,7 +19,7 @@ from fastapi.middleware.gzip import GZipMiddleware
 from fastapi.responses import JSONResponse
 
 from . import (argo, assistant, catalog, cf, colocate, config, cube, cubecasts, currents, glider,
-               globalsurface, heat, residual, sources, textcast, volume, wms)
+               globalsurface, heat, residual, sources, surface, textcast, volume, wms)
 
 # Variables that exist as gridded fields but not as instrument measurements. Asking a
 # float for its "observation count" is meaningless, so the in-situ side falls back to
@@ -323,6 +323,81 @@ def cube_data(variable: str, lon0: float, lon1: float, lat0: float, lat1: float,
     cache = "public, max-age=3600" if c.provenance["forecast"] else "public, max-age=86400"
     return Response(content=c.payload(), media_type="application/octet-stream",
                     headers={"Cache-Control": cache})
+
+
+def _surface(variable: str, day: str, depth: float):
+    if variable not in catalog.VARIABLES:
+        raise HTTPException(404, f"no variable {variable!r}; see /api/catalog")
+    try:
+        return surface.level(variable, day, round(float(depth), 1))
+    except LookupError as exc:
+        raise HTTPException(404, str(exc)) from exc
+
+
+@app.get("/api/surface/meta")
+def surface_meta(variable: str, day: str, depth: float = 0.0) -> dict:
+    """One level of any variable, the whole ocean, 1/4 deg (surface.py)."""
+    return _surface(variable, day, depth).meta()
+
+
+@app.get("/api/surface/data")
+def surface_data(variable: str, day: str, depth: float = 0.0) -> Response:
+    """float32 (lat, lon), south row first, NaN on land."""
+    s = _surface(variable, day, depth)
+    return Response(content=np.ascontiguousarray(s.values).tobytes(),
+                    media_type="application/octet-stream",
+                    headers={"Cache-Control": "public, max-age=3600"})
+
+
+def _currents(day: str, depth: float) -> dict:
+    try:
+        return surface.currents(day, round(float(depth), 1))
+    except LookupError as exc:
+        raise HTTPException(404, str(exc)) from exc
+
+
+@app.get("/api/surface/currents/meta")
+def surface_currents_meta(day: str, depth: float = 0.0) -> dict:
+    return _currents(day, depth)["meta"]
+
+
+@app.get("/api/surface/currents/data")
+def surface_currents_data(day: str, depth: float = 0.0) -> Response:
+    """float32 u then float32 v, (lat, lon) south row first, 0 on land."""
+    c = _currents(day, depth)
+    return Response(content=c["u"].tobytes() + c["v"].tobytes(),
+                    media_type="application/octet-stream",
+                    headers={"Cache-Control": "public, max-age=3600"})
+
+
+@lru_cache(maxsize=16)
+def _cube_currents(box: "cube.Box", day: str, depth: float) -> dict:
+    return surface.regional_currents(box, day, depth)
+
+
+def _cube_currents_checked(lon0, lon1, lat0, lat1, day, depth) -> dict:
+    try:
+        return _cube_currents(cube.Box.parse(lon0, lon1, lat0, lat1), day, round(depth, 1))
+    except ValueError as exc:
+        raise HTTPException(400, str(exc)) from exc
+    except LookupError as exc:
+        raise HTTPException(404, str(exc)) from exc
+
+
+@app.get("/api/cube/currents/meta")
+def cube_currents_meta(lon0: float, lon1: float, lat0: float, lat1: float, day: str,
+                       depth: float = 0.0) -> dict:
+    return _cube_currents_checked(lon0, lon1, lat0, lat1, day, depth)["meta"]
+
+
+@app.get("/api/cube/currents/data")
+def cube_currents_data(lon0: float, lon1: float, lat0: float, lat1: float, day: str,
+                       depth: float = 0.0) -> Response:
+    """float32 u then v over the cube's box at the native level nearest `depth`."""
+    c = _cube_currents_checked(lon0, lon1, lat0, lat1, day, depth)
+    return Response(content=c["u"].tobytes() + c["v"].tobytes(),
+                    media_type="application/octet-stream",
+                    headers={"Cache-Control": "public, max-age=3600"})
 
 
 @app.get("/api/cube/casts")

@@ -337,6 +337,59 @@ export async function getCubeProfile(q: CubeRequest, platform: string, cycle: nu
   return response.json();
 }
 
+// ---- the whole ocean at one level (server/ocean/surface.py) ----------------------
+
+export interface SurfaceMeta {
+  dimensions: [number, number];
+  lonRange: [number, number];
+  latRange: [number, number];
+  levelM: number | null;
+  valueRange: [number, number];
+  provenance: { title: string; units: string; day: string; forecast: boolean;
+                sources: { source: string; era: string; dataset: string }[];
+                level_m: number | null; level_note: string; note: string;
+                horizontal: { block: number; display_step_deg: number } } & Record<string, unknown>;
+}
+
+async function binary(path: string, what: string, floats: number): Promise<Float32Array> {
+  const response = await fetch(`${BASE}${path}`);
+  if (!response.ok) throw await failure(response, what);
+  const all = new Float32Array(await response.arrayBuffer());
+  if (all.length !== floats) throw new Error(`${what}: ${all.length} floats, expected ${floats}`);
+  return all;
+}
+
+/** One level of a variable over the whole ocean, south row first, NaN on land. */
+export async function getSurface(variable: string, day: string, depth: number):
+    Promise<{ meta: SurfaceMeta; values: Float32Array }> {
+  const q = `variable=${variable}&day=${day}&depth=${depth}`;
+  const metaResponse = await fetch(`${BASE}/api/surface/meta?${q}`);
+  if (!metaResponse.ok) throw await failure(metaResponse, "global layer unavailable");
+  const meta = (await metaResponse.json()) as SurfaceMeta;
+  const [nx, ny] = meta.dimensions;
+  return { meta, values: await binary(`/api/surface/data?${q}&n=${nx * ny}`, "global layer", nx * ny) };
+}
+
+export interface CurrentsMeta {
+  dimensions: [number, number]; lonRange: [number, number]; latRange: [number, number];
+  levelM: number; note?: string; provenance?: { note: string };
+}
+
+/** u and v at one level, worldwide or over a cube's box; 0 on land. */
+export async function getCurrents(day: string, depth: number, box?: CubeRequest):
+    Promise<{ meta: CurrentsMeta; u: Float32Array; v: Float32Array }> {
+  const where = box
+    ? `/api/cube/currents/%s?lon0=${box.lon0}&lon1=${box.lon1}&lat0=${box.lat0}&lat1=${box.lat1}&`
+    : `/api/surface/currents/%s?`;
+  const q = `day=${day}&depth=${depth}`;
+  const metaResponse = await fetch(`${BASE}${where.replace("%s", "meta")}${q}`);
+  if (!metaResponse.ok) throw await failure(metaResponse, "currents unavailable");
+  const meta = (await metaResponse.json()) as CurrentsMeta;
+  const [nx, ny] = meta.dimensions;
+  const all = await binary(`${where.replace("%s", "data")}${q}&n=${nx * ny}`, "currents", 2 * nx * ny);
+  return { meta, u: all.subarray(0, nx * ny), v: all.subarray(nx * ny) };
+}
+
 /** The assistant (server/ocean/assistant.py). Actions are whitelisted server-side. */
 export interface ChatAction {
   action: string; view?: string; layer?: string; depth_m?: number;

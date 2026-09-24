@@ -289,6 +289,20 @@
         </div>
       </div></details>
 
+      <details open id="ocean-section"><summary>Whole ocean</summary><div class="sec">
+        <label class="check"><input type="checkbox" id="ocean-surface" checked /> The whole ocean at the cube's top depth</label>
+        <label class="check"><input type="checkbox" id="ocean-wind" checked /> Animated currents, whole ocean</label>
+        <label class="check"><input type="checkbox" id="cube-wind" checked /> Animated currents on the cube's top</label>
+        <div class="prop"><label for="ocean-density">Particles</label>
+          <select id="ocean-density">
+            <option value="5000">5,000</option><option value="12000" selected>12,000</option>
+            <option value="20000">20,000</option><option value="35000">35,000</option>
+          </select></div>
+        <div id="ocean-note" class="hint">Same variable, day and colour bar as the cube, so a
+          colour means the same value inside and outside it. Currents are that day's flow
+          at that depth, animated: a picture of the flow, not where the water went.</div>
+      </div></details>
+
       <details id="bay-section"><summary>INCOIS Bay volume</summary><div class="sec">
         <label class="check"><input type="checkbox" id="bay-volume" /> Show the INCOIS analysis volume in place, under the sea</label>
       </div></details>

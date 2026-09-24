@@ -37,6 +37,8 @@ import { ChatPanel } from "./chat";
 import { CubeController, formatValue, shiftDay } from "./cube/controller";
 import { demo as cubeDataDemo } from "./cube/data";
 import { drawColumn } from "./cube/column";
+import { OceanLayer } from "./ocean";
+import { demo as flowDemo } from "./flow";
 import {
   EMPTY_SENTINEL, OPACITY_REFERENCE_DEPTH_M, OceanVoxelProvider, addVolume, applyRamp,
   makeOceanShader,
@@ -103,6 +105,7 @@ async function main(): Promise<void> {
     sectionDemo();
     cameraDemo();
     cubeDataDemo();
+    flowDemo();
   }
 
   const viewer = new Viewer("globe", {
@@ -262,6 +265,32 @@ async function main(): Promise<void> {
 
   // ---- the Ocean Cube: any water, any day, anywhere (cube/*.ts) -----------------
 
+  const ocean = new OceanLayer(viewer, status, (ms) => graphics.kick(ms));
+  // ?surface=0, ?wind=0, ?cubewind=0 open with a layer off, for links and headless checks.
+  {
+    const q = new URLSearchParams(location.search);
+    const off = (name: string, id: string, set: () => void) => {
+      if (q.get(name) === "0") {
+        set();
+        el<HTMLInputElement>(id).checked = false;
+      }
+    };
+    off("surface", "ocean-surface", () => { ocean.surfaceOn = false; });
+    off("wind", "ocean-wind", () => { ocean.windOn = false; });
+    off("cubewind", "cube-wind", () => { ocean.cubeWindOn = false; });
+  }
+
+  /** The whole ocean follows the cube: its variable, its day, its top face's depth. */
+  function refreshOcean(): void {
+    if (!cubeActive() || !cube.request || !cube.variable) return;
+    const top = cube.currentCut()!.top;
+    void ocean.showSurface(cube.variable.key, cube.request.day, top, cube.style());
+    const d = cube.data!;
+    void ocean.showCurrents(cube.request.day, top,
+      { west: d.west, east: d.east, south: d.south, north: d.north });
+    void ocean.showCubeCurrents(cube.request, top, cube.scene.heightOf(top) + 400);
+  }
+
   const cube = new CubeController({
     viewer,
     status,
@@ -272,6 +301,7 @@ async function main(): Promise<void> {
       syncCubeTimeline();
       renderHud();
       void renderSection();
+      refreshOcean();
     },
     aim: () => void aimAtCube(),
     navigation: (enabled) => {
@@ -781,6 +811,7 @@ async function main(): Promise<void> {
     scene.globe.translucency.enabled =
       view !== "map" && showBay && scene.globe.translucency.frontFaceAlpha < 1;
     cube.setVisible(!showBay && view !== "map");
+    ocean.setVisible(!showBay);
     homeCamera(view);
     if (view === "region") orbit.enable();
     placeStreamlines();
@@ -1101,11 +1132,39 @@ async function main(): Promise<void> {
     await loadObservations();
   });
 
-  /** A colour change on the cube: repaint it and the legend. */
+  /** A colour change on the cube: repaint it, the whole ocean around it, and the legend. */
   const recolourCube = () => {
     cube.repaint();
+    void ocean.recolour(cube.style());
     renderLegendStrip();
   };
+
+  // The ocean layers refetch when a drag is let go, not on every pixel of it: a new top
+  // depth is a new level, and a new height moves the cube-top particles.
+  el("cut-top").addEventListener("change", () => refreshOcean());
+  el("cube-height").addEventListener("change", () => {
+    if (cube.request) {
+      const top = cube.currentCut()!.top;
+      void ocean.showCubeCurrents(cube.request, top, cube.scene.heightOf(top) + 400);
+    }
+  });
+  bind("ocean-surface", "change", (node) => {
+    ocean.surfaceOn = node.checked;
+    if (node.checked) refreshOcean(); else ocean.clearSurface();
+  });
+  bind("ocean-wind", "change", (node) => {
+    ocean.windOn = node.checked;
+    if (node.checked) refreshOcean(); else ocean.dropWind();
+  });
+  bind("cube-wind", "change", (node) => {
+    ocean.cubeWindOn = node.checked;
+    if (node.checked) refreshOcean(); else ocean.dropCubeWind();
+  });
+  el<HTMLSelectElement>("ocean-density").addEventListener("change", (e) => {
+    ocean.density = Number((e.target as HTMLSelectElement).value);
+    ocean.dropWind();
+    refreshOcean();
+  });
 
   paletteSelect.addEventListener("change", () => {
     if (cubeActive()) {
@@ -1643,7 +1702,7 @@ async function main(): Promise<void> {
   if (import.meta.env.DEV) {
     (window as unknown as Record<string, unknown>).vvater = {
       viewer, state, graphics, getPrimitive: () => primitive, getShader: () => shader,
-      setView, setDock, showProfile, setLayer, homeCamera, orbit, flight,
+      setView, setDock, showProfile, setLayer, homeCamera, orbit, flight, cube, ocean,
     };
   }
 
