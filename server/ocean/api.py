@@ -18,8 +18,9 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware.gzip import GZipMiddleware
 from fastapi.responses import JSONResponse
 
-from . import (argo, assistant, catalog, cf, colocate, config, cube, cubecasts, currents, glider,
-               globalsurface, heat, residual, sources, surface, textcast, volume, wms)
+from . import (argo, assistant, catalog, cf, colocate, config, cube, cubecasts, currents, fishing,
+               glider, globalsurface, heat, marine, residual, sources, surface, textcast,
+               volume, wms)
 
 # Variables that exist as gridded fields but not as instrument measurements. Asking a
 # float for its "observation count" is meaningless, so the in-situ side falls back to
@@ -368,6 +369,43 @@ def surface_currents_data(day: str, depth: float = 0.0) -> Response:
     return Response(content=c["u"].tobytes() + c["v"].tobytes(),
                     media_type="application/octet-stream",
                     headers={"Cache-Control": "public, max-age=3600"})
+
+
+def _wind(day: str) -> dict:
+    try:
+        return marine.wind(day)
+    except LookupError as exc:
+        raise HTTPException(404, str(exc)) from exc
+
+
+@app.get("/api/wind/meta")
+def wind_meta(day: str) -> dict:
+    return _wind(day)["meta"]
+
+
+@app.get("/api/wind/data")
+def wind_data(day: str) -> Response:
+    """float32 u then float32 v, 10 m wind at 12:00 UTC, (lat, lon) south row first."""
+    w = _wind(day)
+    return Response(content=w["u"].tobytes() + w["v"].tobytes(),
+                    media_type="application/octet-stream",
+                    headers={"Cache-Control": "public, max-age=3600"})
+
+
+@lru_cache(maxsize=8)
+def _fishing(box: "cube.Box", day: str) -> dict:
+    return fishing.assess(box, day)
+
+
+@app.get("/api/fishing")
+def fishing_zones(lon0: float, lon1: float, lat0: float, lat1: float, day: str) -> dict:
+    """Indicative fishing zones and sea state over a box (fishing.py). Not an advisory."""
+    try:
+        return _fishing(cube.Box.parse(lon0, lon1, lat0, lat1), day)
+    except ValueError as exc:
+        raise HTTPException(400, str(exc)) from exc
+    except LookupError as exc:
+        raise HTTPException(404, str(exc)) from exc
 
 
 @lru_cache(maxsize=16)

@@ -168,6 +168,22 @@ not have).
 **Credentials.** The stores read anonymously; the toolbox login is only used for the
 catalogue lookup of the URL.
 
+### 1.5 Wind and waves — Copernicus Marine ARCO (**verified working, 2026-09-24**)
+
+Read by `server/ocean/marine.py` through the same store reader as §1.4. Each day is read
+at **12:00 UTC**, and every response says so.
+
+| Dataset | Variables | From | To | One read, cold |
+|---|---|---|---|---|
+| `cmems_obs-wind_glo_phy_nrt_l4_0.125deg_PT1H` (WIND_GLO_PHY_L4_NRT_012_004) | `eastward_wind`, `northward_wind` (10 m stress-equivalent, m s-1) | 2020-07-01 | yesterday (2026-09-23 when probed) | open 3-6 s, one global hour 4.1-4.4 s (1440 x 2880) |
+| `cmems_obs-wind_glo_phy_my_l4_0.125deg_PT1H` (WIND_GLO_PHY_L4_MY_012_006) | the same | 2007-01-11 | 2026-05-21 | open 6.0 s, one global hour 3.1 s |
+| `cmems_mod_glo_wav_anfc_0.083deg_PT3H-i` (GLOBAL_ANALYSISFORECAST_WAV_001_027) | `VHM0` significant wave height, m | 2022-11-01 | ten days ahead (2026-10-04 when probed) | open 3.2 s, one global instant 3.7 s (2041 x 4320) |
+
+The wind is an **observation** product (scatterometers blended with ECMWF): there is no
+wind for today or later (D-38). Days before July 2020 are read from the reprocessed store.
+The global wind for the animation is block-averaged 4:1 to 1/2 degree (720 x 360, 2 MB for
+u and v); only the reduced arrays are cached.
+
 ---
 
 ## 2 · In-situ observations
