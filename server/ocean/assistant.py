@@ -534,6 +534,8 @@ def demo() -> None:
     cube_ = check_action("make_cube", {"west": -80, "east": -60, "south": 30, "north": 45,
                                        "day": "2026-09-01; drop", "depth_max": 1e6})
     assert cube_["depth_max"] == 6000 and "day" not in cube_, cube_
+    assert check_action("make_cube", {"west": 0, "east": 10, "south": 0, "north": 10,
+                                      "day": "2026-09-01"})["day"] == "2026-09-01"
     assert "Views (keys 1 to 4)" in tool_user_guide("fly")["sections"]
     print("assistant demo ok")
 
