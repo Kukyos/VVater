@@ -2,14 +2,34 @@
 
 SIH 2026 · Problem Statement 26067 · INCOIS / Ministry of Earth Sciences · Disaster Management
 
-A browser-native platform that renders INCOIS ocean model fields as a **3D volume** —
-temperature and salinity through the whole water column of the Bay of Bengal — and draws
-every **Argo float and glider** into the same scene, so the forecast and the instruments
-that test it can be seen, and compared, together. No install, no plug-in, no account.
+A browser-native platform where you **cut a block out of the ocean anywhere on Earth, on
+any day from 1993 to nine days ahead, and look at it from the side**: temperature,
+salinity, density, sound speed, currents, oxygen, chlorophyll, nutrients, pH and carbon,
+through the whole water column on the model's own levels. Real **Argo floats** stand inside
+the block, coloured by what they measured, and the rest of the planet is painted with the
+same variable and colour bar, with that day's currents flowing over it. No install, no
+plug-in, no account.
 
-![The workspace: the Bay of Bengal volume cut at 93 m, currents at that depth, every float, and the assistant comparing one float with the model](submission/sih/figures/shot-workspace.png)
+## The Ocean Cube
 
-## Views
+![The Gulf Stream on 15 February 2020, cut open: the warm current leaving the coast on the top face at 44 m, the thermocline deepening under it on the south wall, solid land to the west](submission/sih/figures/shot-v2-cube.png)
+
+![The whole ocean around the cube, with that day's currents as moving trails; the cube's top face shows the Gulf Stream's eddies](submission/sih/figures/shot-v2-globe.png)
+
+
+- **Anywhere, any day**: Copernicus Marine models read straight from their cloud stores,
+  1993 to the forecast horizon, 23 variables, labelled reanalysis, analysis or forecast.
+- **Cut it open**: every face is a section through the data; move any side inwards to see
+  inside. Stretched or true depth, contours, or the model's native levels only.
+- **Floats inside the water**: global core and BGC Argo, QC flags, data mode and source file
+  on every cast; click one to compare it with the model on its own day.
+- **The whole ocean around it**, on the same colour bar, with animated currents.
+- Nine scenarios to start from, including Cyclone Amphan before and after, or drag your own
+  box on the globe. The URL carries the view.
+
+## The INCOIS Bay of Bengal volume
+
+
 
 The Bay of Bengal as a volume, 5–2,000 m, with the instruments, the controls and the
 inspector. Four views of the same data:
@@ -50,7 +70,7 @@ inspector. Four views of the same data:
 python -m venv .venv && .venv/Scripts/pip install -r server/requirements.txt
 python -m server.tools.fetch_fixtures             # real files the tests run against
 python -m pytest server/tests -q                  # tests
-python -m server.ocean.globalsurface --warm       # global layers, once (Copernicus login)
+python -m server.tools.warm_scenarios            # pre-fetch the nine scenarios, once
 python -m uvicorn server.ocean.api:app --port 8011
 cd viewer && npm install && npm run dev           # http://localhost:5173
 ```
@@ -66,8 +86,9 @@ Copernicus Marine toolbox · Groq (OpenAI-compatible chat completions with tool 
 
 ## Data
 
-INCOIS ERDDAP Argo variational analysis (primary) · Copernicus GLORYS12 and its 1/4° global
-member · Argo GDAC over HTTPS · U.S. IOOS Glider DAC. Every source is probed, not assumed:
+Copernicus Marine ARCO stores (GLORYS12 reanalysis, global analysis & forecast, PISCES
+biogeochemistry) · INCOIS ERDDAP Argo analyses · Argo GDAC over HTTPS and Ifremer ERDDAP ·
+U.S. IOOS Glider DAC. Every source is probed, not assumed:
 `docs/05-data-sources.md`.
 
 ## Documents

@@ -3,13 +3,75 @@
 What every control does and what every word on screen means. Written for someone who
 has never used an ocean data tool. The in-app assistant answers from this page.
 
+## The Ocean Cube (Properties, top)
+
+The cube is a block of ocean cut out of the planet and set down on the sea surface where
+it came from, so you can look at it from the side. Every face is a slice through the data.
+
+- **Start from** — a ready-made place and day: the Bay of Bengal, Cyclone Amphan before and
+  after, the Arabian Sea's oxygen-poor layer, the Gulf Stream, the Kuroshio, the Agulhas,
+  the 2015 El Niño, the Drake Passage. The line under it says why that one is interesting.
+- **Variable** — what the colours show. Physics: temperature, salinity, currents, vertical
+  velocity, density, speed of sound. Biogeochemistry: chlorophyll, oxygen, nitrate,
+  phosphate, silicate, iron, pH, dissolved carbon, alkalinity, phytoplankton, primary
+  production. All from Copernicus Marine models; density and sound speed are worked out
+  from temperature and salinity.
+- **Day** — any day from 1993 to about nine days ahead. The line under it says which model
+  the day comes from. Days after today are a **forecast** and are marked in yellow.
+- **Down to** — how deep the cube goes, down to the sea floor.
+- **West, East, South, North** — the box, in degrees. **Draw a box** lets you drag one on
+  the globe instead (Esc cancels). **Load cube** fetches it. A cube can be up to 100° wide.
+- **Argo floats in the cube** — every float that measured inside the box within two days.
+  Each is a stick, white at the top where it surfaced, coloured down its length by what it
+  measured on the same colour bar as the cube. Red parts failed quality control. Behind a
+  face a stick is drawn dashed. Click one to compare it with the model.
+
+The first time a place or day is asked for it can take 5 to 20 seconds; after that it is
+kept and opens at once.
+
+## Cut & look
+
+- **Top, Bottom** — cut the cube from above or below. The top face then shows the water at
+  that depth.
+- **West, East, South, North side** — move a side inwards; that wall now shows the inside.
+- **Height** — how tall the cube is drawn. The ocean is a few kilometres deep and thousands
+  wide, so depth is stretched; the number (×250 and so on) says by how much.
+- **Stretched depth** — gives the upper ocean, where most change happens, more room. Off,
+  depth is drawn evenly. The depth labels on the corner are always true depths.
+- **Contours** — thin lines at round values, like height lines on a map.
+- **Native levels only** — shows the model's own depth levels as bands, with nothing
+  blended between them. Off, colours are blended between levels, as sections are usually
+  drawn.
+- **Whole cube** puts the cuts back; **Look at it** points the camera at the cube.
+
+## Whole ocean
+
+- **The whole ocean at the cube's top depth** — the rest of the planet painted with the same
+  variable, day and colours as the cube. Grey land is land.
+- **Animated currents** — moving streaks that follow that day's currents, over the whole
+  ocean and on the cube's top. Faster water is brighter. They show the flow on that one day;
+  they are not the path a drifting object would take over time.
+- **Particles** — how many streaks. Fewer is faster on a slow computer.
+
+## Probe (Inspector)
+
+Hover over the cube to read the value, depth and position under the pointer. Click the cube
+to draw that place's whole column, one dot per model level. Hover over a float stick for its
+number, time, data mode and source file.
+
+## INCOIS Bay volume
+
+The older view of the Bay of Bengal, drawn from INCOIS's own analysis as a see-through
+volume under the sea, with the residual and every glider cast. Tick it to switch to it; the
+controls below (Layers, Properties) belong to it.
+
 ## Views (keys 1 to 4)
 
-- **Region 3D** (1) — the working view. Drag to orbit, Shift- or right-drag to pan, scroll
+- **Region 3D** (1) — the working view, orbiting the cube. Drag to orbit, Shift- or right-drag to pan, scroll
   to zoom. Keyboard: **W A S D** move, **Q E** turn, **R F** zoom in and out, **↑ ↓** tilt.
   Zoom is limited, so you cannot get lost. *Reset camera* or **Home** goes back.
-- **Map 2D** (2) — a flat map of the depth slice. The 3D volume cannot be drawn flat, so
-  the map shows the horizontal section at the chosen depth.
+- **Map 2D** (2) — a flat map of the cube's top face (or, in the Bay volume, the depth
+  slice).
 - **Globe** (3) — the whole Earth with the region in the middle.
 - **Fly** (4) — a plane over the sea at a fixed height, so you cannot fly into space.
   **W S** faster and slower, **A D** turn, **R F** climb and descend (between 8 and
@@ -17,7 +79,7 @@ has never used an ocean data tool. The in-app assistant answers from this page.
 
 Panels fold away with **[** and **]**.
 
-## Layers
+## Layers (INCOIS Bay volume)
 
 - **Analysis** — the model's best estimate of the ocean, from INCOIS: temperature or
   salinity at every grid cell and depth. An estimate, not a measurement.
@@ -25,7 +87,7 @@ Panels fold away with **[** and **]**.
   measurement was taken. Red means the water was warmer than the model said, blue colder.
   Most cells are empty because nobody measured there; they are left empty, not guessed.
 
-## Properties panel
+## Bay volume properties
 
 - **Source** — which model: INCOIS Argo analysis (default, no account needed) or
   Copernicus GLORYS12 (finer grid, has currents).

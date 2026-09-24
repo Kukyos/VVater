@@ -3,7 +3,7 @@
 The rule for this file: an idea earns a place only if the **data already supports it**.
 Anything needing a source we do not have goes to `10-unsourced.md` instead.
 
-Nine are built. Every number here comes from `13-eval-results.md`.
+Thirteen are built; N10 to N13 arrived with v2 (branch `v2`, 2026-09-24). Every number here comes from `13-eval-results.md`.
 
 ---
 
@@ -132,3 +132,42 @@ shape's height bounds, not a mesh transform — so it ships as a labelled pair: 
 scale** and **Readable (40x)**, each with an on-screen line computed from the volume
 actually drawn ("1 part in N"). The first version of that line said "4 km deep and
 2000 km wide"; neither number was what was on screen, so it is computed now.
+
+---
+
+## v2
+
+### N10 · The ocean as a block you can cut
+
+Every ocean viewer we looked at, including Copernicus's own, shows the ocean as a map: a
+surface, or one depth at a time. The brief asks for depth-resolved volumes. The v2 cube
+lifts a block of any size out of the planet, anywhere, on any day, and sets it on the sea
+surface so it can be looked at **from the side**, which is the one direction a map can
+never show. Its faces are sections painted from the model's native levels; any side can
+be moved inwards to look inside. The thermocline, an oxygen-poor layer, the shape of the
+sea floor and the edge of a current become things you see rather than infer from a stack
+of maps.
+
+### N11 · Observations stand inside the model
+
+Argo floats are not dots on a surface here: each is a vertical stick in the cube, coloured
+level by level through the same colour bar as the water around it. Where the model and
+the float disagree, the stick is a different colour from the wall beside it, so a
+misfit is visible before anyone opens a chart. QC failures are drawn in their own colour,
+never dropped; one click co-locates the float against the same model.
+
+### N12 · Any day, any variable, no archive to build
+
+The platform holds no copy of the ocean. It reads the Copernicus ARCO stores chunk by chunk
+(`server/ocean/arco.py`), so every day from 1993 to the forecast horizon, 23 variables,
+physics and biogeochemistry, is one request away, and a day already looked at is cached.
+Which model a day comes from is decided per day and written on screen; a forecast is always
+labelled a forecast.
+
+### N13 · One colour bar for the cube and the planet
+
+The globe around the cube is painted with the cube's own variable at the cube's top depth,
+on the cube's colour bar, with that day's currents flowing over both. A colour means the
+same value inside and outside the block, so the block reads as a piece of the ocean around
+it rather than a separate chart.
+
