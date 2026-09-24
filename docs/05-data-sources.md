@@ -113,6 +113,61 @@ exists for the INCOIS path, not this one.
 at `/thredds/catalog.xml`. ERDDAP gives us the same data in a far easier form, so LAS is
 a documented alternative rather than a build target.
 
+### 1.4 Copernicus ARCO stores — the whole ocean, any day (**verified working, 2026-09-24**)
+
+Every Copernicus dataset is also published as a Zarr store on public S3 ("ARCO",
+analysis-ready cloud-optimised). This is what makes the v2 cube global: no download of a
+subset file per request, just the chunks a box touches. `server/ocean/arco.py`.
+
+**How it is opened.** The toolbox's `open_dataset` builds a catalogue query and a dask
+graph per call; opening a whole dataset that way had not finished after ten minutes. So
+the toolbox is used only to look up the store URL (cached in
+`data/cache/arco/store_urls.json`), and the store is opened with the toolbox's own S3
+store class and `xarray.open_zarr(chunks=None)`: lazy indexing, no dask.
+
+**Measured** on `cmems_mod_glo_phy_my_0.083deg_P1D-m` (`timeChunked.zarr`):
+
+| Operation | Time |
+|---|---:|
+| open the store (once per process) | 3.6–6.8 s |
+| one day, 15° × 15°, all 50 levels, cold | 5–9 s |
+| the same, from the chunk cache | 0.4 s |
+| one day, the whole globe, one level, native 1/12° | 0.6 s |
+
+A chunk is one depth level of one day, 512 × 2048 cells (about 42° × 170°), 0.78 MB
+compressed on average. Cold reads run at about 13 MB/s from this network, so cost scales
+with **how many chunks a box touches**, not with its area: a basin-sized box costs about
+what a small one crossing a chunk edge costs. Chunks are cached on disk.
+
+**Time coverage, read from each store's own time axis** (the catalogue reads it again every
+day; nothing below is hardcoded):
+
+| Dataset | Variables | From | To |
+|---|---|---|---|
+| `cmems_mod_glo_phy_my_0.083deg_P1D-m` (reanalysis + interim) | thetao so uo vo zos mlotst bottomT siconc sithick | 1993-01-01 | 2026-06-23 |
+| `cmems_mod_glo_phy-{thetao,so,cur,wcur}_anfc_0.083deg_P1D-m` | thetao so uo vo wo | 2022-06-01 | 2026-10-03 |
+| `cmems_mod_glo_phy_anfc_0.083deg_P1D-m` | zos mlotst tob siconc … | 2022-06-01 | 2026-10-03 |
+| `cmems_mod_glo_bgc_my_0.25deg_P1D-m` | chl no3 nppv o2 po4 si | 1993-01-01 | 2026-05-31 |
+| `cmems_mod_glo_bgc-{pft,bio,nut,car}_anfc_0.25deg_P1D-m` | chl phyc o2 nppv no3 po4 si fe ph dissic talk | 2021-11-01 | 2026-10-03 |
+
+The eras overlap by years, so there is **no gap** from 1993 to nine days ahead of today.
+The reanalysis is preferred wherever it covers (`catalog.resolve`); days after today are a
+**forecast** and are labelled so in every response.
+
+**Vertical axis.** Physics: 50 levels, 0.494 m to 5,727.9 m. BGC reanalysis: 75 levels.
+BGC analysis-forecast: 50. The stores name the axis `elevation` and hold **negative**
+metres, while its attributes still say `standard_name=depth`, `positive=down`. The data
+and the metadata disagree. We read `depth = -elevation`, record that assumption in every
+cube's provenance, and pin it with physics (`python -m server.ocean.cube --live`: North
+Atlantic, August, surface 27.9 °C, 1,942 m 3.8 °C).
+
+**Bathymetry** is `deptho` in the static dataset `cmems_mod_glo_phy_my_0.083deg_static`,
+part `bathy`, service `static-arco` (not `arco-geo-series`, which the static dataset does
+not have).
+
+**Credentials.** The stores read anonymously; the toolbox login is only used for the
+catalogue lookup of the URL.
+
 ---
 
 ## 2 · In-situ observations
@@ -191,6 +246,28 @@ means walking 184 catalogues — logged as `11-deferred.md` D-02.
 > **Finding worth stating in the proposal:** glider coverage in the Bay of Bengal is not
 > thin, it is **nearly absent** — one deployment in 2,562. The brief presents gliders as
 > a routine data stream alongside Argo. For this region, they are not.
+
+### 2.4 Argo anywhere — Ifremer ERDDAP (**verified working, 2026-09-24; not yet wired**)
+
+The GDAC day-files in §2.1 are per basin. For a cube anywhere on Earth the query has to be
+by box and time. Ifremer's ERDDAP answers exactly that, no credentials:
+
+| Dataset | Query (60° × 40° box, 10 days) | Response |
+|---|---|---:|
+| `ArgoFloats` (core) | `platform_number,cycle_number,time,latitude,longitude&time>=…&latitude>=…&distinct()` | 11 KB, 5.5 s |
+| `ArgoFloats-synthetic-BGC` | same, over 40 days | 13 KB, 4.3 s |
+
+The BGC set carries chlorophyll and oxygen from the floats themselves, which is the
+in-situ chlorophyll the brief names (`11-deferred.md` D-04). Argovis
+(`argovis-api.colorado.edu`) answers the same box query in 2.2 s and is the fallback.
+
+### 2.5 What INCOIS itself publishes on ERDDAP (probed 2026-09-24)
+
+`erddap.incois.gov.in` lists 17 datasets: the Argo 10-day and monthly analyses (VAM and
+Kessler-McCreary), a weekly Argo SST, `Indian_ARGO_Floats`, Oceansat-2 and IRS chlorophyll,
+and ASCAT, QuikSCAT, TMI, AMSR-E and AVHRR satellite products. **No INCOIS numerical ocean
+model output is public there.** So the INCOIS analyses stay first-class where they cover,
+and the global model field comes from Copernicus.
 
 ---
 

@@ -115,6 +115,63 @@ SOURCES: dict[str, Source] = {
 
 DEFAULT_SOURCE = "incois_vam"
 
+# ---------------------------------------------------------------- scenarios
+
+# Named places and days the viewer offers as starting points, and that
+# `python -m server.tools.warm_scenarios` pre-fetches so they open instantly offline.
+# Each is chosen for a physical reason stated in `why`. Descriptions stay qualitative:
+# any number said about them must come from the eval harness (hard rule 1).
+# Boxes are (lon0, lon1, lat0, lat1); lon1 past 180 crosses the antimeridian.
+
+
+@dataclass(frozen=True)
+class Scenario:
+    key: str
+    title: str
+    box: tuple[float, float, float, float]
+    day: str
+    variable: str
+    depth_max: float
+    why: str
+
+
+SCENARIOS: list[Scenario] = [
+    Scenario("bay_of_bengal", "Bay of Bengal", (78, 100, 5, 23), DEMO_DATE.isoformat(),
+             "temperature", 2000,
+             "The flagship: INCOIS analysis, Argo floats, a glider and GLORYS12 all present "
+             "on this one day, which is what the co-location results are measured on."),
+    Scenario("amphan_before", "Cyclone Amphan, before", (80, 95, 5, 23), "2020-05-14",
+             "temperature", 300,
+             "The Bay two days before Amphan formed (16 May 2020): the warm upper ocean a "
+             "cyclone draws its energy from."),
+    Scenario("amphan_after", "Cyclone Amphan, after", (80, 95, 5, 23), "2020-05-22",
+             "temperature", 300,
+             "Two days after landfall (20 May 2020): compare the upper ocean with the day "
+             "before the storm to look for the cooling a cyclone leaves behind it."),
+    Scenario("arabian_sea", "Arabian Sea oxygen minimum", (50, 78, 5, 25), "2019-10-15",
+             "oxygen", 1500,
+             "One of the largest oxygen-poor layers in the world ocean sits a few hundred "
+             "metres down here, under productive surface water."),
+    Scenario("gulf_stream", "Gulf Stream", (-80, -50, 30, 45), "2020-02-15", "temperature",
+             2000,
+             "A western boundary current: warm water carried north against cold slope water, "
+             "with eddies shed on both sides."),
+    Scenario("kuroshio", "Kuroshio", (125, 155, 25, 42), "2020-02-15", "temperature", 2000,
+             "The Pacific's western boundary current, the counterpart of the Gulf Stream."),
+    Scenario("agulhas", "Agulhas retroflection", (10, 35, -45, -30), "2019-07-15",
+             "temperature", 2000,
+             "Where the Agulhas Current turns back on itself south of Africa and sheds "
+             "rings of Indian Ocean water into the Atlantic."),
+    Scenario("el_nino", "Equatorial Pacific, El Niño 2015", (170, 270, -10, 10),
+             "2015-12-01", "temperature", 500,
+             "The equatorial Pacific during the strong 2015-16 El Niño: the thermocline "
+             "along the equator is the thing to look at from the side."),
+    Scenario("drake_passage", "Drake Passage", (-75, -50, -65, -52), "2019-02-15",
+             "temperature", 4000,
+             "The Antarctic Circumpolar Current squeezed between South America and "
+             "Antarctica: fronts that reach the sea floor."),
+]
+
 # ---------------------------------------------------------------- endpoints
 
 ERDDAP_BASE = "https://erddap.incois.gov.in/erddap"

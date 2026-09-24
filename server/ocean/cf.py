@@ -18,6 +18,9 @@ UNIT_ALIASES = {
     "psu": "1e-3",  # practical salinity is dimensionless; PSU is the conventional label
 }
 
+UDUNITS_CELSIUS = frozenset({"degree_Celsius", "degrees_Celsius", "degree_C", "degrees_C",
+                             "degC", "Celsius"})
+
 STANDARD_NAMES = {
     "temperature": "sea_water_temperature",
     "speed": "sea_water_speed",
@@ -71,6 +74,10 @@ def normalise_variable(da, canonical: str) -> CFReport:
     assumptions: list[str] = []
 
     raw_units = str(da.attrs.get("units", "")).strip()
+    # Valid UDUNITS spellings of Celsius (Copernicus writes "degrees_C") are read as-is;
+    # only the non-standard ones above are an assumption worth recording.
+    if raw_units in UDUNITS_CELSIUS:
+        raw_units = "degree_Celsius"
     units = UNIT_ALIASES.get(raw_units.lower(), raw_units)
     if not raw_units:
         units = DISPLAY_UNITS.get(STANDARD_NAMES.get(canonical, ""), "")

@@ -15,10 +15,11 @@ from functools import lru_cache
 import numpy as np
 from fastapi import FastAPI, HTTPException, Request, Response
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.middleware.gzip import GZipMiddleware
 from fastapi.responses import JSONResponse
 
-from . import (argo, assistant, cf, colocate, config, currents, glider, globalsurface, heat,
-               residual, sources, textcast, volume, wms)
+from . import (argo, assistant, catalog, cf, colocate, config, cube, currents, glider,
+               globalsurface, heat, residual, sources, textcast, volume, wms)
 
 # Variables that exist as gridded fields but not as instrument measurements. Asking a
 # float for its "observation count" is meaningless, so the in-situ side falls back to
@@ -63,6 +64,9 @@ app.add_middleware(
     allow_methods=["GET", "POST"],
     allow_headers=["*"],
 )
+# Cubes are megabytes of float32 with large NaN runs (land, below the sea floor), which
+# compress well; the old 42 KB INCOIS volume never needed this.
+app.add_middleware(GZipMiddleware, minimum_size=4096)
 
 # The fetched dataset is the expensive thing, not the packing. Cached by (source,
 # variable, window) so scrubbing the timeline re-packs but never re-downloads.
@@ -272,6 +276,53 @@ def global_data(layer: str = "temperature", day: str | None = None) -> Response:
     return Response(content=_global(layer, day).values.tobytes(),
                     media_type="application/octet-stream",
                     headers={"Cache-Control": "public, max-age=3600"})
+
+
+@lru_cache(maxsize=1)
+def _catalog(today: str) -> dict:
+    return catalog.describe()
+
+
+@app.get("/api/catalog")
+def catalog_endpoint() -> dict:
+    """Every variable the cube can show, and each source era's measured time coverage.
+    Rebuilt once a day, because the stores grow by a day every day."""
+    return {**_catalog(date.today().isoformat()),
+            "scenarios": [{"key": s.key, "title": s.title, "box": list(s.box), "day": s.day,
+                           "variable": s.variable, "depthMax": s.depth_max, "why": s.why}
+                          for s in config.SCENARIOS]}
+
+
+def _cube(variable: str, lon0: float, lon1: float, lat0: float, lat1: float, day: str,
+          depth_max: float) -> "cube.Cube":
+    if variable not in catalog.VARIABLES:
+        raise HTTPException(404, f"no variable {variable!r}; see /api/catalog")
+    try:
+        box = cube.Box.parse(lon0, lon1, lat0, lat1)
+        return cube.build(variable, box, day, float(min(max(depth_max, 0.0), 6000.0)))
+    except ValueError as exc:
+        raise HTTPException(400, str(exc)) from exc
+    except LookupError as exc:
+        raise HTTPException(404, str(exc)) from exc
+
+
+@app.get("/api/cube/meta")
+def cube_meta(variable: str, lon0: float, lon1: float, lat0: float, lat1: float, day: str,
+              depth_max: float = 6000.0) -> dict:
+    """One variable, one day, one box, surface to depth_max, on native levels (cube.py)."""
+    return _cube(variable, lon0, lon1, lat0, lat1, day, depth_max).meta()
+
+
+@app.get("/api/cube/data")
+def cube_data(variable: str, lon0: float, lon1: float, lat0: float, lat1: float, day: str,
+              depth_max: float = 6000.0) -> Response:
+    """float32 values (depth, lat, lon; shallow and south first, x fastest), then float32
+    sea-floor depth (lat, lon). NaN is land or below the sea floor."""
+    c = _cube(variable, lon0, lon1, lat0, lat1, day, depth_max)
+    # A forecast day is rewritten by every new model run; history is not.
+    cache = "public, max-age=3600" if c.provenance["forecast"] else "public, max-age=86400"
+    return Response(content=c.payload(), media_type="application/octet-stream",
+                    headers={"Cache-Control": cache})
 
 
 @app.post("/api/chat")
