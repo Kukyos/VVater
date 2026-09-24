@@ -120,3 +120,6 @@ svg text { font-family: "IBM Plex Sans", sans-serif; }
 .feas .points li { padding: 19px 0; }
 .refcols .refs li { padding-top: 20px; padding-bottom: 20px; }
 .refcols .refs li::before { top: 20px; }
+.novel { display: flex; flex-direction: column; }
+.novel h3 { color: var(--navy); font-size: 46px; margin: 0 0 14px; }
+.novel figcaption { font-size: 36px; }

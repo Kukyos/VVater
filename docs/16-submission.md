@@ -19,11 +19,14 @@ file, not ours, and is not committed.
 
 - Keeps the template's masthead, SIH mark, footer and page numbers, because the portal
   requires the provided template.
-- Fills the title page fields from `01-problem-statement.md`, the "IDEA TITLE"
-  placeholder, and the team badge on every slide.
+- Fills the title page fields from `01-problem-statement.md`, styled like the team's
+  PS 26047 deck (bulleted, Arial Bold, black), and the "IDEA TITLE" placeholder.
+- Replaces the "Your Team Name" oval on every content slide with the VVater logo
+  (`figures/logo.png`, the viewer's favicon rendered by `render.py logo`).
 - Replaces each content slide's instruction box with one rendered body image.
-- Fills the empty lower half of the title page's left column with the idea in one line
-  and `shot-workspace.png`, left of the template's own artwork.
+- Slide 2 leads with what is new: the assistant (`shot-assistant.png`, cropped from
+  `shot-workspace.png` by `figures.py`) and the Fly view.
+- `build.py <path>` writes elsewhere, for when the deck is open in PowerPoint.
 - Drops the template's seventh "important instructions" slide: six is the limit, title
   slide included.
 

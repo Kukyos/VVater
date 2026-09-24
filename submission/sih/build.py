@@ -19,6 +19,7 @@ the machine that opens the file, which for a submission is the trade worth makin
 Rewording is an edit to figures.py and a rerun.
 """
 
+import sys
 from pathlib import Path
 
 from pptx import Presentation
@@ -28,7 +29,8 @@ ROOT = Path(__file__).resolve().parents[2]
 HERE = Path(__file__).resolve().parent
 FIGURES = HERE / "figures"
 TEMPLATE = ROOT / "SIH2026-IDEA-Presentation-Format.pptx"
-OUT = HERE / "final" / "VVater-SIH2026.pptx"
+# An optional path argument writes elsewhere, e.g. while the deck is open in PowerPoint.
+OUT = Path(sys.argv[1]).resolve() if len(sys.argv) > 1 else HERE / "final" / "VVater-SIH2026.pptx"
 
 # The body area, in inches on the 13.33 x 7.5 slide: below the masthead, above the
 # footer bar, bleeding to both edges. figures/deck.css renders to exactly this shape.
@@ -48,12 +50,14 @@ BODIES = {
 }
 DROP = [6]
 
-TEAM_NAME = "VVater"
+# The team is Team Null; VVater is the project, carried by the logo and the idea title.
+TEAM_NAME = "Team Null"
+LOGO = FIGURES / "logo.png"   # the viewer's favicon, rendered by render.py
 
-# The title page, filled in from the official listing. Verbatim from
-# docs/01-problem-statement.md -- never retyped from memory.
+# The title page, laid out like the team's PS 26047 deck: the same six lines, bulleted,
+# Arial Bold in black, "Label - value". Values verbatim from docs/01-problem-statement.md.
 TITLE_FIELDS = {
-    "Problem Statement ID": "26067",
+    "Problem Statement ID": "SIH26067",
     "Problem Statement Title": (
         "Develop a web-based interactive 3D visualization platform that integrates "
         "numerical ocean model outputs and in-situ observations."
@@ -105,57 +109,44 @@ def fill_idea_title(slide) -> None:
     raise SystemExit("no IDEA TITLE placeholder on slide 2; the template changed")
 
 
-def fill_team_badge(slide) -> None:
-    """Every content slide carries a "Your Team Name" oval; only the title slide was
-    being filled, so slides 2-6 went out saying "Your Team Name"."""
-    for shape in slide.shapes:
+def place_logo(slide) -> None:
+    """Every content slide carries a "Your Team Name" oval top left; it becomes the logo,
+    square, centred where the oval was."""
+    for shape in list(slide.shapes):
         if shape.has_text_frame and "Your Team Name" in shape.text_frame.text:
-            frame = shape.text_frame
-            first = frame.paragraphs[0]
-            for para in frame.paragraphs:
-                for run in para.runs:
-                    run.text = ""
-            (first.runs[0] if first.runs else first.add_run()).text = TEAM_NAME
+            size = shape.height
+            slide.shapes.add_picture(str(LOGO), shape.left + (shape.width - size) // 2,
+                                     shape.top, width=size, height=size)
+            shape._element.getparent().remove(shape._element)
 
 
 def fill_title(slide) -> None:
-    """Fill the title page's field list and the team badge."""
+    """The six title fields, styled as on the PS 26047 deck (scaled to this slide)."""
+    from pptx.dml.color import RGBColor
+    from pptx.oxml.ns import qn
+
     for shape in slide.shapes:
-        if not shape.has_text_frame:
+        if not (shape.has_text_frame and "Problem Statement ID" in shape.text_frame.text):
             continue
-        text = shape.text_frame.text
-
-        if "Your Team Name" in text:
-            shape.text_frame.paragraphs[0].runs[0].text = TEAM_NAME
-            continue
-
-        if "Problem Statement ID" not in text:
-            continue
-
         frame = shape.text_frame
         frame.clear()
+        frame.word_wrap = True
         for index, (label, value) in enumerate(TITLE_FIELDS.items()):
             para = frame.paragraphs[0] if index == 0 else frame.add_paragraph()
+            para.space_after = Pt(14)
+            pPr = para._p.get_or_add_pPr()
+            pPr.set("marL", str(Inches(0.3)))
+            pPr.set("indent", str(-Inches(0.3)))
+            pPr.append(pPr.makeelement(qn("a:buFont"), {"typeface": "Arial"}))
+            pPr.append(pPr.makeelement(qn("a:buChar"), {"char": "•"}))
             run = para.add_run()
-            run.text = f"{label}: {value}" if value else f"{label}:"
-            run.font.size = Pt(16 if len(value) < 60 else 13)
-
-
-# The lower half of the title page's left column is empty in the template. The idea in one
-# line and a capture of the running build fill it, left of the template's own artwork.
-TITLE_LINE = ("The ocean model and every float and glider in one 3D scene, in a browser "
-              "— and where they disagree.")
-
-
-def add_title_picture(slide) -> None:
-    box = slide.shapes.add_textbox(Inches(0.35), Inches(4.08), Inches(5.9), Inches(0.5))
-    run = box.text_frame.paragraphs[0].add_run()
-    run.text = TITLE_LINE
-    run.font.size = Pt(13)
-    run.font.bold = True
-    box.text_frame.word_wrap = True
-    slide.shapes.add_picture(str(FIGURES / "shot-workspace.png"),
-                             Inches(0.35), Inches(4.72), height=Inches(2.62))
+            run.text = f"{label} - {value}" if value else f"{label} - "
+            run.font.size = Pt(20)
+            run.font.bold = True
+            run.font.name = "Arial"
+            run.font.color.rgb = RGBColor(0, 0, 0)
+        return
+    raise SystemExit("no title field box on slide 1; the template changed")
 
 
 def main() -> None:
@@ -174,10 +165,9 @@ def main() -> None:
     deck = Presentation(str(TEMPLATE))
 
     fill_title(deck.slides[0])
-    add_title_picture(deck.slides[0])
     fill_idea_title(deck.slides[1])
     for slide in deck.slides:
-        fill_team_badge(slide)
+        place_logo(slide)
 
     for index, name in BODIES.items():
         slide = deck.slides[index]
@@ -192,7 +182,7 @@ def main() -> None:
 
     OUT.parent.mkdir(parents=True, exist_ok=True)
     deck.save(str(OUT))
-    print(f"wrote {OUT.relative_to(ROOT)}  ({len(deck.slides)} slides)")
+    print(f"wrote {OUT}  ({len(deck.slides)} slides)")
 
 
 if __name__ == "__main__":

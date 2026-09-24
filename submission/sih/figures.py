@@ -44,6 +44,14 @@ def signed(value, digits=1) -> str:
     return f"{float(value):+.{digits}f}".replace("-", "&#8722;")
 
 
+def crop_assistant() -> None:
+    """The assistant panel from the workspace capture, so slide 2 shows it at a readable
+    size. A crop of a real capture, not a mock-up."""
+    from PIL import Image
+    Image.open(FIGURES / "shot-workspace.png").crop((2352, 150, 3200, 1045)).save(
+        FIGURES / "shot-assistant.png")
+
+
 def load() -> dict:
     if not EVAL.exists():
         raise SystemExit(
@@ -177,6 +185,7 @@ def flowchart(empty_pct: str) -> str:
 def main() -> None:
     FIGURES.mkdir(parents=True, exist_ok=True)
     e = load()
+    crop_assistant()
 
     bands = e["depth_bands"]
     shallow, deep = bands["0-300 m"], bands["300-950 m"]
@@ -194,57 +203,53 @@ def main() -> None:
 
     # ============================================================ 2 solution
     page("body-solution", f"""
-<p class="lead" style="font-size:56px">INCOIS knows the ocean in 3D; its forecasters still read it in 2D.
-<b>VVater puts the model and every instrument in one 3D scene, in a browser, and shows where they disagree.</b></p>
-<div class="cols grow" style="grid-template-columns: 1fr 1650px; gap: 60px">
-  <div class="col" style="gap:16px">
-    <h2 style="margin:0">The problem, in plain words</h2>
-    <div class="cards" style="grid-template-columns: repeat(3, 1fr)">
-      <div class="card red"><h3>The ocean has depth</h3><p>A cyclone feeds on a warm layer
-        tens of metres thick. A surface map cannot show how thick, and thickness is the fuel.</p></div>
-      <div class="card grey"><h3>Two versions of truth</h3><p>The <b>model</b> estimates the whole
-        ocean on a grid; <b>floats and gliders</b> actually measure, at a few points. Where they
-        disagree matters most.</p></div>
-      <div class="card grey"><h3>Two separate tools</h3><p>Each is opened in its own desktop
-        program, mostly as flat maps, so comparing them is manual — the gap the brief names.</p></div>
-    </div>
-    <h2 style="margin:4px 0 0">One question, today and with VVater</h2>
-    <div class="journey">
-      <div class="who">Today</div>
-      <div class="step now">Open the model in one desktop tool, pick a depth</div>
-      <div class="step now">Open the float files in another, plot one profile</div>
-      <div class="step now">Line them up by eye; repeat for every depth</div>
-      <div class="who" style="color:var(--navy)">VVater</div>
-      <div class="step vv">Open one link. <b>No install</b>; deployable on INCOIS servers</div>
-      <div class="step vv">Whole water column + <b>{argo["profiles"]} float profiles, {glider["casts"]} glider casts</b></div>
-      <div class="step vv">Click a float: profile vs model, gap in <b>°C and cyclone fuel</b></div>
-    </div>
-    <h2 style="margin:4px 0 0">What makes it different</h2>
-    <div class="cards" style="grid-template-columns: repeat(2, 1fr); gap:18px">
-      <div class="card"><h3>Shows where the model is wrong</h3><p>Measured minus model as its
-        own 3D layer. Only <b>{res["coverage_percent"]}%</b> was ever measured; the rest stays visibly empty.</p></div>
-      <div class="card"><h3>Shows how sure the model is</h3><p>The analysis ships an error field;
-        water the model is guessing about is drawn faint, not solid.</p></div>
-      <div class="card"><h3>Speaks the forecaster's unit</h3><p>Every comparison also in
-        <b>cyclone heat potential</b> (kJ/cm²); the 20 °C isotherm is one click.</p></div>
-      <div class="card"><h3>Never hides a bad reading</h3><p>Each point carries its QC flag, data
-        mode and source file; rejected levels are drawn red, not deleted.</p></div>
-    </div>
-    <div class="gloss" style="grid-template-columns: repeat(4, 1fr)">
-      <div><b>Argo float</b>a robot that dives to 2,000 m every ten days</div>
-      <div><b>Glider</b>an underwater drone that saw-tooths along a track</div>
-      <div><b>Analysis</b>the model's best 3D estimate, published by INCOIS</div>
-      <div><b>Residual</b>measured minus modelled: how wrong, and where</div>
+<p class="lead" style="font-size:56px">Forecasters get the ocean model and the measurements in separate tools, as flat maps.
+<b>VVater puts both in one 3D scene in the browser, and you can ask it questions or fly over it.</b></p>
+<div class="cols grow" style="grid-template-columns: 1180px 1fr; gap: 90px">
+  <div class="col" style="gap:14px">
+    <h2 style="margin:0">The problem</h2>
+    <ul class="points">
+      <li><b>The ocean is 3D; the tools are flat</b><span>A cyclone feeds on a warm layer tens of
+        metres thick. A surface map cannot show how thick.</span></li>
+      <li><b>Model and measurements live apart</b><span>The model in one program, float and glider
+        files in another; comparing them is done by eye.</span></li>
+    </ul>
+    <h2 style="margin:18px 0 0">What we built</h2>
+    <ul class="points">
+      <li><b>One link, no install</b><span>any browser; deployable on INCOIS servers</span></li>
+      <li><b>Model and measurements in one 3D scene</b><span>the INCOIS model with
+        {argo["profiles"]} Argo float profiles and {glider["casts"]} glider casts</span></li>
+      <li><b>Click a float, see the gap</b><span>its profile against the model, in °C and in cyclone
+        heat potential</span></li>
+      <li><b>Bad readings stay visible</b><span>failed quality checks drawn red, never dropped</span></li>
+    </ul>
+    <div class="thumbs" style="grid-template-columns: repeat(3, 1fr); margin-top:10px">
+      <figure><img src="shot-simple.png"><figcaption><b>Simple</b>the whole ocean</figcaption></figure>
+      <figure><img src="shot-region.png"><figcaption><b>Region 3D</b>the water column</figcaption></figure>
+      <figure><img src="shot-map.png"><figcaption><b>Map 2D</b>any depth</figcaption></figure>
     </div>
   </div>
-  <div class="col" style="gap:16px">
-    <figure class="shot"><img src="shot-workspace.png" style="aspect-ratio: 16 / 9; object-fit: cover; object-position: 100% 45%">
-      <figcaption><b>The working prototype, not a mock-up:</b> the volume cut at 93 m with currents and every float; right, the built-in assistant opened a float for us and compared it with the model from the data.</figcaption></figure>
-    <div class="thumbs" style="grid-template-columns: repeat(4, 1fr)">
-      <figure><img src="shot-simple.png"><figcaption><b>Simple</b>the whole ocean, one layer</figcaption></figure>
-      <figure><img src="shot-region.png"><figcaption><b>Region 3D</b>water column, 40× tall</figcaption></figure>
-      <figure><img src="shot-map.png"><figcaption><b>Map 2D</b>section at any depth</figcaption></figure>
-      <figure><img src="shot-fly.png"><figcaption><b>Fly</b>over the Bay, fixed height</figcaption></figure>
+  <div class="col" style="gap:14px">
+    <h2 style="margin:0">What is new</h2>
+    <div class="cols grow" style="grid-template-columns: 900px 1fr; gap: 60px">
+      <figure class="shot novel">
+        <h3>1 · Ask the ocean in plain words</h3>
+        <img src="shot-assistant.png">
+        <figcaption><b>Answers from the data and drives the viewer.</b> Here it opened the float,
+          drew its profile and compared it with the model. Any number it cannot trace to the
+          data is flagged.</figcaption>
+      </figure>
+      <figure class="shot novel">
+        <h3>2 · Fly over the Bay like a plane</h3>
+        <img src="shot-fly.png" style="aspect-ratio: 16 / 9; object-fit: cover; object-position: 50% 70%">
+        <figcaption><b>A flight view with pilot controls</b>: speed, turn, altitude 8–250 km.
+          The 3D water column, the currents and every float pass underneath at 40× depth.</figcaption>
+        <ul class="points" style="margin-top:18px">
+          <li><b>Why it matters</b><span>a 2,000 m-deep ocean becomes something a student, a
+            forecaster or a minister can see and move through, not a stack of flat maps</span></li>
+          <li><b>How to fly</b><span>W/S speed · A/D turn · R/F altitude · drag to steer</span></li>
+        </ul>
+      </figure>
     </div>
   </div>
 </div>
