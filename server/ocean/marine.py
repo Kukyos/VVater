@@ -28,6 +28,7 @@ hour would be a normalisation nobody could see (hard rule 5).
 
 from __future__ import annotations
 
+import os
 import sys
 from concurrent.futures import ThreadPoolExecutor
 from functools import lru_cache
@@ -46,6 +47,15 @@ WIND_BLOCK = 4
 GFS_URL = "https://thredds.ucar.edu/thredds/ncss/grid/grib/NCEP/GFS/Global_0p25deg/Best"
 GFS_VARS = ("u-component_of_wind_height_above_ground", "v-component_of_wind_height_above_ground")
 GFS_NAME = "NCEP GFS 0.25 deg (UCAR THREDDS, Best collection), 10 m wind"
+# UCAR's throughput swings: the same 1.5 MB global field came back in 4 s one morning and
+# in 90 s that afternoon, and a request past the old 120 s limit ended as an unhandled
+# error the browser could not even read. So the global field is taken at 1 degree
+# (stride 4, about 0.4 MB), a slow answer is given up on, and a forecast field once read
+# is kept on disk for FORECAST_TTL_S (a GFS run is replaced every six hours).
+GFS_TIMEOUT_S = (10, 45)
+GFS_GLOBAL_STRIDE = 4
+GFS_CACHE = arco.CACHE.parent / "gfs"
+FORECAST_TTL_S = 6 * 3600
 # Beyond any recorded 10 m wind; a cell past it is a bad value, masked and counted.
 WIND_LIMIT_MS = 120.0
 
@@ -90,13 +100,17 @@ def _gfs(day: str, box: "cube.Box | None" = None) -> tuple[np.ndarray, np.ndarra
     for lo, hi, shift in pieces:
         q = {"var": list(GFS_VARS), "time": when, "vertCoord": 10, "accept": "netcdf4"}
         if box is None:
-            q["horizStride"] = 2
+            q["horizStride"] = GFS_GLOBAL_STRIDE
         else:
             q.update(west=lo, east=hi, south=box.lat0, north=box.lat1)
-        r = requests.get(GFS_URL, params=q, timeout=120)
+        try:
+            r = requests.get(GFS_URL, params=q, timeout=GFS_TIMEOUT_S)
+        except requests.RequestException as exc:
+            raise LookupError(f"GFS forecast unreachable ({type(exc).__name__})") from exc
         if r.status_code == 400:
             raise LookupError(f"GFS forecast has no {when}: {r.text[:160]}")
-        r.raise_for_status()
+        if not r.ok:
+            raise LookupError(f"GFS forecast unavailable (HTTP {r.status_code})")
         ds = xr.open_dataset(io.BytesIO(r.content))
         u = np.asarray(ds[GFS_VARS[0]].values, dtype=np.float32).squeeze()
         v = np.asarray(ds[GFS_VARS[1]].values, dtype=np.float32).squeeze()
@@ -126,22 +140,56 @@ def _gfs_provenance(when: str, variable: str) -> dict:
                     f"{_observed_until()}"}
 
 
-@lru_cache(maxsize=6)
+def _gfs_global(day: str) -> dict:
+    """The forecast field for the animation, from the disk cache while it is fresh."""
+    import json
+    import time
+
+    path = GFS_CACHE / f"{day}.npz"
+    if path.exists() and time.time() - path.stat().st_mtime < FORECAST_TTL_S:
+        z = np.load(path)
+        return {"u": z["u"], "v": z["v"], "meta": json.loads(str(z["meta"]))}
+    u, v, lons, lats, when = _gfs(day)
+    bad = ~(np.abs(u) <= WIND_LIMIT_MS) | ~(np.abs(v) <= WIND_LIMIT_MS)
+    ny, nx = u.shape
+    out = {"u": np.nan_to_num(np.where(bad, 0, u)).astype(np.float32),
+           "v": np.nan_to_num(np.where(bad, 0, v)).astype(np.float32),
+           "meta": {"dimensions": [int(nx), int(ny)],
+                    "lonRange": [float(lons[0]), float(lons[-1])],
+                    "latRange": [float(lats[0]), float(lats[-1])], "levelM": 10.0,
+                    "provenance": {**_gfs_provenance(when, "u, v 10 m"),
+                                   "display_step_deg": 0.25 * GFS_GLOBAL_STRIDE,
+                                   "range_test": {"limit_ms": WIND_LIMIT_MS,
+                                                  "masked_cells": int(bad.sum())}}}}
+    GFS_CACHE.mkdir(parents=True, exist_ok=True)
+    tmp = path.with_suffix(f".{os.getpid()}.npz")
+    np.savez(tmp, u=out["u"], v=out["v"], meta=json.dumps(out["meta"]))
+    os.replace(tmp, path)
+    return out
+
+
 def wind(day: str) -> dict:
-    """u and v worldwide at 1/2 deg, for the particles. Only the reduced arrays are kept."""
-    if day > _observed_until():
-        u, v, lons, lats, when = _gfs(day)
-        bad = ~(np.abs(u) <= WIND_LIMIT_MS) | ~(np.abs(v) <= WIND_LIMIT_MS)
-        ny, nx = u.shape
-        return {"u": np.nan_to_num(np.where(bad, 0, u)).astype(np.float32),
-                "v": np.nan_to_num(np.where(bad, 0, v)).astype(np.float32),
-                "meta": {"dimensions": [int(nx), int(ny)],
-                         "lonRange": [float(lons[0]), float(lons[-1])],
-                         "latRange": [float(lats[0]), float(lats[-1])], "levelM": 10.0,
-                         "provenance": {**_gfs_provenance(when, "u, v 10 m"),
-                                        "display_step_deg": 0.5,
-                                        "range_test": {"limit_ms": WIND_LIMIT_MS,
-                                                       "masked_cells": int(bad.sum())}}}}
+    """u and v worldwide, for the particles.
+
+    Up to yesterday: the observed record. After it: the GFS forecast. If GFS cannot be
+    reached, the newest observed day stands in, and the provenance says so in words
+    (`stand_in`), so a slow third-party server costs the forecast, not the whole layer."""
+    until = _observed_until()
+    if day <= until:
+        return _observed_wind(day)
+    try:
+        return _gfs_global(day)
+    except LookupError as exc:
+        got = _observed_wind(until)
+        prov = {**got["meta"]["provenance"], "stand_in": True,
+                "note": f"{exc}; showing the newest observed wind, {until}, instead of "
+                        f"the forecast for {day}"}
+        return {**got, "meta": {**got["meta"], "provenance": prov}}
+
+
+@lru_cache(maxsize=6)
+def _observed_wind(day: str) -> dict:
+    """The observed record at 1/2 deg. Only the reduced arrays are kept."""
     store, when = _wind_store(day)
     at = store.ds.sel(time=when)
     with ThreadPoolExecutor(max_workers=2) as pool:
@@ -223,7 +271,22 @@ def demo() -> None:
     lon = np.array([170.0, 175.0, 180.0])
     start = 170.0
     assert ((lon - start) % 360 + start).tolist() == [170, 175, 180], "180 stays east"
-    print("marine ok: fixed hour stated, days outside the record refused, date line kept")
+    # A forecast day with GFS unreachable: the newest observed day stands in, and says so.
+    import server.ocean.marine as m
+    saved = (m._observed_until, m._gfs_global, m._observed_wind)
+    def down(day):
+        raise LookupError("GFS forecast unreachable (ReadTimeout)")
+    try:
+        m._observed_until = lambda: "2026-09-23"
+        m._gfs_global = down
+        m._observed_wind = lambda day: {"u": 0, "v": 0, "meta": {"provenance": {"time_utc": day}}}
+        got = m.wind("2026-09-26")["meta"]["provenance"]
+        assert got["stand_in"] and "2026-09-23" in got["note"] and "unreachable" in got["note"], got
+        assert "stand_in" not in m.wind("2026-09-20")["meta"]["provenance"]
+    finally:
+        m._observed_until, m._gfs_global, m._observed_wind = saved
+    print("marine ok: fixed hour stated, days outside the record refused, date line kept, "
+          "an unreachable forecast labelled as a stand-in")
 
 
 def live() -> None:

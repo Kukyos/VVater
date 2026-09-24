@@ -196,6 +196,14 @@ ahead). One global field at stride 2 (1/2 deg, 720 x 361) is 1.5 MB and took 3.6
 both are normalised in `marine._gfs`, and a box across the date line is read in two pieces.
 It is a model forecast of 10 m wind, not stress-equivalent wind, and every response says
 which of the two it is.
+
+**Measured the same afternoon, UCAR was slow and flaky:** the same 1.5 MB global field took
+89-91 s (first byte in 2-4 s, then about 16 kB/s), and one request broke off mid-transfer
+(`ChunkedEncodingError`). So `marine.py` reads the global field at 1 degree (stride 4,
+about 0.4 MB), gives up after 45 s without data, keeps each forecast day on disk for six
+hours (`data/cache/gfs/`, one GFS run), and when GFS cannot be reached shows the newest
+observed day in its place, with `stand_in` and the reason in the provenance and on screen.
+Once cached, a forecast day came back in 2.5-3.6 s.
 The global wind for the animation is block-averaged 4:1 to 1/2 degree (720 x 360, 2 MB for
 u and v); only the reduced arrays are cached.
 

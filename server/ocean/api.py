@@ -376,6 +376,8 @@ def _wind(day: str) -> dict:
         return marine.wind(day)
     except LookupError as exc:
         raise HTTPException(404, str(exc)) from exc
+    except Exception as exc:  # a store that failed to open: an answer the browser can read
+        raise HTTPException(503, f"wind unavailable: {type(exc).__name__}: {exc}") from exc
 
 
 @app.get("/api/wind/meta")

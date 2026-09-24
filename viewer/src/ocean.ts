@@ -40,6 +40,8 @@ export class OceanLayer {
   airOn = false;
   /** What the air layer shows, for the panel: its day and hour, or why it is missing. */
   airNote = "";
+  /** Called whenever airNote changes, so the panel line follows it. */
+  onAirNote?: () => void;
   density = 12_000;
 
   constructor(private viewer: Viewer, private status: Status, private kick: (ms?: number) => void) {
@@ -183,18 +185,24 @@ export class OceanLayer {
     // Observed wind up to yesterday, the GFS forecast after it; the server decides and
     // the note carries which one it was.
     let got: Awaited<ReturnType<typeof api.getWind>>;
+    this.airNote = `loading the wind for ${day}…`;
+    this.onAirNote?.();
     try {
       got = await api.getWind(day);
     } catch (error) {
       if (ticket !== this.airTicket) return;
       this.airNote = (error as Error).message;
       this.status(this.airNote, "warn");
+      this.onAirNote?.();
       return;
     }
     if (ticket !== this.airTicket) return;
     const p = got.meta.provenance;
     this.airNote = `wind at 10 m, ${String(p.time_utc).replace("T", " ")} UTC · ` +
-      (p.forecast ? "forecast, NCEP GFS" : "observed, satellite scatterometers blended with ECMWF");
+      (p.forecast ? "forecast, NCEP GFS" : "observed, satellite scatterometers blended with ECMWF") +
+      (p.stand_in ? ` · ${p.note}` : "");
+    if (p.stand_in) this.status(String(p.note), "warn");
+    this.onAirNote?.();
     this.flow.set("air", { ...field(got, 0), style: AIR }, Math.round(this.density * 0.6));
   }
 

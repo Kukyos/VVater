@@ -337,6 +337,9 @@ async function main(): Promise<void> {
   // ---- the Ocean Cube: any water, any day, anywhere (cube/*.ts) -----------------
 
   const ocean = new OceanLayer(viewer, status, (ms) => graphics.kick(ms));
+  ocean.onAirNote = () => {
+    el("air-note").textContent = ocean.airOn ? ocean.airNote : "";
+  };
   // ?surface=0, ?wind=0, ?cubewind=0 open with a layer off, for links and headless checks.
   {
     const q = new URLSearchParams(location.search);
