@@ -92,6 +92,7 @@ CONTROLS: dict[str, str] = {
     "ocean-air": "checkbox: animated winds at 10 m",
     "ocean-density": "select: particle count 5000, 12000, 20000, 35000",
     "fish-on": "checkbox: likely fishing zones and sea state in the cube's box",
+    "pfz-on": "checkbox: official INCOIS PFZ advisory points (India)",
     # colour
     "palette": "select: colour palette", "reverse": "checkbox: reverse the palette",
     "log": "checkbox: log colour scale", "range-min": "number: colour bar minimum",
@@ -268,6 +269,19 @@ def tool_fishing_zones(west: float, east: float, south: float, north: float,
             "not_an_advisory": p["not_an_advisory"]}
 
 
+def tool_incois_pfz(sector: str = "") -> dict:
+    """INCOIS's own PFZ advisories (pfz.py), all sectors or those whose name matches."""
+    from . import pfz
+
+    a = pfz.advisories()
+    want = sector.lower().strip()
+    chosen = [s for s in a["sectors"] if not want or want in s["name"].lower()] or a["sectors"]
+    return {"fetched_utc": a["fetched_utc"], "provenance": a["provenance"],
+            "sectors": [{**{k: s[k] for k in ("name", "status", "valid_till", "source")},
+                         "note": s.get("note"), "points": s["points"][:12],
+                         "points_total": len(s["points"])} for s in chosen]}
+
+
 def guide_sections() -> dict[str, str]:
     """docs/17-user-guide.md split at its ## headings."""
     text = GUIDE.read_text(encoding="utf-8") if GUIDE.exists() else ""
@@ -346,6 +360,15 @@ TOOLS: dict[str, tuple[Callable[..., dict], dict]] = {
             "south": {"type": "number"}, "north": {"type": "number"},
             "day": {"type": "string", "description": "YYYY-MM-DD; today if omitted"}},
             "required": ["west", "east", "south", "north"]}}),
+    "incois_pfz": (tool_incois_pfz, {
+        "description": "The official INCOIS Potential Fishing Zone advisories for Indian coastal "
+                       "sectors, as INCOIS publishes them today: per point the landing centre, "
+                       "direction, bearing, distance (km), depth (m), lat/lon, validity. "
+                       "Sectors under cloud have none. For Indian waters prefer this over "
+                       "fishing_zones, and say which one you quote.",
+        "parameters": {"type": "object", "properties": {
+            "sector": {"type": "string", "description": "e.g. Kerala, Gujarat, Andaman; "
+                                                        "empty for all"}}}}),
     "ui_action": (tool_ui_action, {
         "description": "Change the viewer; applied when the user's browser receives the "
                        "answer. Call it once per change. "
@@ -393,8 +416,9 @@ Rules you must follow:
   sea surface to the floor (Copernicus). make_cube builds one. The INCOIS Bay volume
   (78-100E, 5-23N, 5-2000 m, demo date {config.DEMO_DATE}) is the older view; value_at,
   list_observations, profile and the residual layer are about it only.
-- Fishing questions: call fishing_zones on a box around the coast asked about, name the
-  best spots with their sea state, and always say it is indicative, not an INCOIS advisory.
+- Fishing questions: for Indian waters call incois_pfz first (the official advisory);
+  anywhere, fishing_zones gives the indicative zones and the sea state. Say which you quote;
+  fishing_zones is indicative, not an INCOIS advisory.
 
 - For anything about the interface or a term, call user_guide first.
 
@@ -496,7 +520,9 @@ def run(messages: list[dict], context: dict | None = None,
         message = reply["choices"][0]["message"]
         calls = message.get("tool_calls") or []
         if not calls:
-            text = (message.get("content") or "").strip()
+            # The model sometimes leaves its own citation marks (【2†L1-L4】); they point at
+            # nothing the user can see.
+            text = re.sub(r"\s*【[^】]*】", "", message.get("content") or "").strip()
             return {"reply": text, "actions": actions, "tools_used": used,
                     "unverified": unverified_numbers(text, evidence)}
         convo.append({"role": "assistant", "content": message.get("content") or "",
@@ -525,6 +551,7 @@ def demo() -> None:
     assert unverified_numbers("It is 28.9 °C at 50 m", ['{"value": 28.93, "native_level_m": 50.0}']) == []
     assert unverified_numbers("It is 31.4 °C", ['{"value": 28.93}']) == ["31.4"]
     assert unverified_numbers("3 floats in 2018", []) == []
+    assert re.sub(r"\s*【[^】]*】", "", "Jakhau 46-51 km 【2†L7-L12】.") == "Jakhau 46-51 km."
     assert check_action("set_depth", {"depth_m": 99999}) == {"action": "set_depth", "depth_m": 2000.0}
     assert check_action("run_shell", {}) is None
     assert check_action("set_view", {"view": "space"}) is None

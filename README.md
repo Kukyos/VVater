@@ -87,7 +87,7 @@ Copernicus Marine toolbox · Groq (OpenAI-compatible chat completions with tool 
 ## Data
 
 Copernicus Marine ARCO stores (GLORYS12 reanalysis, global analysis & forecast, L4 winds, global wave forecast, PISCES
-biogeochemistry) · INCOIS ERDDAP Argo analyses · Argo GDAC over HTTPS and Ifremer ERDDAP ·
+biogeochemistry) · NCEP GFS wind forecast via UCAR THREDDS · INCOIS PFZ advisories · INCOIS ERDDAP Argo analyses · Argo GDAC over HTTPS and Ifremer ERDDAP ·
 U.S. IOOS Glider DAC. Every source is probed, not assumed:
 `docs/05-data-sources.md`.
 

@@ -19,8 +19,8 @@ from fastapi.middleware.gzip import GZipMiddleware
 from fastapi.responses import JSONResponse
 
 from . import (argo, assistant, catalog, cf, colocate, config, cube, cubecasts, currents, fishing,
-               glider, globalsurface, heat, marine, residual, sources, surface, textcast,
-               volume, wms)
+               glider, globalsurface, heat, marine, pfz, residual, sources, surface,
+               textcast, volume, wms)
 
 # Variables that exist as gridded fields but not as instrument measurements. Asking a
 # float for its "observation count" is meaningless, so the in-situ side falls back to
@@ -406,6 +406,15 @@ def fishing_zones(lon0: float, lon1: float, lat0: float, lat1: float, day: str) 
         raise HTTPException(400, str(exc)) from exc
     except LookupError as exc:
         raise HTTPException(404, str(exc)) from exc
+
+
+@app.get("/api/pfz")
+def pfz_advisories() -> dict:
+    """INCOIS's own Potential Fishing Zone advisories, every sector, as published (pfz.py)."""
+    try:
+        return pfz.advisories()
+    except Exception as exc:  # INCOIS down or its home page changed: say so, 502
+        raise HTTPException(502, f"INCOIS PFZ advisories unavailable: {exc}") from exc
 
 
 @lru_cache(maxsize=16)

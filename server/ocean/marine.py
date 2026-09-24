@@ -9,6 +9,11 @@ Two Copernicus Marine ARCO stores, read the same way as the ocean model (arco.py
     today or later. One global hour reads in about 4 s cold. Before July 2020 the
     reprocessed twin `cmems_obs-wind_glo_phy_my_l4_0.125deg_PT1H` (WIND_GLO_PHY_L4_MY_012_006,
     2007-01-11 onward, same variables and grid) is read instead, and the response names it.
+  * **Wind forecast** for the days the observations have not reached (today and up to about
+    two weeks ahead): NCEP GFS 0.25 deg, 10 m u and v, from UCAR's THREDDS "Best" GFS
+    collection through its NetCDF subset service -- no credentials, NetCDF back, so xarray
+    reads it with nothing new installed. One global field at 1/2 deg is 1.5 MB, about 4 s.
+    It is a *model forecast*, not stress-equivalent wind, and every response says so.
   * **Waves** `cmems_mod_glo_wav_anfc_0.083deg_PT3H-i` (GLOBAL_ANALYSISFORECAST_WAV_001_027):
     significant wave height `VHM0`, 3-hourly instants, 1/12 deg, 2022-11 to ten days
     ahead. A forecast, which is what anyone deciding whether to go out needs.
@@ -38,6 +43,9 @@ HOUR = "12:00"
 # Display grid of the global wind animation: 1/8 deg averaged 4:1 to 1/2 deg (720 x 360,
 # 2 MB for u and v). Particles are drawn a few pixels long; finer adds bytes, not detail.
 WIND_BLOCK = 4
+GFS_URL = "https://thredds.ucar.edu/thredds/ncss/grid/grib/NCEP/GFS/Global_0p25deg/Best"
+GFS_VARS = ("u-component_of_wind_height_above_ground", "v-component_of_wind_height_above_ground")
+GFS_NAME = "NCEP GFS 0.25 deg (UCAR THREDDS, Best collection), 10 m wind"
 # Beyond any recorded 10 m wind; a cell past it is a bad value, masked and counted.
 WIND_LIMIT_MS = 120.0
 
@@ -63,9 +71,77 @@ def _provenance(store: arco.OpenStore, when: str, variable: str, note: str) -> d
             "fixed_hour_note": f"the field at {HOUR} UTC stands for the day", "note": note}
 
 
+def _observed_until() -> str:
+    return arco.open_store(WIND_DATASET).coverage()[1]
+
+
+def _gfs(day: str, box: "cube.Box | None" = None) -> tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray, str]:
+    """GFS 10 m u, v at 12:00 UTC: globally at 1/2 deg, or over a box at 1/4 deg.
+    Returned south row first, longitudes ascending in -180..180 (or past 180 for a box
+    across the date line, as cube.Box keeps them)."""
+    import io
+
+    import requests
+    import xarray as xr
+
+    when = f"{day}T{HOUR}:00Z"
+    pieces = [(None, None, 0.0)] if box is None else box.pieces()
+    us, vs, lon_parts, lats = [], [], [], None
+    for lo, hi, shift in pieces:
+        q = {"var": list(GFS_VARS), "time": when, "vertCoord": 10, "accept": "netcdf4"}
+        if box is None:
+            q["horizStride"] = 2
+        else:
+            q.update(west=lo, east=hi, south=box.lat0, north=box.lat1)
+        r = requests.get(GFS_URL, params=q, timeout=120)
+        if r.status_code == 400:
+            raise LookupError(f"GFS forecast has no {when}: {r.text[:160]}")
+        r.raise_for_status()
+        ds = xr.open_dataset(io.BytesIO(r.content))
+        u = np.asarray(ds[GFS_VARS[0]].values, dtype=np.float32).squeeze()
+        v = np.asarray(ds[GFS_VARS[1]].values, dtype=np.float32).squeeze()
+        la = np.asarray(ds["latitude"].values, dtype=float)
+        lo_ = np.asarray(ds["longitude"].values, dtype=float)
+        if la[0] > la[-1]:  # GFS is north row first
+            u, v, la = u[::-1], v[::-1], la[::-1]
+        # GFS longitudes are 0..360; bring them into this piece's own range (-180.. for
+        # the globe), so 180 on the east edge of a piece is not read as -180.
+        start = -180.0 if lo is None else lo
+        lo_ = (lo_ - start) % 360 + start
+        if lo is not None:
+            lo_ = np.where((lo_ > hi) & np.isclose(lo_ - 360, lo), lo_ - 360, lo_)
+        order = np.argsort(lo_)
+        lo_ = lo_[order] + shift
+        keep = lo_ > lon_parts[-1][-1] if lon_parts else np.ones(lo_.size, bool)  # 180 once
+        us.append(u[:, order][:, keep]); vs.append(v[:, order][:, keep])
+        lon_parts.append(lo_[keep]); lats = la
+    return (np.concatenate(us, axis=1), np.concatenate(vs, axis=1),
+            np.concatenate(lon_parts), lats, when)
+
+
+def _gfs_provenance(when: str, variable: str) -> dict:
+    return {"dataset": GFS_NAME, "time_utc": when[:16], "variable": variable, "forecast": True,
+            "fixed_hour_note": f"the field at {HOUR} UTC stands for the day",
+            "note": "NCEP GFS model forecast of 10 m wind; the observed record ends "
+                    f"{_observed_until()}"}
+
+
 @lru_cache(maxsize=6)
 def wind(day: str) -> dict:
     """u and v worldwide at 1/2 deg, for the particles. Only the reduced arrays are kept."""
+    if day > _observed_until():
+        u, v, lons, lats, when = _gfs(day)
+        bad = ~(np.abs(u) <= WIND_LIMIT_MS) | ~(np.abs(v) <= WIND_LIMIT_MS)
+        ny, nx = u.shape
+        return {"u": np.nan_to_num(np.where(bad, 0, u)).astype(np.float32),
+                "v": np.nan_to_num(np.where(bad, 0, v)).astype(np.float32),
+                "meta": {"dimensions": [int(nx), int(ny)],
+                         "lonRange": [float(lons[0]), float(lons[-1])],
+                         "latRange": [float(lats[0]), float(lats[-1])], "levelM": 10.0,
+                         "provenance": {**_gfs_provenance(when, "u, v 10 m"),
+                                        "display_step_deg": 0.5,
+                                        "range_test": {"limit_ms": WIND_LIMIT_MS,
+                                                       "masked_cells": int(bad.sum())}}}}
     store, when = _wind_store(day)
     at = store.ds.sel(time=when)
     with ThreadPoolExecutor(max_workers=2) as pool:
@@ -104,6 +180,12 @@ def _box(store: arco.OpenStore, name: str, when: str, box: cube.Box) -> tuple:
 
 
 def wind_speed_box(box: cube.Box, day: str) -> dict:
+    if day > _observed_until():
+        u, v, lons, lats, when = _gfs(day, box)
+        speed = np.hypot(u, v)
+        speed[~(speed <= WIND_LIMIT_MS)] = np.nan
+        return {"values": speed, "lons": lons, "lats": lats,
+                "provenance": _gfs_provenance(when, "wind speed from u, v at 10 m")}
     store, when = _wind_store(day)
     u, lons, lats = _box(store, "eastward_wind", when, box)
     v, _, _ = _box(store, "northward_wind", when, box)
@@ -138,7 +220,10 @@ def demo() -> None:
         assert "outside" in str(exc)
     else:
         raise AssertionError("a day past the wind record must be refused, not guessed")
-    print("marine ok: fixed hour stated, days outside the record refused")
+    lon = np.array([170.0, 175.0, 180.0])
+    start = 170.0
+    assert ((lon - start) % 360 + start).tolist() == [170, 175, 180], "180 stays east"
+    print("marine ok: fixed hour stated, days outside the record refused, date line kept")
 
 
 def live() -> None:

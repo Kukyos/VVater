@@ -179,8 +179,23 @@ at **12:00 UTC**, and every response says so.
 | `cmems_obs-wind_glo_phy_my_l4_0.125deg_PT1H` (WIND_GLO_PHY_L4_MY_012_006) | the same | 2007-01-11 | 2026-05-21 | open 6.0 s, one global hour 3.1 s |
 | `cmems_mod_glo_wav_anfc_0.083deg_PT3H-i` (GLOBAL_ANALYSISFORECAST_WAV_001_027) | `VHM0` significant wave height, m | 2022-11-01 | ten days ahead (2026-10-04 when probed) | open 3.2 s, one global instant 3.7 s (2041 x 4320) |
 
-The wind is an **observation** product (scatterometers blended with ECMWF): there is no
-wind for today or later (D-38). Days before July 2020 are read from the reprocessed store.
+The wind is an **observation** product (scatterometers blended with ECMWF), so it has no
+wind for today or later. Days before July 2020 are read from the reprocessed store.
+
+**Wind forecast: NCEP GFS 0.25 deg through UCAR THREDDS** (**verified working,
+2026-09-24**). For days after the observed record ends:
+
+    https://thredds.ucar.edu/thredds/ncss/grid/grib/NCEP/GFS/Global_0p25deg/Best
+      ?var=u-component_of_wind_height_above_ground&var=v-component_of_wind_height_above_ground
+      &time=2026-09-27T12:00:00Z&vertCoord=10&accept=netcdf4[&horizStride=2 | &west=..&east=..&south=..&north=..]
+
+No credentials; NetCDF back, read by xarray with nothing new installed. The "Best"
+collection covered 2026-09-17 to 2026-10-10 when probed (a week back, about sixteen days
+ahead). One global field at stride 2 (1/2 deg, 720 x 361) is 1.5 MB and took 3.6-4.4 s; a
+17 x 15 deg box at 1/4 deg took 1.9 s. Latitude comes north row first and longitude 0-360;
+both are normalised in `marine._gfs`, and a box across the date line is read in two pieces.
+It is a model forecast of 10 m wind, not stress-equivalent wind, and every response says
+which of the two it is.
 The global wind for the animation is block-averaged 4:1 to 1/2 degree (720 x 360, 2 MB for
 u and v); only the reduced arrays are cached.
 
@@ -284,6 +299,27 @@ Kessler-McCreary), a weekly Argo SST, `Indian_ARGO_Floats`, Oceansat-2 and IRS c
 and ASCAT, QuikSCAT, TMI, AMSR-E and AVHRR satellite products. **No INCOIS numerical ocean
 model output is public there.** So the INCOIS analyses stay first-class where they cover,
 and the global model field comes from Copernicus.
+
+### 2.6 INCOIS Potential Fishing Zone advisories (**verified working, 2026-09-24**)
+
+INCOIS publishes its PFZ advisories as HTML text, per coastal sector, on its Marine
+Fisheries pages. There is no API and no feed; `server/ocean/pfz.py` reads the pages.
+
+    https://incois.gov.in/MarineFisheries/TextDataHome?mfid=1&request_locale=en   (session cookie)
+    https://incois.gov.in/MarineFisheries/TextData?secid=SEC001 ... SEC014
+
+Fourteen sectors, Gujarat (SEC001) round to Lakshadweep (SEC014). A sector with an advisory
+carries "SATELLITE DATA SHOWS LIKELY AVAILABILITY OF FISH STOCK TILL <date>" and one table:
+*From the coast of, Direction, Bearing (deg), Distance (km) From-To, Depth (mtr) From-To,
+Latitude (dms), Longitude (dms)*. A sector under cloud says "No data available for this
+sector due to excessive cloud cover". On the probe day four sectors had advisories (Gujarat
+110 points, Maharashtra 80, Andaman 20, Nicobar 24, valid till 25 Sep 2026) and ten were
+clouded out: in the monsoon, satellite SST is often blind.
+
+The page is meant for people, so the parser checks the table's headings exactly and fails
+loudly if they change (`python -m server.ocean.pfz` runs against a saved, trimmed page in
+`server/tests/fixtures/`). Advisories are fetched at most once an hour. The same pages sit
+behind INCOIS's incomplete certificate chain as ERDDAP, handled as in D-06.
 
 ---
 

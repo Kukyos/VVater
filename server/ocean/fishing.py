@@ -18,7 +18,8 @@ strength or chlorophyll level that means "fish" is not something this project ca
 for every sea on Earth (docs/10-unsourced.md, "Fishing zone rule"). A relative rule always finds the
 strongest fronts in the water asked about; it cannot say whether they are strong enough.
 
-**The sea state**, from the wave forecast and the observed wind (marine.py), on two sourced
+**The sea state**, from the wave forecast and the wind (marine.py: observed up to yesterday,
+the GFS forecast after), on two sourced
 scales -- the WMO sea state code for significant wave height and the Beaufort scale for
 wind -- with the choice of where "caution" and "stay in" fall for a small boat logged as a
 judgement (docs/10-unsourced.md, "Sea state for a small boat"):
