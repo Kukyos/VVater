@@ -22,8 +22,9 @@ import type { Viewer } from "@cesium/widgets";
 import * as api from "../api";
 import type { Catalog, CatalogVariable, CubeRequest, Scenario } from "../api";
 import { byId, hasPalette, paletteLut } from "../colorbar";
+import { CastLayer } from "./casts";
 import { CubeData, depthToT, niceStep, tToDepth } from "./data";
-import { type Style, paintLevel } from "./paint";
+import { type Style, paintLevel, rgbFor } from "./paint";
 import { type Cut, CubeScene } from "./scene";
 
 /** The colour the cube is painted with; the colour-map controls edit this. */
@@ -59,6 +60,10 @@ const lonLabel = (lon: number) => {
 
 export class CubeController {
   readonly scene: CubeScene;
+  readonly castLayer: CastLayer;
+  /** The Argo casts in the current cube, or why there are none. */
+  casts?: api.CubeCasts;
+  private castTicket = 0;
   data?: CubeData;
   request?: CubeRequest;
   variable?: CatalogVariable;
@@ -79,6 +84,7 @@ export class CubeController {
 
   constructor(private hooks: CubeHooks) {
     this.scene = new CubeScene(hooks.viewer.scene);
+    this.castLayer = new CastLayer(hooks.viewer.scene);
     this.handler = new ScreenSpaceEventHandler(hooks.viewer.canvas);
   }
 
@@ -239,6 +245,40 @@ export class CubeController {
     this.hooks.status(`${p.title} · ${p.day}${p.forecast ? " · FORECAST" : ""} · ` +
       `${p.sources[0].source} · ${nx}×${ny} cells × ${nz} native levels`);
     this.prefetch(1);
+    void this.loadCasts(request);
+  }
+
+  /** The Argo casts for this cube; drawn when they arrive, without holding up the cube. */
+  private async loadCasts(request: CubeRequest): Promise<void> {
+    const ticket = ++this.castTicket;
+    this.castLayer.clear();
+    this.casts = undefined;
+    el("cube-casts-count").textContent = "looking for floats…";
+    let got: api.CubeCasts;
+    try {
+      got = await api.getCubeCasts(request);
+    } catch (error) {
+      if (ticket === this.castTicket) {
+        el("cube-casts-count").textContent = (error as Error).message;
+      }
+      return;
+    }
+    if (ticket !== this.castTicket) return;
+    this.casts = got;
+    el("cube-casts-count").textContent = !got.available ? (got.note ?? "")
+      : `${got.shown} Argo casts within ±${got.window_days} days` +
+        (got.thinned ? ` (${got.found} found; thinned evenly for drawing)` : "") +
+        ` · ${got.dataset}`;
+    this.drawCasts();
+  }
+
+  private drawCasts(): void {
+    const cut = this.currentCut();
+    if (!this.casts?.available || !cut) return;
+    const style = this.style();
+    this.castLayer.render(this.casts.casts, cut, (d) => this.scene.heightOf(d),
+      (v) => rgbFor(v, style));
+    this.hooks.kick(400);
   }
 
   /** Warm tomorrow while today is being looked at; the browser caches the response. */
@@ -285,6 +325,12 @@ export class CubeController {
     const side = Math.min((d.east - d.west) * 111_320 * Math.cos(lat * Math.PI / 180),
                           (d.north - d.south) * 110_574);
     return side * this.heightFraction;
+  }
+
+  /** Show or hide the whole cube, its floats following the floats checkbox. */
+  setVisible(visible: boolean): void {
+    this.scene.show(visible);
+    this.castLayer.show(visible && el<HTMLInputElement>("cube-floats").checked);
   }
 
   /** Whether a place is inside the cube's footprint (for which markers to show). */
@@ -336,6 +382,7 @@ export class CubeController {
     const cut = this.currentCut();
     if (!d || !cut) return;
     this.scene.render(d, cut, this.style(), this.displayHeight());
+    this.drawCasts();
     this.onRepaint?.();
     this.labelCut(cut);
     el("cube-height-label").textContent = `×${Math.round(this.scene.exaggeration)}`;
@@ -441,6 +488,10 @@ export class CubeController {
       this.native = (e.target as HTMLInputElement).checked;
       this.repaint();
     });
+    el<HTMLInputElement>("cube-floats").addEventListener("change", (e) => {
+      this.castLayer.show((e.target as HTMLInputElement).checked);
+      this.hooks.kick();
+    });
     this.syncCutSliders();
     this.bindProbe();
   }
@@ -480,9 +531,24 @@ export class CubeController {
     return { ...at, value };
   }
 
+  /** The Argo cast under a screen position, if one is there. */
+  castAt(position: Cartesian2): api.CubeCast | undefined {
+    if (!this.castLayer.visible) return undefined;
+    return this.castLayer.castOf(this.hooks.viewer.scene.pick(position));
+  }
+
   private readout(position: Cartesian2): void {
-    const hit = this.probeAt(position);
     const node = el("probe-readout");
+    const cast = this.castAt(position);
+    if (cast) {
+      const mode = { R: "real-time", A: "adjusted", D: "delayed-mode" }[cast.dataMode] ?? cast.dataMode;
+      node.innerHTML = `<b>Argo ${cast.platform}</b> cycle ${cast.cycle} · ` +
+        `${cast.time.slice(0, 16).replace("T", " ")} UTC · data mode ${cast.dataMode} (${mode})<br>` +
+        `${cast.levels} levels, ${cast.levelsRejected} rejected by QC · click to compare with the model` +
+        `<br>${escapeHtml(cast.sourceFile)}`;
+      return;
+    }
+    const hit = this.probeAt(position);
     if (!hit || !this.variable) return;
     const kind = Number.isNaN(hit.value)
       ? this.data!.kind(this.data!.fx(hit.lon), this.data!.fy(hit.lat), hit.depth)
@@ -589,6 +655,9 @@ function boxOf(a: Cartographic, b: Cartographic): Rectangle {
   return new Rectangle(Math.min(a.longitude, b.longitude), Math.min(a.latitude, b.latitude),
                        Math.max(a.longitude, b.longitude), Math.max(a.latitude, b.latitude));
 }
+
+const escapeHtml = (text: string) => text.replace(/[&<>"']/g, (c) =>
+  ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]!);
 
 export function shiftDay(day: string, days: number): string {
   return new Date(Date.parse(`${day}T00:00:00Z`) + days * DAY_MS).toISOString().slice(0, 10);

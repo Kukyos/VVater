@@ -18,7 +18,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware.gzip import GZipMiddleware
 from fastapi.responses import JSONResponse
 
-from . import (argo, assistant, catalog, cf, colocate, config, cube, currents, glider,
+from . import (argo, assistant, catalog, cf, colocate, config, cube, cubecasts, currents, glider,
                globalsurface, heat, residual, sources, textcast, volume, wms)
 
 # Variables that exist as gridded fields but not as instrument measurements. Asking a
@@ -323,6 +323,33 @@ def cube_data(variable: str, lon0: float, lon1: float, lat0: float, lat1: float,
     cache = "public, max-age=3600" if c.provenance["forecast"] else "public, max-age=86400"
     return Response(content=c.payload(), media_type="application/octet-stream",
                     headers={"Cache-Control": cache})
+
+
+@app.get("/api/cube/casts")
+def cube_casts(variable: str, lon0: float, lon1: float, lat0: float, lat1: float, day: str,
+               depth_max: float = 2000.0) -> dict:
+    """Argo casts inside a cube's box around its day, for drawing (cubecasts.py). Every
+    cast carries its QC flags, data mode and source file (hard rule 2)."""
+    try:
+        box = cube.Box.parse(lon0, lon1, lat0, lat1)
+        return cubecasts.casts(variable, box, day, depth_max)
+    except ValueError as exc:
+        raise HTTPException(400, str(exc)) from exc
+    except RuntimeError as exc:
+        raise HTTPException(502, str(exc)) from exc
+
+
+@app.get("/api/cube/profile")
+def cube_profile(variable: str, platform: str, cycle: int, lon0: float, lon1: float,
+                 lat0: float, lat1: float, day: str, depth_max: float = 2000.0) -> dict:
+    """One cast against the cube's model on the cast's own day, through colocate.py."""
+    try:
+        box = cube.Box.parse(lon0, lon1, lat0, lat1)
+        return cubecasts.compare(variable, platform, cycle, box, day, depth_max)
+    except ValueError as exc:
+        raise HTTPException(400, str(exc)) from exc
+    except LookupError as exc:
+        raise HTTPException(404, str(exc)) from exc
 
 
 @app.post("/api/chat")

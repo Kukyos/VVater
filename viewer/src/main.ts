@@ -780,7 +780,7 @@ async function main(): Promise<void> {
     // cube stands on the surface, so only the in-place Bay volume needs a see-through sea.
     scene.globe.translucency.enabled =
       view !== "map" && showBay && scene.globe.translucency.frontFaceAlpha < 1;
-    cube.scene.show(!showBay && view !== "map");
+    cube.setVisible(!showBay && view !== "map");
     homeCamera(view);
     if (view === "region") orbit.enable();
     placeStreamlines();
@@ -924,7 +924,10 @@ async function main(): Promise<void> {
     for (const entity of viewer.entities.values) {
       const obs = entity.properties?.observation?.getValue?.() as api.Observation | undefined;
       if (!obs || !entity.point) continue;
-      entity.show = !onCube || cube.contains(obs.lon, obs.lat);
+      // With the cube, floats come from global Argo as sticks (cube/casts.ts); the Bay's
+      // own markers would draw the same floats twice. The Bay glider is not in global
+      // Argo, so its casts stay as markers inside the cube's footprint.
+      entity.show = !onCube || (obs.kind !== "argo" && cube.contains(obs.lon, obs.lat));
       entity.position = Cartesian3.fromDegrees(obs.lon, obs.lat, top) as never;
       entity.point.disableDepthTestDistance = (onCube ? 0 : Number.POSITIVE_INFINITY) as never;
     }
@@ -935,6 +938,11 @@ async function main(): Promise<void> {
   handler.setInputAction(async (movement: { position: unknown }) => {
     const picked = viewer.scene.pick(movement.position as never);
     const entity = picked?.id;
+    const cast = cubeActive() ? cube.castLayer.castOf(picked) : undefined;
+    if (cast) {
+      await showCubeProfile(cast);
+      return;
+    }
     if (!entity?.id) {
       // Not a float: if it is the cube, pin that place's whole column.
       const hit = cubeActive() ? cube.columnAt(movement.position as never) : undefined;
@@ -959,6 +967,33 @@ async function main(): Promise<void> {
       bottom: cube.data!.maxDepth, range: cube.colour.range,
       paletteId: cube.colour.paletteId, reversed: cube.colour.reversed,
     });
+  }
+
+  /**
+   * A float in the cube against the cube's own model, on the float's own day. Same chart
+   * and caption as the Bay's profiles; the caption names the model it compared with,
+   * because in the Bay the old panel compared with INCOIS and this one with Copernicus.
+   */
+  async function showCubeProfile(cast: api.CubeCast): Promise<void> {
+    const ticket = ++profileTicket;
+    el("profile-panel").classList.remove("hidden");
+    el("profile-empty").style.display = "none";
+    setDock("right", true);
+    el("profile-title").textContent = `Argo ${cast.platform} · cycle ${cast.cycle}`;
+    el("profile-caption").textContent = "co-locating with the model…";
+    try {
+      const profile = await api.getCubeProfile(cube.request!, cast.platform, cast.cycle);
+      if (ticket !== profileTicket) return;
+      drawProfile(el<HTMLCanvasElement>("profile-chart"), profile, cube.variable!.units);
+      el("profile-caption").textContent =
+        `${captionFor(profile)}\ncompared with: ${profile.modelTitle}, ` +
+        `${profile.summary.model ? (profile.summary.model as { era: string }).era : ""}, ` +
+        `on the float's own day` +
+        (profile.assumptions?.length ? `\n${profile.assumptions.join("\n")}` : "");
+    } catch (error) {
+      if (ticket !== profileTicket) return;
+      el("profile-caption").textContent = `could not compare: ${(error as Error).message}`;
+    }
   }
 
   // Clicking a second float before the first profile arrived could draw the first one

@@ -46,6 +46,12 @@ function index(v: number, s: Style): number {
   return Math.max(0, Math.min(255, Math.round(t * 255)));
 }
 
+/** A value's colour through the style's colour bar, for things drawn outside a face. */
+export function rgbFor(v: number, s: Style): [number, number, number] {
+  const k = Math.max(index(v, s), 0);
+  return [s.lut[k * 4], s.lut[k * 4 + 1], s.lut[k * 4 + 2]];
+}
+
 /** Contour band a value falls in; lines are drawn where neighbouring bands differ. */
 function band(v: number, s: Style): number {
   if (v !== v || s.step <= 0) return NaN;

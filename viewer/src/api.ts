@@ -307,6 +307,36 @@ export async function getCube(q: CubeRequest): Promise<{
   return { meta, values: all.subarray(0, nx * ny * nz), seafloor: all.subarray(nx * ny * nz) };
 }
 
+/** One Argo cast inside a cube, thinned for drawing (rejected levels always kept). */
+export interface CubeCast {
+  platform: string; cycle: number; lat: number; lon: number; time: string;
+  dataMode: string; sourceFile: string; fieldUsed: string;
+  levels: number; levelsRejected: number; notes: string[];
+  depth: (number | null)[]; value: (number | null)[]; accepted: boolean[]; qc: string;
+}
+
+export interface CubeCasts {
+  variable: string; available: boolean; note?: string; casts: CubeCast[];
+  dataset?: string; window_days?: number; from?: string; to?: string;
+  found?: number; shown?: number; thinned?: boolean; units_as_drawn?: string;
+  pairing?: string; qcAccepted?: string[];
+}
+
+export async function getCubeCasts(q: CubeRequest): Promise<CubeCasts> {
+  const response = await fetch(`${BASE}/api/cube/casts?${cubeQuery(q)}`);
+  if (!response.ok) throw await failure(response, "floats unavailable");
+  return response.json();
+}
+
+/** One cast against the cube's model, on the cast's own day (server/ocean/cubecasts.py). */
+export async function getCubeProfile(q: CubeRequest, platform: string, cycle: number):
+    Promise<ProfileComparison & { modelTitle: string }> {
+  const response = await fetch(`${BASE}/api/cube/profile?${cubeQuery(q)}` +
+    `&platform=${encodeURIComponent(platform)}&cycle=${cycle}`);
+  if (!response.ok) throw await failure(response, "co-location unavailable");
+  return response.json();
+}
+
 /** The assistant (server/ocean/assistant.py). Actions are whitelisted server-side. */
 export interface ChatAction {
   action: string; view?: string; layer?: string; depth_m?: number;
