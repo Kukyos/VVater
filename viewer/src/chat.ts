@@ -13,14 +13,15 @@ export interface ChatHooks {
 }
 
 const ALLOWED = new Set(["set_view", "set_layer", "set_depth", "fly_to", "open_profile",
-  "isotherm_20"]);
+  "isotherm_20", "make_cube", "set_control", "click", "highlight", "immersive", "cinematic"]);
 
 const SUGGESTIONS = [
-  "How warm is the water at 100 m in the middle of the Bay?",
+  "Make a cube of the Gulf Stream, down to 1,000 m",
+  "Where should I fish near Chennai this week?",
+  "Show me the winds",
+  "How do I draw my own box?",
   "Which floats failed quality control?",
-  "Where is the model most wrong, by depth?",
-  "What does the residual layer show?",
-  "How do I fly over the Bay?",
+  "Play the cinematic tour",
 ];
 
 /** Minimal, safe formatting: escape everything, then allow **bold** and line breaks. */

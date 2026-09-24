@@ -20,7 +20,10 @@ it came from, so you can look at it from the side. Every face is a slice through
   the day comes from. Days after today are a **forecast** and are marked in yellow.
 - **Down to** — how deep the cube goes, down to the sea floor.
 - **West, East, South, North** — the box, in degrees. **Draw a box** lets you drag one on
-  the globe instead (Esc cancels). **Load cube** fetches it. A cube can be up to 100° wide.
+  the globe instead: press it, then hold the left button and drag across the globe (the
+  camera stays still while you draw; start on the globe, not in space). Esc cancels. It
+  works in Region, Map and Globe, not in Fly. **Load cube** fetches it. A cube can be up to
+  100° wide.
 - **Argo floats in the cube** — every float that measured inside the box within two days.
   Each is a stick, white at the top where it surfaced, coloured down its length by what it
   measured on the same colour bar as the cube. Red parts failed quality control. Behind a
@@ -46,12 +49,55 @@ kept and opens at once.
 
 ## Whole ocean
 
+- **Only the cube** — hides the rest of the world (its colour, currents and winds) so the
+  cube is seen on its own. Untick it to bring them back.
 - **The whole ocean at the cube's top depth** — the rest of the planet painted with the same
   variable, day and colours as the cube. Grey land is land.
 - **Animated currents** — moving streaks that follow that day's currents, over the whole
   ocean and on the cube's top. Faster water is brighter. They show the flow on that one day;
   they are not the path a drifting object would take over time.
-- **Particles** — how many streaks. Fewer is faster on a slow computer.
+- **Animated winds at 10 m** — amber streaks for the wind just above the sea, on the cube's
+  day at 12:00 UTC. It is measured (satellite scatterometers blended with the ECMWF
+  weather model), so it exists up to yesterday; for today or a forecast day the newest
+  wind is shown and the line under the switch says which day it is. White is water, amber
+  is air.
+- **Particles** — how many streaks. Fewer is faster on a slow computer. Streaks are always
+  spread over the part of the globe on screen, so a close-up or a low flight is as full as
+  the view from space.
+
+## For fishermen
+
+- **Likely fishing zones & sea state in the cube's box** — orange cells are where fish are
+  likely to gather: the strongest temperature fronts in the box (warm water meeting cool)
+  where there is also food (chlorophyll at or above the box's middle value). This is the
+  idea INCOIS uses for its Potential Fishing Zone advisories, applied to the model, so it
+  works on any coast. Turning it on opens the flat map, because the standing cube would
+  hide the zones.
+- **Sea state** — a yellow wash means a small boat should take care (waves of 1.25 m or
+  more, or wind of 10.8 m/s, Beaufort 6); red means stay in (waves of 2.5 m or more, or wind
+  of 13.9 m/s, Beaufort 7). Waves come from the Copernicus forecast, which runs ten days
+  ahead; wind is measured and ends yesterday. What is missing for the day is said.
+- **Spots** — the five best zone cells, at least half a degree apart, with their front
+  strength, chlorophyll and sea state. **Go** flies there.
+- For a trip, set the cube's day to today or a forecast day and draw the box around your
+  coast. **This is indicative, not an INCOIS advisory.** Official Potential Fishing Zone
+  advisories and ocean state warnings are at incois.gov.in; always follow harbour and IMD
+  warnings.
+
+## Immersive view (key I)
+
+The **Immersive** button (top right) hides every panel and leaves the globe, its currents
+and its winds. A small bar at the top has:
+
+- **Cinematic** (key C) — the camera tells it by itself: the planet from space, down to the
+  Bay of Bengal, a low pass over the water, first light with the sun on the horizon where
+  it really stands at dawn today, and back out to space across the day-night line. Click
+  the globe or press it again to take the camera back.
+- **Currents**, **Winds**, **Colour** — each layer on or off. In immersive the currents and
+  colour are at the sea surface, on the cube's day; the line at the bottom says what is
+  shown.
+- **Sunlight** — day and night from where the sun really is.
+- **Exit** (Esc) — back to the workspace exactly as it was.
 
 ## Probe (Inspector)
 
@@ -147,5 +193,13 @@ Panels fold away with **[** and **]**.
 Ask about the data ("how warm is the water at 100 m off Chennai?", "which floats failed
 quality control?") or about the viewer ("what does the residual show?"). It answers from
 the data through the same functions the viewer uses. Figures it could not trace back to
-the data are marked. It can also change the view for you — set a depth, open a float's
-profile, switch views.
+the data are marked. It can also work the viewer for you:
+
+- **build a cube** anywhere ("make a cube of the Gulf Stream down to 1,000 m"),
+- **set any switch or control** (winds on, fishing zones on, the cube's day, cuts, palette),
+- **press buttons** (views, Draw a box, Look at it, Immersive, the cinematic tour),
+- **show you where a control is** — it rings it in orange for five seconds, opening the
+  panel it is in, so you learn where it lives ("how do I draw my own box?"),
+- **find fishing spots** near a coast, with their sea state.
+
+Every change it makes is listed under its answer.

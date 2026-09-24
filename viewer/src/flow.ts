@@ -17,7 +17,9 @@
  * is not where water went; that would need the field to change in time under the particles.
  */
 
-import { Cartesian2, Cartesian3, SceneTransforms, type Scene } from "@cesium/engine";
+import {
+  Cartesian2, Cartesian3, Ellipsoid, Math as CesiumMath, Rectangle, SceneTransforms, type Scene,
+} from "@cesium/engine";
 
 const EARTH_RADIUS = 6_371_000;
 const DEG = Math.PI / 180;
@@ -34,7 +36,29 @@ export interface Field {
   height: number;           // metres above the ellipsoid the particles are drawn at
   /** Skip particles inside this box (a cube stands there and hides the water). */
   hole?: { west: number; east: number; south: number; north: number };
+  /** Look and pace; the default is the ocean currents' white. */
+  style?: FlowStyle;
 }
+
+export interface FlowStyle {
+  /** Speeds (field units) splitting the four brightness bands. */
+  bands: [number, number, number];
+  colours: [string, string, string, string];
+  /** Multiplies the picture speed: 10 m/s of wind must not race across the screen. */
+  pace: number;
+}
+
+const CURRENTS: FlowStyle = {
+  bands: [0.1, 0.25, 0.6],
+  colours: ["rgba(170,210,235,0.55)", "rgba(205,232,250,0.75)",
+            "rgba(235,248,255,0.9)", "rgba(255,255,255,1)"],
+  pace: 1,
+};
+
+/** Seconds of motion a trail stands for; while the camera moves it is drawn as one streak. */
+const TRAIL_S = 0.7;
+/** Longest streak on screen, in CSS pixels: a fast zoom-out stretched them into needles. */
+const MAX_STREAK_PX = 12;
 
 interface Swarm {
   field: Field;
@@ -58,6 +82,13 @@ export class FlowOverlay {
   private prevScreen = new Cartesian2();
   private last = 0;
   visible = true;
+  /** Draw through the holes (immersive view hides the cube that made them). */
+  ignoreHoles = false;
+  /** The part of the globe on screen, in degrees; particles are born here. */
+  private view?: { west: number; east: number; south: number; north: number };
+  private viewRect = new Rectangle();
+  /** Camera range at the last full reseed; a big zoom since then reseeds everything. */
+  private seededRange = 0;
   /** Visual speed: degrees moved per second per m/s of current, scaled by zoom. */
   speed = 1;
 
@@ -121,12 +152,25 @@ export class FlowOverlay {
     this.clear();
   }
 
-  /** A new particle somewhere in the field (or the visible part of it), with a random age. */
+  /**
+   * A new particle in the part of the field on screen, with a random age. Seeding the whole
+   * globe put almost none of 12,000 particles in view once the camera came down low, so a
+   * flight or a close-up showed empty water.
+   */
   private seed(s: Swarm, i: number, randomAge = false): void {
     const f = s.field;
+    const v = this.view;
+    const west = v ? Math.max(f.west, v.west) : f.west;
+    const east = v ? Math.min(f.east, v.east) : f.east;
+    const south = v ? Math.max(f.south, v.south) : f.south;
+    const north = v ? Math.min(f.north, v.north) : f.north;
+    // The field is off screen: seed it anywhere, it costs nothing to draw.
+    const onScreen = east > west && north > south;
     for (let tries = 0; tries < 8; tries += 1) {
-      const lon = f.west + Math.random() * (f.east - f.west);
-      const lat = f.south + Math.random() * (f.north - f.south);
+      const lon = onScreen ? west + Math.random() * (east - west)
+        : f.west + Math.random() * (f.east - f.west);
+      const lat = onScreen ? south + Math.random() * (north - south)
+        : f.south + Math.random() * (f.north - f.south);
       if (this.inHole(f, lon, lat)) continue;
       const [u, v] = sample(f, lon, lat);
       if (u === 0 && v === 0 && tries < 7) continue;  // land: try again
@@ -139,7 +183,7 @@ export class FlowOverlay {
 
   private inHole(f: Field, lon: number, lat: number): boolean {
     const h = f.hole;
-    if (!h) return false;
+    if (!h || this.ignoreHoles) return false;
     const l = lon < h.west ? lon + 360 : lon;
     return l >= h.west && l <= h.east && lat >= h.south && lat <= h.north;
   }
@@ -149,9 +193,19 @@ export class FlowOverlay {
     const dt = this.last ? Math.min((now - this.last) / 1000, 0.05) : 1 / 60;
     this.last = now;
     const camera = this.scene.camera;
-    // A moving camera invalidates every trail on screen: wipe instead of smearing.
-    const moved = !Cartesian3.equalsEpsilon(camera.positionWC, this.lastCamera, 1) ||
-      !Cartesian3.equalsEpsilon(camera.directionWC, this.lastDirection, 1e-6);
+    // A moving camera invalidates every trail on screen: wipe instead of smearing. The
+    // epsilons are absolute (1 m, 1e-6): a relative 1 counted any zoom as "not moved", and
+    // the trails smeared across the globe as white after-images.
+    const moved = !Cartesian3.equalsEpsilon(camera.positionWC, this.lastCamera, 0, 1) ||
+      !Cartesian3.equalsEpsilon(camera.directionWC, this.lastDirection, 0, 1e-6);
+    if (moved || !this.view) this.updateView();
+    // After a zoom by more than half, the particles are still packed where the old view
+    // was (a clump of white from space after a low pass); spread them over the new one.
+    const r = Cartesian3.magnitude(camera.positionWC) - EARTH_RADIUS;
+    if (this.view && (r > this.seededRange * 1.6 || r < this.seededRange / 1.6)) {
+      this.seededRange = r;
+      for (const s of this.swarms.values()) for (let i = 0; i < s.count; i += 1) this.seed(s, i, true);
+    }
     Cartesian3.clone(camera.positionWC, this.lastCamera);
     Cartesian3.clone(camera.directionWC, this.lastDirection);
     const g = this.g;
@@ -174,6 +228,9 @@ export class FlowOverlay {
     g.lineCap = "round";
     for (const s of this.swarms.values()) {
       const f = s.field;
+      const style = f.style ?? CURRENTS;
+      const step = degPerSecond * style.pace;
+      const [b0, b1, b2] = style.bands;
       g.lineWidth = 1.2 * ratio;
       // Four brightness bands by speed, one path each: a few draw calls per frame.
       const paths = [new Path2D(), new Path2D(), new Path2D(), new Path2D()];
@@ -187,10 +244,15 @@ export class FlowOverlay {
           this.seed(s, i);
           continue;
         }
-        const prevOk = this.project(lon, lat, f.height, cam, camLen, this.prevScreen);
         const cosLat = Math.max(Math.cos(lat * DEG), 0.05);
-        lon += (u / cosLat) * degPerSecond * dt;
-        lat += v * degPerSecond * dt;
+        // Standing still, a trail is built up frame by frame on the fading canvas. Moving,
+        // the canvas is wiped every frame, so a one-frame step would be a sub-pixel dot and
+        // the currents vanished in flight: draw the whole trail as one streak instead.
+        const back = moved ? TRAIL_S : 0;
+        const prevOk = this.project(lon - (u / cosLat) * step * back, lat - v * step * back,
+                                    f.height, cam, camLen, this.prevScreen);
+        lon += (u / cosLat) * step * dt;
+        lat += v * step * dt;
         if (lon < f.west || lon > f.east || lat < f.south || lat > f.north ||
             this.inHole(f, lon, lat)) {
           this.seed(s, i);
@@ -198,20 +260,51 @@ export class FlowOverlay {
         }
         s.lon[i] = lon;
         s.lat[i] = lat;
-        if (!prevOk || !this.project(lon, lat, f.height, cam, camLen, this.screen)) continue;
-        const band = speed < 0.1 ? 0 : speed < 0.25 ? 1 : speed < 0.6 ? 2 : 3;
+        if (!this.project(lon, lat, f.height, cam, camLen, this.screen)) {
+          // Off screen or behind the planet: reborn where it can be seen.
+          if (this.view) this.seed(s, i, true);
+          continue;
+        }
+        if (!prevOk) continue;
+        if (moved) {
+          const dx = this.prevScreen.x - this.screen.x;
+          const dy = this.prevScreen.y - this.screen.y;
+          const len = Math.hypot(dx, dy);
+          if (len > MAX_STREAK_PX) {
+            this.prevScreen.x = this.screen.x + dx * MAX_STREAK_PX / len;
+            this.prevScreen.y = this.screen.y + dy * MAX_STREAK_PX / len;
+          }
+        }
+        const band = speed < b0 ? 0 : speed < b1 ? 1 : speed < b2 ? 2 : 3;
         const p = paths[band];
         p.moveTo(this.prevScreen.x * ratio, this.prevScreen.y * ratio);
         p.lineTo(this.screen.x * ratio, this.screen.y * ratio);
       }
-      const colours = ["rgba(170,210,235,0.55)", "rgba(205,232,250,0.75)",
-                       "rgba(235,248,255,0.9)", "rgba(255,255,255,1)"];
       paths.forEach((p, b) => {
-        g.strokeStyle = colours[b];
+        g.strokeStyle = style.colours[b];
         g.stroke(p);
       });
     }
   };
+
+  /**
+   * The globe's part of the screen, in degrees. Undefined when it wraps the date line or
+   * the camera sees no globe; particles are then born anywhere in their field.
+   */
+  private updateView(): void {
+    const r = this.scene.camera.computeViewRectangle(Ellipsoid.WGS84, this.viewRect);
+    if (!r || r.east <= r.west) {
+      this.view = undefined;
+      return;
+    }
+    // Padded: Cesium samples the screen's edges for this box, and looking along the
+    // horizon it came back short, cutting the particles off along a line.
+    const d = CesiumMath.toDegrees;
+    const padX = Math.max(d(r.east - r.west) * 0.25, 1);
+    const padY = Math.max(d(r.north - r.south) * 0.25, 1);
+    this.view = { west: d(r.west) - padX, east: d(r.east) + padX,
+                  south: d(r.south) - padY, north: d(r.north) + padY };
+  }
 
   /** Screen position of a place, or false when it is behind the planet or off screen. */
   private project(lon: number, lat: number, height: number, cam: Cartesian3, camLen: number,

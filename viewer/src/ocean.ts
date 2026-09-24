@@ -22,7 +22,7 @@ import type { Viewer } from "@cesium/widgets";
 import * as api from "./api";
 import type { CubeRequest } from "./api";
 import type { Style } from "./cube/paint";
-import { type Field, FlowOverlay } from "./flow";
+import { type Field, FlowOverlay, type FlowStyle } from "./flow";
 
 type Status = (message: string, kind?: "info" | "busy" | "warn" | "error") => void;
 
@@ -33,9 +33,13 @@ export class OceanLayer {
   private surfaceTicket = 0;
   private windTicket = 0;
   private cubeWindTicket = 0;
+  private airTicket = 0;
   surfaceOn = true;
   windOn = true;
   cubeWindOn = true;
+  airOn = false;
+  /** What the air layer shows, for the panel: its day and hour, or why it is missing. */
+  airNote = "";
   density = 12_000;
 
   constructor(private viewer: Viewer, private status: Status, private kick: (ms?: number) => void) {
@@ -163,7 +167,37 @@ export class OceanLayer {
       return;
     }
     if (ticket !== this.cubeWindTicket) return;
-    this.flow.set("cube", field(got, height), 4000);
+    // About the density the whole-ocean particles have when the cube fills the screen: a
+    // fixed 4,000 on a small box turned its top face into white noise.
+    const area = Math.abs((request.lon1 - request.lon0) * (request.lat1 - request.lat0));
+    this.flow.set("cube", field(got, height), Math.round(Math.min(Math.max(area * 20, 300), 3000)));
+  }
+
+  /** 10 m wind worldwide, as warm trails over the ocean's white ones (marine.py). */
+  async showAir(day: string): Promise<void> {
+    const ticket = ++this.airTicket;
+    if (!this.airOn) {
+      this.flow.remove("air");
+      return;
+    }
+    // The wind record ends yesterday: a cube on today or a forecast day borrows the
+    // newest wind there is, and the note says which day that was.
+    const yesterday = new Date(Date.now() - 86_400_000).toISOString().slice(0, 10);
+    const use = day > yesterday ? yesterday : day;
+    let got: Awaited<ReturnType<typeof api.getWind>>;
+    try {
+      got = await api.getWind(use);
+    } catch (error) {
+      if (ticket !== this.airTicket) return;
+      this.airNote = (error as Error).message;
+      this.status(this.airNote, "warn");
+      return;
+    }
+    if (ticket !== this.airTicket) return;
+    this.airNote = `wind at 10 m, ${String(got.meta.provenance.time_utc).replace("T", " ")} UTC` +
+      (use !== day ? ` (the newest there is; ${day} has no wind yet)` : "") +
+      " · satellite scatterometers blended with ECMWF";
+    this.flow.set("air", { ...field(got, 0), style: AIR }, Math.round(this.density * 0.6));
   }
 
   dropCubeWind(): void {
@@ -177,6 +211,14 @@ export class OceanLayer {
     this.kick();
   }
 }
+
+/** Wind: amber, and paced so 10 m/s moves about as fast on screen as a 0.8 m/s current. */
+const AIR: FlowStyle = {
+  bands: [4, 8, 13],
+  colours: ["rgba(255,196,120,0.45)", "rgba(255,210,140,0.65)",
+            "rgba(255,226,170,0.85)", "rgba(255,244,215,1)"],
+  pace: 0.08,
+};
 
 function field(got: { meta: api.CurrentsMeta; u: Float32Array; v: Float32Array },
                height: number): Field {

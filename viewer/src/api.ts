@@ -390,10 +390,50 @@ export async function getCurrents(day: string, depth: number, box?: CubeRequest)
   return { meta, u: all.subarray(0, nx * ny), v: all.subarray(nx * ny) };
 }
 
+/** 10 m wind worldwide at 12:00 UTC on a day (server/ocean/marine.py); ends yesterday. */
+export async function getWind(day: string):
+    Promise<{ meta: CurrentsMeta & { provenance: Record<string, unknown> }; u: Float32Array; v: Float32Array }> {
+  const metaResponse = await fetch(`${BASE}/api/wind/meta?day=${day}`);
+  if (!metaResponse.ok) throw await failure(metaResponse, "wind unavailable");
+  const meta = await metaResponse.json();
+  const [nx, ny] = meta.dimensions;
+  const all = await binary(`/api/wind/data?day=${day}&n=${nx * ny}`, "wind", 2 * nx * ny);
+  return { meta, u: all.subarray(0, nx * ny), v: all.subarray(nx * ny) };
+}
+
+export interface FishingSpot {
+  lat: number; lon: number; front_c_per_100km: number; chlorophyll_mg_m3: number;
+  sea_state: "fit" | "caution" | "stay in" | "unknown";
+}
+
+export interface Fishing {
+  dimensions: [number, number]; lonRange: [number, number]; latRange: [number, number];
+  /** base64, one byte per cell south row first: bit 0 zone, bits 1-2 sea state, 255 land. */
+  cells: string;
+  spots: FishingSpot[];
+  counts: { ocean_cells: number; zone_cells: number; stay_in_cells: number; caution_cells: number };
+  provenance: { day: string; missing: string[]; not_an_advisory: string } & Record<string, unknown>;
+}
+
+/** Indicative fishing zones and sea state over a box (server/ocean/fishing.py). */
+export async function getFishing(q: { lon0: number; lon1: number; lat0: number; lat1: number },
+                                 day: string): Promise<Fishing> {
+  const response = await fetch(`${BASE}/api/fishing?lon0=${q.lon0}&lon1=${q.lon1}` +
+    `&lat0=${q.lat0}&lat1=${q.lat1}&day=${day}`);
+  if (!response.ok) throw await failure(response, "fishing zones unavailable");
+  return response.json();
+}
+
 /** The assistant (server/ocean/assistant.py). Actions are whitelisted server-side. */
 export interface ChatAction {
   action: string; view?: string; layer?: string; depth_m?: number;
   lat?: number; lon?: number; platform?: string;
+  /** make_cube */
+  west?: number; east?: number; south?: number; north?: number; variable?: string;
+  day?: string; depth_max?: number;
+  /** set_control, click, highlight: an element id from the server's CONTROLS list */
+  target?: string; value?: string | number | boolean;
+  on?: boolean;
 }
 
 export async function chat(messages: { role: string; content: string }[],

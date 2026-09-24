@@ -39,6 +39,8 @@ import { demo as cubeDataDemo } from "./cube/data";
 import { drawColumn } from "./cube/column";
 import { OceanLayer } from "./ocean";
 import { demo as flowDemo } from "./flow";
+import { FishingLayer, demo as fishingDemo } from "./fishing";
+import { Immersive, demo as immersiveDemo } from "./immersive";
 import {
   EMPTY_SENTINEL, OPACITY_REFERENCE_DEPTH_M, OceanVoxelProvider, addVolume, applyRamp,
   makeOceanShader,
@@ -106,6 +108,8 @@ async function main(): Promise<void> {
     cameraDemo();
     cubeDataDemo();
     flowDemo();
+    fishingDemo();
+    immersiveDemo();
   }
 
   const viewer = new Viewer("globe", {
@@ -289,6 +293,60 @@ async function main(): Promise<void> {
     void ocean.showCurrents(cube.request.day, top,
       { west: d.west, east: d.east, south: d.south, north: d.north });
     void ocean.showCubeCurrents(cube.request, top, cube.scene.heightOf(top) + 400);
+    void ocean.showAir(cube.request.day).then(() => {
+      el("air-note").textContent = ocean.airOn ? ocean.airNote : "";
+    });
+    void refreshFishing();
+  }
+
+  // ---- for fishermen (fishing.ts, server/ocean/fishing.py) -----------------
+
+  const fishing = new FishingLayer(viewer, (ms) => graphics.kick(ms));
+  async function refreshFishing(): Promise<void> {
+    const on = el<HTMLInputElement>("fish-on").checked;
+    const summary = el("fish-summary");
+    const list = el("fish-spots");
+    if (!on || !cube.request) {
+      fishing.clear();
+      summary.textContent = "";
+      list.replaceChildren();
+      el("fish-advisory").textContent = "";
+      return;
+    }
+    summary.textContent = "reading temperature fronts, chlorophyll, waves and wind…";
+    let got: api.Fishing | undefined;
+    try {
+      got = await fishing.show(cube.request, cube.request.day);
+    } catch (error) {
+      summary.textContent = (error as Error).message;
+      return;
+    }
+    if (!got) return;
+    const c = got.counts;
+    const pct = (n: number) => `${Math.round(100 * n / Math.max(c.ocean_cells, 1))}%`;
+    summary.textContent = `${got.provenance.day}: ${c.zone_cells} likely-zone cells of ` +
+      `${c.ocean_cells} (1/4°). Sea state: ${pct(c.stay_in_cells)} stay in, ` +
+      `${pct(c.caution_cells)} caution.` +
+      (got.provenance.missing.length ? ` Missing: ${got.provenance.missing.join("; ")}.` : "");
+    list.replaceChildren(...got.spots.map((spot, i) => {
+      const row = document.createElement("div");
+      row.className = "spot";
+      const ns = spot.lat >= 0 ? "N" : "S";
+      const ew = spot.lon >= 0 ? "E" : "W";
+      row.innerHTML = `<span><b>${i + 1}. ${Math.abs(spot.lat).toFixed(2)}°${ns} ` +
+        `${Math.abs(spot.lon).toFixed(2)}°${ew}</b></span>` +
+        `<span class="state ${spot.sea_state.replace(" ", "-")}">${spot.sea_state}</span>` +
+        `<span class="hint">front ${spot.front_c_per_100km} °C/100 km · chlorophyll ` +
+        `${spot.chlorophyll_mg_m3} mg/m³</span>`;
+      const go = document.createElement("button");
+      go.className = "btn";
+      go.textContent = "Go";
+      go.addEventListener("click", () => void flyTo(spot.lon, spot.lat, 350_000));
+      row.append(go);
+      return row;
+    }));
+    if (!got.spots.length) list.textContent = "no zone found in this box";
+    el("fish-advisory").textContent = got.provenance.not_an_advisory;
   }
 
   const cube = new CubeController({
@@ -304,9 +362,18 @@ async function main(): Promise<void> {
       refreshOcean();
     },
     aim: () => void aimAtCube(),
+    // Drawing a box needs the drag for itself. Turning the orbit camera off used to hand
+    // the mouse back to Cesium's own controller, so the drag drew and moved the globe.
     navigation: (enabled) => {
-      if (state.view !== "region") return;
-      if (enabled) orbit.enable(); else orbit.disable();
+      if (state.view === "fly") return false;
+      const controller = viewer.scene.screenSpaceCameraController;
+      if (enabled) {
+        if (state.view === "region") orbit.enable(); else controller.enableInputs = true;
+      } else {
+        if (state.view === "region") orbit.disable();
+        controller.enableInputs = false;
+      }
+      return true;
     },
   });
   cube.onRepaint = () => {
@@ -1160,6 +1227,29 @@ async function main(): Promise<void> {
     ocean.cubeWindOn = node.checked;
     if (node.checked) refreshOcean(); else ocean.dropCubeWind();
   });
+  bind("ocean-air", "change", (node) => {
+    ocean.airOn = node.checked;
+    void ocean.showAir(cube.request?.day ?? today()).then(() => {
+      el("air-note").textContent = ocean.airOn ? ocean.airNote : "";
+    });
+  });
+  // One switch for the two whole-ocean layers, so the cube can be looked at on its own.
+  bind("cube-only", "change", (node) => {
+    for (const id of ["ocean-surface", "ocean-wind", "ocean-air"]) {
+      if (id === "ocean-air" && !node.checked) continue;  // winds are opt-in: never turned on here
+      const box = el<HTMLInputElement>(id);
+      if (box.checked === node.checked) {
+        box.checked = !node.checked;
+        box.dispatchEvent(new Event("change"));
+      }
+    }
+  });
+  // The zones are painted on the sea surface, which the standing cube covers: they are
+  // read on the flat map, where the cube is its own top face.
+  bind("fish-on", "change", async (node) => {
+    if (node.checked && state.view !== "map" && !immersive.active) await setView("map");
+    void refreshFishing();
+  });
   el<HTMLSelectElement>("ocean-density").addEventListener("change", (e) => {
     ocean.density = Number((e.target as HTMLSelectElement).value);
     ocean.dropWind();
@@ -1269,6 +1359,8 @@ async function main(): Promise<void> {
   // The INCOIS volume and the cube are never on screen together (see showBay).
   bind("bay-volume", "change", async (node) => {
     showBay = node.checked;
+    el("app").classList.toggle("bay", showBay);
+    if (!showBay && state.layer === "residual") await setLayer("field");
     if (showBay) {
       state.depthIndex = Math.min(state.depthIndex, 23);
       await setView("region");
@@ -1571,27 +1663,136 @@ async function main(): Promise<void> {
     syncGraphicsPanel();
   }
 
+  // ---- anywhere, and immersive (immersive.ts) ------------------------------
+
+  const today = () => new Date().toISOString().slice(0, 10);
+
+  /** Look at a place: orbiting if it is by the cube, from the globe view if not. */
+  async function flyTo(lon: number, lat: number, range: number): Promise<void> {
+    const d = cube.data;
+    const near = (lo: number, hi: number, v: number) => v >= lo - 6 && v <= hi + 6;
+    const byCube = cubeActive() && !!d && near(d.south, d.north, lat) &&
+      (near(d.west, d.east, lon) || near(d.west, d.east, lon + 360));
+    if (byCube || (showBay && near(lon0, lon1, lon) && near(lat0, lat1, lat))) {
+      if (state.view !== "region") await setView("region");
+      orbit.lookAt(lon, lat, range);
+    } else {
+      // The orbit camera is held to its box; anywhere else is seen from the globe view.
+      if (state.view !== "globe") await setView("globe");
+      viewer.camera.flyTo({ destination: Cartesian3.fromDegrees(lon, lat, range * 2.5), duration: 2.5 });
+    }
+    graphics.kick(3000);
+  }
+
+  let viewBeforeImmersive: ViewName = "region";
+  const immersive = new Immersive(viewer, {
+    enter: async () => {
+      viewBeforeImmersive = state.view;
+      await setView("globe");
+      cube.setVisible(false);
+      if (primitive) primitive.show = false;
+      fishing.setVisible(false);
+      ocean.setVisible(true);
+      ocean.flow.ignoreHoles = true;
+      ocean.dropCubeWind();
+    },
+    exit: async () => {
+      ocean.flow.ignoreHoles = false;
+      // The workspace's own switches decide again what the whole ocean shows.
+      ocean.surfaceOn = el<HTMLInputElement>("ocean-surface").checked;
+      ocean.windOn = el<HTMLInputElement>("ocean-wind").checked;
+      ocean.airOn = el<HTMLInputElement>("ocean-air").checked;
+      if (!ocean.surfaceOn) ocean.clearSurface();
+      if (!ocean.windOn) ocean.dropWind();
+      if (!ocean.airOn) void ocean.showAir("");
+      fishing.setVisible(true);
+      await setView(viewBeforeImmersive);
+      if (cubeActive() && viewBeforeImmersive === "region") await aimAtCube();
+      refreshOcean();
+    },
+    layer: (name, on) => {
+      // With the cube gone the particles and colour are at the surface; the key says so.
+      const day = cube.request?.day ?? today();
+      if (name === "currents") {
+        ocean.windOn = on;
+        if (on) void ocean.showCurrents(day, 0); else ocean.dropWind();
+      } else if (name === "air") {
+        ocean.airOn = on;
+        void ocean.showAir(day).then(() => immersive.renderKey());
+      } else {
+        ocean.surfaceOn = on;
+        if (on && cube.variable) void ocean.showSurface(cube.variable.key, day, 0, cube.style());
+        else ocean.clearSurface();
+      }
+    },
+    describe: () => {
+      const day = cube.request?.day ?? today();
+      const parts: string[] = [];
+      if (ocean.windOn) parts.push(`white: ocean currents at the surface on ${day}`);
+      if (ocean.airOn && ocean.airNote) parts.push(`amber: ${ocean.airNote}`);
+      if (ocean.surfaceOn && cube.variable) {
+        parts.push(`colour: ${cube.variable.title.toLowerCase()} at the surface on ${day}`);
+      }
+      return parts.join("  ·  ");
+    },
+    setBasemapBrightness: (b) => {
+      const was = basemap?.brightness ?? 1;
+      if (basemap) basemap.brightness = b;
+      return was;
+    },
+    kick: (ms) => graphics.kick(ms),
+  });
+  el("immersive").addEventListener("click", () => void immersive.enter());
+
+
   // ---- assistant ----------------------------------------------------------
 
-  /** What the assistant is told the user is looking at, so "here" and "this" resolve. */
+  /** What the assistant is told the user is looking at, so "here" and "this" resolve.
+   * Kept short: the server cuts the context at a fixed length. */
   const chatContext = () => {
     const c = viewer.camera.positionCartographic;
+    const r = cube.request;
     return {
-      view: state.view,
-      variable: state.variable,
-      layer: state.layer,
-      source: state.source,
-      analysis_step: meta.times[state.timeIndex].slice(0, 10),
-      slice_depth_m: Math.round(sliceDepth()),
+      view: immersive.active ? "immersive" : state.view,
+      camera: [+CesiumMath.toDegrees(c.latitude).toFixed(1),
+               +CesiumMath.toDegrees(c.longitude).toFixed(1), Math.round(c.height / 1000)],
+      cube: r && !showBay ? { box: [r.lon0, r.lon1, r.lat0, r.lat1], variable: r.variable,
+                              day: r.day, depth_max: r.depthMax } : null,
+      bay_volume: showBay ? { layer: state.layer, depth_m: Math.round(sliceDepth()) } : null,
       open_profile: el("profile-panel").classList.contains("hidden")
         ? null : el("profile-title").textContent,
-      camera: {
-        lat: +CesiumMath.toDegrees(c.latitude).toFixed(2),
-        lon: +CesiumMath.toDegrees(c.longitude).toFixed(2),
-        height_km: Math.round(c.height / 1000),
-      },
+      on: ["ocean-surface", "ocean-wind", "cube-wind", "ocean-air", "fish-on"]
+        .filter((id) => el<HTMLInputElement>(id).checked),
     };
   };
+
+  /** Orange ring round a control for five seconds, opening whatever hides it. */
+  let highlightTimer = 0;
+  let highlighted: HTMLElement | undefined;
+  function highlight(node: HTMLElement): void {
+    // A checkbox is a dot; ring its whole label.
+    const target = (node.closest("label.check") as HTMLElement | null) ?? node;
+    const dock = target.closest(".dock");
+    if (dock) setDock(dock.id as "left" | "right", true);
+    for (let d = target.parentElement?.closest("details"); d; d = d.parentElement?.closest("details")) {
+      d.open = true;
+    }
+    if (target instanceof HTMLDetailsElement) target.open = true;
+    window.clearTimeout(highlightTimer);
+    highlighted?.classList.remove("hl");
+    void target.offsetWidth;  // restarts the pulse when the same control is pointed at twice
+    target.classList.add("hl");
+    highlighted = target;
+    target.scrollIntoView({ block: "center", behavior: "smooth" });
+    highlightTimer = window.setTimeout(() => target.classList.remove("hl"), 5000);
+  }
+
+  /** A control the assistant may touch: a named element of this page, and nothing else. */
+  function control(id: unknown): HTMLElement {
+    const node = typeof id === "string" ? document.getElementById(id) : null;
+    if (!node || !el("app").contains(node)) throw new Error(`no control ${String(id)}`);
+    return node;
+  }
 
   const assistant = new ChatPanel({
     context: chatContext,
@@ -1600,8 +1801,10 @@ async function main(): Promise<void> {
       const clamp = (v: number | undefined, lo: number, hi: number) =>
         Math.min(Math.max(Number(v), lo), hi);
       if (a.action === "set_view" && ALL_VIEWS.includes(a.view as ViewName)) {
+        if (immersive.active) await immersive.leave();
         await setView(a.view as ViewName);
       } else if (a.action === "set_layer" && (a.layer === "field" || a.layer === "residual")) {
+        if (a.layer === "residual" && !showBay) control("bay-volume").click();
         await setLayer(a.layer);
       } else if (a.action === "set_depth") {
         const depths = state.volumeMeta?.provenance.depth_grid.depths_m ?? [];
@@ -1616,14 +1819,50 @@ async function main(): Promise<void> {
         slider.dispatchEvent(new Event("input"));
         slider.dispatchEvent(new Event("change"));
       } else if (a.action === "fly_to") {
-        const lat = clamp(a.lat, -80, 80);
-        const lon = clamp(a.lon, -180, 180);
-        if (state.view !== "region") await setView("region");
-        orbit.lookAt(lon, lat, 900_000);
+        await flyTo(clamp(a.lon, -180, 180), clamp(a.lat, -80, 80), 900_000);
       } else if (a.action === "open_profile" && a.platform) {
         await showProfile(a.platform);
       } else if (a.action === "isotherm_20") {
         el("preset-d20").click();
+      } else if (a.action === "make_cube") {
+        if (immersive.active) await immersive.leave();
+        if (showBay) control("bay-volume").click();
+        const set = (id: string, v: unknown) => {
+          if (v !== undefined && v !== null && v !== "") el<HTMLInputElement>(id).value = String(v);
+        };
+        const has = (id: string, v: unknown) =>
+          [...el<HTMLSelectElement>(id).options].some((o) => o.value === String(v));
+        set("cube-w", clamp(a.west, -180, 180));
+        set("cube-e", clamp(a.east, -180, 180));
+        set("cube-s", clamp(a.south, -80, 90));
+        set("cube-n", clamp(a.north, -80, 90));
+        if (a.variable && has("cube-variable", a.variable)) set("cube-variable", a.variable);
+        if (a.day && /^\d{4}-\d{2}-\d{2}$/.test(a.day)) set("cube-day", a.day);
+        if (a.depth_max && has("cube-depth", a.depth_max)) set("cube-depth", a.depth_max);
+        el("cube-load").click();
+      } else if (a.action === "set_control") {
+        const node = control(a.target);
+        if (node instanceof HTMLInputElement && node.type === "checkbox") {
+          node.checked = a.value === true || a.value === "true" || a.value === 1;
+        } else if (node instanceof HTMLInputElement || node instanceof HTMLSelectElement) {
+          node.value = String(a.value);
+        } else {
+          throw new Error("not a control with a value");
+        }
+        node.dispatchEvent(new Event("input", { bubbles: true }));
+        node.dispatchEvent(new Event("change", { bubbles: true }));
+        highlight(node);
+      } else if (a.action === "click") {
+        const node = control(a.target);
+        if (!(node instanceof HTMLButtonElement)) throw new Error("only buttons are clicked");
+        node.click();
+      } else if (a.action === "highlight") {
+        highlight(control(a.target));
+      } else if (a.action === "immersive") {
+        if (a.on === false) await immersive.leave(); else await immersive.enter();
+      } else if (a.action === "cinematic") {
+        await immersive.enter();
+        immersive.startCinema();
       }
     },
   });
@@ -1675,6 +1914,9 @@ async function main(): Promise<void> {
     const views: Record<string, ViewName> = { "1": "region", "2": "map", "3": "globe", "4": "fly" };
     if (views[event.key]) void setView(views[event.key]);
     else if (event.key.toLowerCase() === "p" && state.view === "fly") flight.paused = !flight.paused;
+    else if (event.key.toLowerCase() === "i") void immersive.toggle();
+    else if (event.key === "Escape" && immersive.active) void immersive.leave();
+    else if (event.key.toLowerCase() === "c" && immersive.active) immersive.startCinema();
     else if (event.key === "[") setDock("left");
     else if (event.key === "]") setDock("right");
     else if (event.key === "Home") {
@@ -1703,6 +1945,7 @@ async function main(): Promise<void> {
     (window as unknown as Record<string, unknown>).vvater = {
       viewer, state, graphics, getPrimitive: () => primitive, getShader: () => shader,
       setView, setDock, showProfile, setLayer, homeCamera, orbit, flight, cube, ocean,
+      immersive, fishing, highlight,
     };
   }
 

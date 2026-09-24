@@ -55,6 +55,56 @@ class AssistantUnavailable(RuntimeError):
 VIEWS = {"region", "map", "globe", "fly"}
 LAYERS = {"field", "residual"}
 
+# The controls the assistant may set, click or point at, by element id in viewer/index.html.
+# The description is the model's menu; the browser checks again that the id is a control
+# of its own page. Anything not listed here cannot be touched.
+CONTROLS: dict[str, str] = {
+    # sections (highlight only)
+    "cube-section": "section: Ocean cube (box, variable, day, depth)",
+    "cut-section": "section: Cut & look (slide the cube's faces in)",
+    "ocean-section": "section: Whole ocean (surface colour, currents, winds)",
+    "fishing-section": "section: For fishermen",
+    "probe-section": "section: Probe (value under the cursor, column chart)",
+    "bay-section": "section: INCOIS Bay volume (the v1 view, residual layer)",
+    "chat-section": "section: this assistant",
+    # the cube
+    "cube-scenario": "select: a ready-made cube to start from",
+    "cube-variable": "select: the cube's variable (temperature, salinity, speed, chlorophyll...)",
+    "cube-day": "date input YYYY-MM-DD: the cube's day",
+    "cube-depth": "select: down to 200, 500, 1000, 2000, 4000 or 6000 (sea floor) m",
+    "cube-w": "number: west edge, degrees", "cube-e": "number: east edge, degrees",
+    "cube-s": "number: south edge, degrees", "cube-n": "number: north edge, degrees",
+    "cube-draw": "button: draw a box on the globe with the mouse",
+    "cube-load": "button: load the cube for the box, day and variable",
+    "cube-floats": "checkbox: Argo floats in the cube",
+    "cut-top": "range 0-1000: cut the cube's top down", "cut-bottom": "range 0-1000: bottom",
+    "cut-west": "range 0-1000: west side in", "cut-east": "range 0-1000: east side in",
+    "cut-south": "range 0-1000: south side in", "cut-north": "range 0-1000: north side in",
+    "cube-height": "range 5-80: vertical exaggeration of the cube",
+    "cube-stretched": "checkbox: stretched depth", "cube-contours": "checkbox: contour lines",
+    "cube-native": "checkbox: native levels only, no interpolation",
+    "cut-reset": "button: whole cube (undo cuts)", "cube-home": "button: look at the cube",
+    # the whole ocean
+    "cube-only": "checkbox: only the cube, hide the rest of the world",
+    "ocean-surface": "checkbox: the whole ocean coloured at the cube's top depth",
+    "ocean-wind": "checkbox: animated ocean currents, whole ocean",
+    "cube-wind": "checkbox: animated currents on the cube's top",
+    "ocean-air": "checkbox: animated winds at 10 m",
+    "ocean-density": "select: particle count 5000, 12000, 20000, 35000",
+    "fish-on": "checkbox: likely fishing zones and sea state in the cube's box",
+    # colour
+    "palette": "select: colour palette", "reverse": "checkbox: reverse the palette",
+    "log": "checkbox: log colour scale", "range-min": "number: colour bar minimum",
+    "range-max": "number: colour bar maximum",
+    # the Bay volume and the header
+    "bay-volume": "checkbox: show the INCOIS Bay analysis volume instead of the cube",
+    "view-region": "button: Region 3D view", "view-map": "button: Map 2D view",
+    "view-globe": "button: Globe view", "view-fly": "button: Fly view",
+    "reset-view": "button: reset the camera", "immersive": "button: immersive view",
+    "layer-residual": "button: residual vs observed (Bay volume only)",
+    "gfx-tier": "select: graphics quality",
+}
+
 
 def check_action(action: str, args: dict) -> dict | None:
     """A proposed interface action, validated and clamped, or None if not allowed."""
@@ -71,6 +121,28 @@ def check_action(action: str, args: dict) -> dict | None:
         if action == "open_profile" and isinstance(args.get("platform"), str):
             return {"action": action, "platform": args["platform"][:64]}
         if action == "isotherm_20":
+            return {"action": action}
+        if action == "make_cube":
+            out = {"action": action, "west": num("west", -180, 180), "east": num("east", -180, 180),
+                   "south": num("south", -80, 90), "north": num("north", -80, 90)}
+            if isinstance(args.get("variable"), str):
+                out["variable"] = args["variable"][:32]
+            if isinstance(args.get("day"), str) and re.fullmatch(r"\d{4}-\d{2}-\d{2}", args["day"]):
+                out["day"] = args["day"]
+            if args.get("depth_max") is not None:
+                out["depth_max"] = int(num("depth_max", 200, 6000))
+            return out
+        if action in ("set_control", "click", "highlight") and args.get("target") in CONTROLS:
+            out = {"action": action, "target": args["target"]}
+            if action == "set_control":
+                value = args.get("value")
+                if not isinstance(value, (str, int, float, bool)):
+                    return None
+                out["value"] = value[:40] if isinstance(value, str) else value
+            return out
+        if action == "immersive":
+            return {"action": action, "on": args.get("on") is not False}
+        if action == "cinematic":
             return {"action": action}
     except (KeyError, TypeError, ValueError):
         return None
@@ -181,6 +253,21 @@ def tool_global_value(layer: str, lat: float, lon: float, day: str | None = None
             "source": "Copernicus GLORYS12, 1/4 deg, surface only"}
 
 
+def tool_fishing_zones(west: float, east: float, south: float, north: float,
+                       day: str | None = None) -> dict:
+    """Indicative fishing zones and sea state over a box (fishing.py), without the grid."""
+    from datetime import date
+
+    from . import cube, fishing
+
+    day = day or date.today().isoformat()
+    result = fishing.assess(cube.Box.parse(west, east, south, north), day)
+    p = result["provenance"]
+    return {"day": day, "spots": result["spots"], "counts": result["counts"],
+            "rule": p["rule"], "sea_state_scale": p["sea_state_scale"], "missing": p["missing"],
+            "not_an_advisory": p["not_an_advisory"]}
+
+
 def guide_sections() -> dict[str, str]:
     """docs/17-user-guide.md split at its ## headings."""
     text = GUIDE.read_text(encoding="utf-8") if GUIDE.exists() else ""
@@ -249,16 +336,41 @@ TOOLS: dict[str, tuple[Callable[..., dict], dict]] = {
                        "keys, layers, QC, data mode, bias, RMSE, TCHP). Call it for any "
                        "question about the interface or a term.",
         "parameters": {"type": "object", "properties": {"topic": {"type": "string"}}}}),
+    "fishing_zones": (tool_fishing_zones, {
+        "description": "Indicative fishing zones (thermal fronts with chlorophyll) and the "
+                       "sea state (forecast waves, observed wind) over a box, anywhere. "
+                       "Keep the box near the coast asked about, about 5-15 degrees a side. "
+                       "Always pass on its not_an_advisory line.",
+        "parameters": {"type": "object", "properties": {
+            "west": {"type": "number"}, "east": {"type": "number"},
+            "south": {"type": "number"}, "north": {"type": "number"},
+            "day": {"type": "string", "description": "YYYY-MM-DD; today if omitted"}},
+            "required": ["west", "east", "south", "north"]}}),
     "ui_action": (tool_ui_action, {
-        "description": "Propose a change to the viewer, applied when the user's browser "
-                       "receives the answer. set_view{view: region|map|globe|fly}, "
-                       "set_layer{layer: field|residual}, set_depth{depth_m}, "
-                       "fly_to{lat, lon}, open_profile{platform}, isotherm_20{}.",
+        "description": "Change the viewer; applied when the user's browser receives the "
+                       "answer. Call it once per change. "
+                       "set_view{view: region|map|globe|fly}; fly_to{lat, lon} anywhere; "
+                       "make_cube{west, east, south, north, variable?, day?, depth_max?} "
+                       "builds an Ocean Cube anywhere (up to 100 x 80 degrees); "
+                       "set_control{target, value} sets a control; click{target} presses a "
+                       "button; highlight{target} rings a control in orange for five "
+                       "seconds to show the user where it is; immersive{on}; cinematic{} "
+                       "plays the camera tour. Bay volume only: set_layer{layer: "
+                       "field|residual}, set_depth{depth_m}, open_profile{platform}, "
+                       "isotherm_20{}. Targets: " +
+                       "; ".join(f"{k} = {v}" for k, v in CONTROLS.items()),
         "parameters": {"type": "object", "properties": {
             "action": {"type": "string"}, "view": {"type": "string"},
             "layer": {"type": "string"},
             "depth_m": {"type": "number"}, "lat": {"type": "number"},
-            "lon": {"type": "number"}, "platform": {"type": "string"}},
+            "lon": {"type": "number"}, "platform": {"type": "string"},
+            "west": {"type": "number"}, "east": {"type": "number"},
+            "south": {"type": "number"}, "north": {"type": "number"},
+            "variable": {"type": "string"}, "day": {"type": "string"},
+            "depth_max": {"type": "number"},
+            "target": {"type": "string"},
+            "value": {"type": "string", "description": "true/false for a checkbox"},
+            "on": {"type": "boolean"}},
             "required": ["action"]}}),
 }
 
@@ -274,13 +386,19 @@ Rules you must follow:
 - Depths: say which native level the tool used, not only the depth asked for.
 - The analysis is a model estimate, not a measurement. Say which one you are quoting.
 - Keep answers short: two to five sentences, plain words, units always.
-- If showing something would help, call ui_action (for example set_depth, open_profile,
-  set_view). Say in your answer what you changed.
-- Region: Bay of Bengal 78-100E, 5-23N, 5-2000 m. Demo date {config.DEMO_DATE}.
+- If showing something would help, call ui_action. Say in your answer what you changed.
+- When the user asks how to do something, do it for them if you can, and highlight the
+  control involved so they learn where it is. When you only explain, still highlight it.
+- The Ocean Cube works anywhere on Earth, any day from 1993 to ten days ahead, from the
+  sea surface to the floor (Copernicus). make_cube builds one. The INCOIS Bay volume
+  (78-100E, 5-23N, 5-2000 m, demo date {config.DEMO_DATE}) is the older view; value_at,
+  list_observations, profile and the residual layer are about it only.
+- Fishing questions: call fishing_zones on a box around the coast asked about, name the
+  best spots with their sea state, and always say it is indicative, not an INCOIS advisory.
 
 - For anything about the interface or a term, call user_guide first.
 
-What the user is looking at right now: {json.dumps(context)[:600]}"""
+What the user is looking at right now: {json.dumps(context)[:1500]}"""
 
 
 # ------------------------------------------------------------------ verification
@@ -410,6 +528,12 @@ def demo() -> None:
     assert check_action("set_depth", {"depth_m": 99999}) == {"action": "set_depth", "depth_m": 2000.0}
     assert check_action("run_shell", {}) is None
     assert check_action("set_view", {"view": "space"}) is None
+    assert check_action("highlight", {"target": "cube-draw"}) == {"action": "highlight", "target": "cube-draw"}
+    assert check_action("click", {"target": "body"}) is None, "only listed controls"
+    assert check_action("set_control", {"target": "fish-on", "value": {"x": 1}}) is None
+    cube_ = check_action("make_cube", {"west": -80, "east": -60, "south": 30, "north": 45,
+                                       "day": "2026-09-01; drop", "depth_max": 1e6})
+    assert cube_["depth_max"] == 6000 and "day" not in cube_, cube_
     assert "Views (keys 1 to 4)" in tool_user_guide("fly")["sections"]
     print("assistant demo ok")
 

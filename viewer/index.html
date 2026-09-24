@@ -197,6 +197,63 @@
   .chat-form textarea { resize: none; background: var(--field); border: 1px solid var(--seam);
     border-radius: 3px; color: var(--text); padding: 5px 7px; font: inherit; }
 
+  /* The residual layer belongs to the INCOIS Bay volume; with the cube on it did nothing. */
+  #app:not(.bay) .bay-only { display: none; }
+
+  /* ---- the assistant pointing at a control */
+  .hl { outline: 2px solid #ff9a1f !important; outline-offset: 2px;
+    box-shadow: 0 0 0 5px rgba(255, 154, 31, .22); border-radius: 3px;
+    animation: hl-pulse 1s ease-in-out 5; }
+  details.hl, .seg.hl { outline-offset: -2px; }
+  @keyframes hl-pulse { 50% { box-shadow: 0 0 0 9px rgba(255, 154, 31, .08); } }
+
+  /* ---- fishing */
+  .spot { display: grid; grid-template-columns: 1fr auto auto; gap: 2px 8px; align-items: center;
+    padding: 5px 7px; background: var(--field); border-radius: 3px; font-size: 11px; }
+  .spot b { font-variant-numeric: tabular-nums; }
+  .spot .state { font-size: 10px; text-transform: uppercase; letter-spacing: .06em; }
+  .spot .fit { color: #5fd38a; } .spot .caution { color: var(--warn); }
+  .spot .stay-in { color: var(--error); } .spot .unknown { color: var(--dim); }
+  .spot .hint { grid-column: 1 / -1; }
+  .spot .btn { grid-row: 1; grid-column: 3; padding: 1px 10px; }
+  #fish-advisory { color: var(--warn); }
+
+  /* ---- immersive: the globe and nothing else */
+  #app.immersive { grid-template-columns: 0 minmax(0, 1fr) 0; grid-template-rows: 0 minmax(0, 1fr) 0;
+    gap: 0; }
+  #app.immersive #top, #app.immersive .dock, #app.immersive #statusbar,
+  #app.immersive #hud, #app.immersive #timeline, #app.immersive #flight-hud { display: none; }
+  #immersive-bar { display: none; position: absolute; top: 14px; left: 50%;
+    transform: translateX(-50%); gap: 4px; padding: 4px; z-index: 5;
+    background: rgba(10, 14, 20, .45); border: 1px solid rgba(255, 255, 255, .12);
+    border-radius: 20px; backdrop-filter: blur(6px); transition: opacity .6s; }
+  #app.immersive #immersive-bar { display: flex; }
+  #immersive-bar button { background: none; border: 0; color: rgba(255, 255, 255, .72);
+    padding: 5px 12px; border-radius: 16px; cursor: pointer; font-size: 11.5px; }
+  #immersive-bar button:hover { color: #fff; background: rgba(255, 255, 255, .08); }
+  #immersive-bar button.on { color: #0b1a22; background: rgba(223, 246, 255, .9); }
+  #app.cinema #immersive-bar { opacity: .12; }
+  #app.cinema #immersive-bar:hover { opacity: 1; }
+  #immersive-key { display: none; position: absolute; left: 16px; bottom: 14px; z-index: 5;
+    font-size: 10.5px; color: rgba(255, 255, 255, .6); text-shadow: 0 1px 2px #000;
+    pointer-events: none; line-height: 1.6; }
+  #app.immersive #immersive-key { display: block; }
+  #app.cinema #immersive-key { display: none; }
+  #cinema { position: absolute; inset: 0; pointer-events: none; z-index: 4; display: none; }
+  #app.cinema #cinema { display: block; }
+  #cinema::before, #cinema::after { content: ""; position: absolute; left: 0; right: 0;
+    height: 9vh; background: #000; }
+  #cinema::before { top: 0; } #cinema::after { bottom: 0; }
+  #cinema-fade { position: absolute; inset: 0; background: #000; opacity: 0;
+    transition: opacity .45s; }
+  #cinema-fade.on { opacity: 1; }
+  #cinema-title { position: absolute; left: 6vw; bottom: calc(9vh + 22px); color: #fff;
+    font-size: 13px; letter-spacing: .28em; text-transform: uppercase; opacity: 0;
+    transition: opacity 1.2s; text-shadow: 0 1px 6px rgba(0, 0, 0, .8); }
+  #cinema-title small { display: block; letter-spacing: .12em; font-size: 10.5px;
+    color: rgba(255, 255, 255, .6); margin-top: 6px; text-transform: none; }
+  #cinema-title.on { opacity: 1; }
+
   @media (max-width: 1400px) { .brand span { display: none; } }
   @media (max-width: 900px) {
     #app { --left: 26px; --right: 26px; }
@@ -208,7 +265,7 @@
 <div id="app">
 
   <header id="top">
-    <div class="brand">VVater<span>3D ocean model &amp; in-situ observations · Bay of Bengal</span></div>
+    <div class="brand">VVater<span>3D ocean model &amp; in-situ observations · any ocean</span></div>
     <span class="tag">View</span>
     <div class="seg" role="group" aria-label="View">
       <button id="view-region" class="on" title="Oblique 3D view of the region (1)">Region 3D</button>
@@ -217,12 +274,13 @@
       <button id="view-fly" title="Fly over the surface at a fixed altitude (4)">Fly</button>
     </div>
     <button id="reset-view" class="tool" title="Back to this view's home camera (Home)">Reset camera</button>
-    <span class="tag">Layer</span>
-    <div class="seg" role="group" aria-label="Layer">
+    <span class="tag bay-only">Layer</span>
+    <div class="seg bay-only" role="group" aria-label="Layer" id="layer-seg">
       <button id="layer-field" class="on">Analysis</button>
       <button id="layer-residual">Residual vs observed</button>
     </div>
     <div class="spacer"></div>
+    <button id="immersive" class="tool" title="Only the globe, its currents and winds (I)">Immersive</button>
     <span id="view-hint" class="tag"><kbd>1</kbd>–<kbd>4</kbd> views · <kbd>WASD</kbd> move · <kbd>[</kbd> <kbd>]</kbd> docks</span>
   </header>
 
@@ -290,9 +348,13 @@
       </div></details>
 
       <details open id="ocean-section"><summary>Whole ocean</summary><div class="sec">
+        <label class="check"><input type="checkbox" id="cube-only" /> Only the cube: hide the rest of the world</label>
         <label class="check"><input type="checkbox" id="ocean-surface" checked /> The whole ocean at the cube's top depth</label>
         <label class="check"><input type="checkbox" id="ocean-wind" checked /> Animated currents, whole ocean</label>
         <label class="check"><input type="checkbox" id="cube-wind" checked /> Animated currents on the cube's top</label>
+        <label class="check"><input type="checkbox" id="ocean-air" /> Animated winds at 10 m</label>
+        <div class="key"><i class="dot" style="background:#eaf6ff"></i> currents &nbsp; <i class="dot" style="background:#ffd28c"></i> wind</div>
+        <div id="air-note" class="hint"></div>
         <div class="prop"><label for="ocean-density">Particles</label>
           <select id="ocean-density">
             <option value="5000">5,000</option><option value="12000" selected>12,000</option>
@@ -301,6 +363,21 @@
         <div id="ocean-note" class="hint">Same variable, day and colour bar as the cube, so a
           colour means the same value inside and outside it. Currents are that day's flow
           at that depth, animated: a picture of the flow, not where the water went.</div>
+      </div></details>
+
+      <details id="fishing-section"><summary>For fishermen</summary><div class="sec">
+        <label class="check"><input type="checkbox" id="fish-on" /> Likely fishing zones &amp; sea state in the cube's box</label>
+        <div class="hint">Zones: where warm and cool water meet (the strongest 10% of
+          temperature fronts in the box) and there is food (chlorophyll at or above the box's
+          median). Sea state: forecast waves and observed wind at noon UTC. Opens the flat
+          map, where the zones are not hidden under the cube. For a trip, set the cube's day
+          to today or a forecast day.</div>
+        <div class="key"><i class="dot" style="background:#ff9a1f"></i> likely zone
+          <i class="dot" style="background:#ffd23f"></i> caution
+          <i class="dot" style="background:#ff5f6d"></i> stay in</div>
+        <div id="fish-summary" class="hint"></div>
+        <div id="fish-spots" style="display:grid;gap:5px"></div>
+        <div id="fish-advisory" class="hint"></div>
       </div></details>
 
       <details id="bay-section"><summary>INCOIS Bay volume</summary><div class="sec">
@@ -409,6 +486,16 @@
     <div id="globe"></div>
     <div id="hud"></div>
     <div id="flight-hud" class="hidden"></div>
+    <div id="immersive-bar" role="toolbar" aria-label="Immersive view">
+      <button id="imm-cinema" title="Let the camera tell it (C)">Cinematic</button>
+      <button id="imm-currents" class="on" title="Ocean currents">Currents</button>
+      <button id="imm-air" class="on" title="Winds at 10 m">Winds</button>
+      <button id="imm-colour" title="The cube's variable over the whole ocean">Colour</button>
+      <button id="imm-light" class="on" title="Day and night from the sun">Sunlight</button>
+      <button id="imm-exit" title="Back to the workspace (Esc)">Exit</button>
+    </div>
+    <div id="immersive-key"></div>
+    <div id="cinema"><div id="cinema-fade"></div><div id="cinema-title"></div></div>
     <div id="timeline">
       <button id="play" class="btn">▶ Play</button>
       <input type="range" id="time" min="0" max="1" step="1" aria-label="Analysis time step" />

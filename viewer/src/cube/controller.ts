@@ -44,7 +44,8 @@ export interface CubeHooks {
   /** Point the orbit camera at the cube. */
   aim: (cube: CubeController) => void;
   /** Hand mouse input to the box tool (false) and back to the camera (true). */
-  navigation: (enabled: boolean) => void;
+  /** Hand the mouse to the box tool (false) or back to the camera; false if it cannot. */
+  navigation: (enabled: boolean) => boolean;
 }
 
 const MAX_BOX = { lon: 100, lat: 80 };  // server/ocean/cube.py MAX_BOX_DEG
@@ -576,9 +577,12 @@ export class CubeController {
       this.endDrawing();
       return;
     }
+    if (!this.hooks.navigation(false)) {
+      this.hooks.status("the box is drawn in Region, Map or Globe; leave Fly first", "warn");
+      return;
+    }
     this.drawing = {};
     el("cube-draw").classList.add("on");
-    this.hooks.navigation(false);
     this.hooks.status("drag a box on the globe; Esc cancels");
     const pick = (p: Cartesian2) => {
       const world = this.hooks.viewer.camera.pickEllipsoid(p);
@@ -587,6 +591,7 @@ export class CubeController {
     this.handler.setInputAction((e: { position: Cartesian2 }) => {
       if (!this.drawing) return;
       this.drawing.start = pick(e.position);
+      if (!this.drawing.start) this.hooks.status("start the box on the globe, not in space", "warn");
     }, ScreenSpaceEventType.LEFT_DOWN);
     this.handler.setInputAction((e: { endPosition: Cartesian2 }) => {
       const start = this.drawing?.start;
