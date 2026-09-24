@@ -20,3 +20,6 @@ services:
       # inflated the process towards the free plan's 512 MB. Two arenas is plenty here.
       - key: MALLOC_ARENA_MAX
         value: "2"
+      # 32 reader threads each hold a chunk in flight; 8 is slower per cube but fits 512 MB.
+      - key: ZARR_CONCURRENCY
+        value: "8"

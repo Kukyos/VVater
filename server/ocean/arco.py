@@ -57,7 +57,7 @@ URL_TTL_S = 7 * 24 * 3600
 
 # Parallel chunk reads. Zarr issues the chunk gets of one read concurrently; each get runs
 # in a thread (the toolbox store wraps a blocking boto3 call), so this is the thread count.
-ZARR_CONCURRENCY = 32
+ZARR_CONCURRENCY = int(os.environ.get("ZARR_CONCURRENCY", "32"))
 
 _url_lock = threading.Lock()
 

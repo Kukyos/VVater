@@ -137,7 +137,7 @@ def speed(u: np.ndarray, v: np.ndarray) -> np.ndarray:
     return np.hypot(u, v).astype(np.float32)
 
 
-@lru_cache(maxsize=24)  # 24 x 3.9 MB; all 13 days x 6 layers would be ~300 MB
+@lru_cache(maxsize=8)  # 8 x 3.9 MB; the rest re-read from the disk cache. Render free is 512 MB
 def surface(day: str, layer_key: str) -> Surface:
     import xarray as xr
 

@@ -422,7 +422,7 @@ def build(key: str, box: Box, day: str, depth_max: float = 6000.0,
         return _build(*args)
 
 
-@lru_cache(maxsize=12)
+@lru_cache(maxsize=4)  # each cube holds its full grid; Render free is 512 MB
 def _build(key: str, box: Box, day: str, depth_max: float, budget: int) -> Cube:
     date.fromisoformat(day)  # validates the format before anything touches the network
     bases = catalog.base_variables(key)

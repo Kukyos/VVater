@@ -35,6 +35,7 @@ dashboard after the blueprint creates the service; they're deliberately not comm
 | `ALLOWED_ORIGIN_REGEX` | recommended | Vercel preview deploys get a random `*.vercel.app` subdomain per deploy; a regex like `https://vvater-.*\.vercel\.app` covers them since exact-match origins can't. |
 | `COPERNICUSMARINE_SERVICE_USERNAME` / `_PASSWORD` | not needed | The Ocean Cube, whole ocean, winds and waves read Copernicus's public ARCO stores anonymously; checked 2026-09-24 with no credentials and no credential file. Only the older `sources.py` subset path used a login. |
 | `MALLOC_ARENA_MAX` | set in `render.yaml` | `2`. Keeps glibc from giving each of the 32 zarr reader threads its own memory arena. |
+| `ZARR_CONCURRENCY` | set in `render.yaml` | `8` (default 32). Fewer chunk reads in flight: slower cube loads, lower peak memory. |
 
 **Memory.** Measured locally over a realistic session (the Bay cube, whole ocean, winds,
 fishing zones, PFZ advisories, a second cube in the Gulf Stream, immersive): 126 MB idle,
