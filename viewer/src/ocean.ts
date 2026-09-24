@@ -124,7 +124,11 @@ export class OceanLayer {
     this.kick(800);
   }
 
+  // Each drop also bumps its layer's ticket: a fetch already in flight when a layer is
+  // turned off would otherwise land afterwards and paint it back (opening straight into
+  // immersive showed the cube's colour and currents it had just cleared).
   clearSurface(): void {
+    this.surfaceTicket += 1;
     if (this.imagery) this.viewer.imageryLayers.remove(this.imagery);
     this.imagery = undefined;
     this.kick();
@@ -151,6 +155,7 @@ export class OceanLayer {
   }
 
   dropWind(): void {
+    this.windTicket += 1;
     this.flow.remove("ocean");
   }
 
@@ -207,6 +212,7 @@ export class OceanLayer {
   }
 
   dropCubeWind(): void {
+    this.cubeWindTicket += 1;
     this.flow.remove("cube");
   }
 

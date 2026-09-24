@@ -352,6 +352,11 @@ async function main(): Promise<void> {
     off("surface", "ocean-surface", () => { ocean.surfaceOn = false; });
     off("wind", "ocean-wind", () => { ocean.windOn = false; });
     off("cubewind", "cube-wind", () => { ocean.cubeWindOn = false; });
+    // ?air=1 opens with the winds on (they are off by default).
+    if (q.get("air") === "1") {
+      ocean.airOn = true;
+      el<HTMLInputElement>("ocean-air").checked = true;
+    }
   }
 
   /** The whole ocean follows the cube: its variable, its day, its top face's depth. */
@@ -2104,6 +2109,8 @@ async function main(): Promise<void> {
     // ?view=map|globe|fly opens a view directly, for links and for headless checks.
     const startView = new URLSearchParams(location.search).get("view") as ViewName | null;
     if (startView && ALL_VIEWS.includes(startView) && startView !== "region") await setView(startView);
+    // ?immersive=1 opens straight into the immersive view.
+    if (new URLSearchParams(location.search).get("immersive") === "1") await immersive.enter();
     // Tuned against the real scene, after the volume is on screen. A saved manual
     // choice is respected; "auto" re-measures every start, because the same browser
     // profile can be on a laptop's integrated GPU today and a monitor tomorrow.
