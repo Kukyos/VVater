@@ -37,6 +37,7 @@ internal to copernicusmarine 2.4.1, which is pinned exactly in requirements.txt.
 from __future__ import annotations
 
 import json
+import os
 import sys
 import threading
 import time
@@ -152,7 +153,7 @@ def _make_store_class():
                 path.parent.mkdir(parents=True, exist_ok=True)
                 # Written aside and renamed, so a crash mid-write never leaves a
                 # truncated chunk that later decodes as garbage.
-                partial = path.with_name(path.name + f".{threading.get_ident()}.part")
+                partial = path.with_name(f"{path.name}.{os.getpid()}.{threading.get_ident()}.part")
                 partial.write_bytes(buffer.to_bytes())
                 partial.replace(path)
             return buffer
