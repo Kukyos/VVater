@@ -444,6 +444,12 @@
           scale. Surface only — the volume is the Bay.</div>
         <div class="prop"><label for="sea-surface">Sea surface</label>
           <div class="slider"><input type="range" id="sea-surface" min="0" max="100" value="25" /><span class="val" id="sea-surface-label">0.25</span></div></div>
+        <div class="prop"><label for="land">Land</label>
+          <select id="land">
+            <option value="grey">Relief, grey (NASA, sharp)</option>
+            <option value="colour">Relief, colour (NASA Blue Marble)</option>
+            <option value="offline">Offline (Natural Earth, soft)</option>
+          </select></div>
         <div class="prop"><label for="basemap">Basemap</label>
           <div class="slider"><input type="range" id="basemap" min="10" max="100" value="55" /><span class="val" id="basemap-label">0.55</span></div></div>
       </div></details>

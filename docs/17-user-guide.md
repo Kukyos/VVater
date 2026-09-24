@@ -168,6 +168,12 @@ Panels fold away with **[** and **]**.
 - **Add casts from a text file** — load your own measurements (CSV or TSV with latitude,
   longitude, time, depth or pressure, temperature). They are paired with the model like
   any float and marked unevaluated.
+- **Land** (Scene) — how the land looks. *Relief, grey* is NASA's shaded relief with the
+  colour taken out, so the ocean data carries all the colour on screen; *Relief, colour* is
+  NASA's Blue Marble; both are sharp enough to fly low over (about 600 m a pixel). They
+  come over the internet from NASA; without it, or on *Offline*, the softer Natural Earth
+  map built into the viewer shows instead. Immersive always shows the colour relief.
+  **Basemap** sets how bright the land is. Fly always has a sky and haze on the horizon.
 - **Graphics** — quality settings. *Auto* picks the best quality that keeps 60 frames a
   second on this machine; the picture sharpens to full resolution whenever it stops moving.
 

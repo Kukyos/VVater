@@ -321,6 +321,20 @@ loudly if they change (`python -m server.ocean.pfz` runs against a saved, trimme
 `server/tests/fixtures/`). Advisories are fetched at most once an hour. The same pages sit
 behind INCOIS's incomplete certificate chain as ERDDAP, handled as in D-06.
 
+### 2.7 Land imagery — NASA GIBS Blue Marble relief (**verified working, 2026-09-24**)
+
+    https://gibs.earthdata.nasa.gov/wmts/epsg3857/best/BlueMarble_ShadedRelief_Bathymetry/
+      default/GoogleMapsCompatible_Level8/{z}/{y}/{x}.jpeg
+
+Public domain (NASA), no key, `Access-Control-Allow-Origin: *`, JPEG 256 px tiles to zoom 8
+(about 600 m a pixel at the equator; a tile is 11-18 kB and came back in about 1 s). The
+bundled Natural Earth II stops at 2,048 px round the Earth (about 20 km a pixel), which is
+what made flying low look like a smear. The GIBS layer is drawn over Natural Earth, never
+instead of it: after twelve tile failures it removes itself and the viewer carries on
+offline, so the viewer still needs no third-party server to work. The 4326 endpoint was
+not used: its tile matrices are not powers of two (2x1, 3x2, 5x3 ...), which Cesium's
+geographic tiling cannot describe.
+
 ---
 
 ## 3 · Toolchain — resolved

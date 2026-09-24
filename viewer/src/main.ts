@@ -19,6 +19,8 @@ import {
   ScreenSpaceEventType,
   SingleTileImageryProvider,
   TileMapServiceImageryProvider,
+  UrlTemplateImageryProvider,
+  WebMercatorTilingScheme,
 } from "@cesium/engine";
 import { Viewer } from "@cesium/widgets";
 import "@cesium/widgets/Source/widgets.css";
@@ -165,6 +167,62 @@ async function main(): Promise<void> {
     status(`offline basemap unavailable (${(error as Error).message})`, "warn");
   }
 
+  // ---- land: sharp relief over the offline base ------------------------------------
+  //
+  // Natural Earth II is 2,048 pixels round the whole Earth, about 20 km a pixel: from a
+  // flight at 50 km the land was a smear. NASA's Blue Marble shaded relief and bathymetry
+  // through GIBS goes to about 600 m a pixel, is public domain, needs no key and allows
+  // any origin. It is an enhancement, not a dependency: it sits over Natural Earth, and if
+  // GIBS cannot be reached the layer removes itself and the offline base is what shows.
+  //   grey    -- relief without colour, so the ocean data carries all the colour on screen
+  //   colour  -- Blue Marble as it is (immersive always uses this)
+  //   offline -- Natural Earth only, no network
+  type Land = "grey" | "colour" | "offline";
+  let relief: ImageryLayer | undefined;
+  let landStyle: Land = "grey";
+  let landBrightness = 0.55;
+  const reliefProvider = () => new UrlTemplateImageryProvider({
+    url: "https://gibs.earthdata.nasa.gov/wmts/epsg3857/best/BlueMarble_ShadedRelief_Bathymetry/" +
+      "default/GoogleMapsCompatible_Level8/{z}/{y}/{x}.jpeg",
+    tilingScheme: new WebMercatorTilingScheme(),
+    maximumLevel: 8,
+    credit: "NASA Blue Marble shaded relief and bathymetry, via NASA GIBS",
+  });
+  /** Apply a land style, or the immersive override (colour, full brightness). */
+  function setLand(style: Land, brightness = landBrightness, keep = true): void {
+    if (keep) {
+      landStyle = style;
+      landBrightness = brightness;
+    }
+    if (style === "offline") {
+      if (relief) viewer.imageryLayers.remove(relief);
+      relief = undefined;
+    } else if (!relief) {
+      const provider = reliefProvider();
+      let failures = 0;
+      provider.errorEvent.addEventListener(() => {
+        failures += 1;
+        if (failures === 12 && relief) {
+          viewer.imageryLayers.remove(relief);
+          relief = undefined;
+          status("NASA relief tiles unreachable; showing the offline basemap", "warn");
+        }
+      });
+      relief = new ImageryLayer(provider);
+      // Right above the offline base, below every data layer.
+      viewer.imageryLayers.add(relief, basemap ? viewer.imageryLayers.indexOf(basemap) + 1 : 0);
+    }
+    if (relief) {
+      relief.saturation = style === "grey" ? 0 : 1;
+      relief.contrast = style === "grey" ? 1.15 : 1;
+      // The Basemap slider's 0.55 was tuned for Natural Earth's pale shelf seas; the relief
+      // is darker, and at the same number it read as mud. Lifted to match.
+      relief.brightness = Math.min(brightness * 1.6, 1.2);
+    }
+    if (basemap) basemap.brightness = brightness;
+    graphics.kick(800);
+  }
+
   const [lon0, lon1] = meta.region.lon;
   const [lat0, lat1] = meta.region.lat;
   // Translucent only over the volume. A see-through surface everywhere turned the rest
@@ -262,6 +320,15 @@ async function main(): Promise<void> {
   // asks for a frame; camera movement already does on its own.
   const graphics = new Graphics(viewer);
   graphics.apply();
+  // ?land=offline|colour|grey, for links and for checks with no network.
+  {
+    const q = new URLSearchParams(location.search).get("land");
+    const start: Land = q === "offline" || q === "colour" ? q : "grey";
+    el<HTMLSelectElement>("land").value = start;
+    setLand(start);
+  }
+  el<HTMLSelectElement>("land").addEventListener("change", (e) =>
+    setLand((e.target as HTMLSelectElement).value as Land));
   orbit.enable();
   for (const type of ["input", "change", "click"]) {
     document.addEventListener(type, () => graphics.kick(), true);
@@ -866,6 +933,15 @@ async function main(): Promise<void> {
     // Hand the camera back to Cesium before anything else touches it.
     if (view !== "region") orbit.disable();
     if (view !== "fly") flight.disable();
+    // Fly always has a sky, whatever the graphics tier: a horizon against black read as the
+    // edge of a hole. Leaving Fly puts the tier's own choice back.
+    if (view === "fly") {
+      if (viewer.scene.skyAtmosphere) viewer.scene.skyAtmosphere.show = true;
+      viewer.scene.globe.showGroundAtmosphere = true;
+      viewer.scene.fog.enabled = true;
+    } else {
+      graphics.apply();
+    }
     const scene = viewer.scene;
     if (view === "map" && scene.mode !== SceneMode.SCENE2D) {
       // Hidden before the morph, not after: the voxel primitive has no 2D path.
@@ -1361,7 +1437,7 @@ async function main(): Promise<void> {
   bind("basemap", "input", (node) => {
     const brightness = Number(node.value) / 100;
     el("basemap-label").textContent = brightness.toFixed(2);
-    if (basemap) basemap.brightness = brightness;
+    setLand(landStyle, brightness);
     graphics.kick();
   });
 
@@ -1786,9 +1862,12 @@ async function main(): Promise<void> {
       }
       return parts.join("  ·  ");
     },
+    // Immersive shows the planet in colour at full brightness; the workspace's own land
+    // style comes back on exit (the value returned here is handed back then).
     setBasemapBrightness: (b) => {
-      const was = basemap?.brightness ?? 1;
-      if (basemap) basemap.brightness = b;
+      const was = landBrightness;
+      if (immersive.active) setLand(landStyle === "offline" ? "offline" : "colour", b, false);
+      else setLand(landStyle, b);
       return was;
     },
     kick: (ms) => graphics.kick(ms),
