@@ -75,6 +75,8 @@ python -m uvicorn server.ocean.api:app --port 8011
 cd viewer && npm install && npm run dev           # http://localhost:5173
 ```
 
+On Windows, `start.bat` runs the last two lines in their own windows and opens the browser.
+
 Credentials go in `.env` (see `.env.example`). The INCOIS data needs none. Copernicus
 (currents and the global layers) needs a free Copernicus Marine account; the assistant needs
 a Groq API key. Without either, the rest of the viewer works and the missing parts say why.
