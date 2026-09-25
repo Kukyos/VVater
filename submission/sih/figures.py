@@ -164,7 +164,7 @@ def flowchart(v2: dict) -> str:
     L, BW = 0, 900
     cx = L + BW / 2
     box(L, 0, BW, 170, "1  You ask: box · day · variable",
-        [f"anywhere, {cat['first_day'][:4]} to {cat['last_day']}, {cat['variables']} variables",
+        [f"anywhere; {cat['variables']} variables, {cat['from_first_day']} of them from {cat['first_day'][:4]}",
          "by hand, by a named scenario, or by the assistant"])
     arrow([(cx, 170), (cx, 214)])
     diamond(cx, 306, 560, 184, ["Reanalysis covers", "that day?"])
@@ -235,7 +235,7 @@ def main() -> None:
     bands = e["depth_bands"]
     shallow = bands["0-300 m"]
     res, field, argo, glider = e["residual"], e["field"], e["argo"], e["glider"]
-    rng, tchp = e["field_range_test"], e["tchp"]
+    rng, tchp, coloc = e["field_range_test"], e["tchp"], e["colocation"]
     ta, tg = tchp["argo"], tchp["glider"]
     v2 = e["v2"]
     cat, host = v2["catalog"], v2["hosting"]
@@ -245,16 +245,17 @@ def main() -> None:
     # ============================================================ 2 solution
     page("body-solution", f"""
 <p class="lead" style="font-size:56px">Cut a block out of the ocean <b>anywhere on Earth, on any day
-since {cat["first_day"][:4]}</b>, and look at it from the side, with the real Argo floats
+from {cat["first_day"][:4]} to the forecast</b>, and look at it from the side, with the real Argo floats
 standing inside it. In any browser.</p>
 <div class="cols grow" style="grid-template-columns: 2280px 1fr; gap: 80px">
   <figure class="shot hero">
     <img src="crop-hero.jpg">
     <figcaption><b>The Bay of Bengal on {before["day"]}, two days before Cyclone Amphan formed</b>,
     cut open to 1,000 m. The warm lid, the thermocline under it and the cold water below are
-    drawn on the model's own {before["levels"]} depth levels. Each dashed stick is an Argo float that
-    surfaced within two days, coloured by what it measured ({casts["found"]} floats; a level that
-    fails QC is drawn red, never dropped). Model: Copernicus GLORYS12, 1/12°.</figcaption>
+    drawn on the model's own {v2["hero"]["levels"]} depth levels. Each dashed stick is an Argo float
+    standing in the water where it dived, within two days ({casts["found"]} floats); click one for its
+    measurements against the model, with QC flags (a failed level is drawn red, never dropped).
+    Model: Copernicus GLORYS12, 1/12°.</figcaption>
   </figure>
   <div class="col" style="gap:16px">
     <h2 style="margin:0">The gap the brief names</h2>
@@ -267,7 +268,7 @@ standing inside it. In any browser.</p>
       <figure><img src="crop-anywhere.jpg"><figcaption><b>Any ocean, any day</b>{cat["variables"]} variables, physics and biogeochemistry. Here the Gulf Stream.</figcaption></figure>
       <figure><img src="crop-floats.jpg"><figcaption><b>Floats inside the model</b>click one: its dive against the model, with QC, data mode and file</figcaption></figure>
       <figure><img src="crop-planet.jpg"><figcaption><b>One colour bar for the planet</b>the globe in the cube's colours, currents and winds flowing</figcaption></figure>
-      <figure><img src="crop-assistant.jpg"><figcaption><b>Ask it, and it acts</b>"make a cube of oxygen in the Arabian Sea": built, and the control ringed</figcaption></figure>
+      <figure><img src="crop-assistant.jpg"><figcaption><b>Ask it, and it acts</b>"make a cube of oxygen in the Arabian Sea": the assistant built it</figcaption></figure>
     </div>
   </div>
 </div>
@@ -277,7 +278,7 @@ standing inside it. In any browser.</p>
     rows = [
         ("3D volume, depth slices, time steps", "cube faces as sections, cut planes, a day-by-day timeline; the INCOIS voxel volume"),
         ("Isosurface", "20 °C isotherm, one click (INCOIS Bay volume)"),
-        ("Argo, glider, BGC, click for a profile", "core and BGC floats, a glider, CSV casts; profile against the model"),
+        ("Argo, glider, CTD, BGC, click for a profile", "core and BGC floats, a glider; CTD as a CSV cast; profile against the model"),
         ("NetCDF and delimited-text parsers", "xarray, and a text reader checked cast for cast against the NetCDF path"),
         ("Colour bar editor", "palette, min/max, linear or log"),
         ("Opacity, vertical exaggeration", "both sliders, the stretch printed on screen"),
@@ -306,10 +307,10 @@ standing inside it. In any browser.</p>
     # ============================================================ 4 feasibility
     page("body-feasibility", f"""
 <div class="stats" style="grid-template-columns: repeat(4, 1fr); gap: 60px">
-  <div class="stat"><b>{cat["variables"]}</b><span>variables, every day from {cat["first_day"]} to {cat["last_day"]}, forecast days labelled</span></div>
+  <div class="stat"><b>{cat["variables"]}</b><span>variables to {cat["last_day"]}, forecast days labelled; {cat["from_first_day"]} of them every day from {cat["first_day"][:4]}</span></div>
   <div class="stat"><b>{before["open_seconds_disk_cache"]} s</b><span>to open the Amphan cube from the disk cache ({before["payload_mb"]} MB to the browser)</span></div>
   <div class="stat"><b>{host["peak_mb"]} MB</b><span>peak memory over a full cold session: {host["requests_ok"]} of {host["requests"]} requests answered</span></div>
-  <div class="stat"><b>{argo["profiles"]} + {glider["casts"]}</b><span>Argo profiles and glider casts co-located with the INCOIS model</span></div>
+  <div class="stat"><b>{coloc["profiles_compared"]} + {coloc["glider_casts_compared"]}</b><span>Argo profiles and glider casts co-located with the INCOIS model, level by level</span></div>
 </div>
 <div class="cols grow feas" style="grid-template-columns: 1.05fr 1fr; gap: 100px">
   <div class="col" style="gap:12px">
@@ -326,7 +327,7 @@ standing inside it. In any browser.</p>
     <h2 style="margin:0">Risks we hit, and what we did</h2>
     <table class="risks">
       <tr><td>The brief's data links are dead</td><td class="why">Both are <span class="mono">ftp://</span> and blocked; replaced with tested HTTPS sources.</td></tr>
-      <tr><td>The model fails QC too</td><td class="why">{rng["failed"]} INCOIS cells read above 40 °C at depth; masked and counted, reported.</td></tr>
+      <tr><td>The model fails QC too</td><td class="why">{rng["failed"]} INCOIS cells read above 40 °C at depth; masked, counted in the provenance panel.</td></tr>
       <tr><td>Bad float readings</td><td class="why">{argo["levels_rejected"]} of {argo["levels"]:,} levels fail QC in the Bay; drawn red, never dropped.</td></tr>
       <tr><td>An AI that invents numbers</td><td class="why">It reaches data only through our API; an untraceable number is flagged on screen.</td></tr>
       <tr><td>A small host ran out of memory</td><td class="why">Shared S3 client and capped caches; we ask for 1 GB, measured {host["peak_mb"]} MB peak.</td></tr>
@@ -392,7 +393,7 @@ standing inside it. In any browser.</p>
   <div class="col" style="gap:8px">
     <h2 style="margin:0">Data, each source probed</h2>
     <ol class="refs">
-      <li>Copernicus Marine GLORYS12 reanalysis and global analysis &amp; forecast, physics and PISCES biogeochemistry, read as ARCO stores. <span class="why">The cube.</span><span class="url">data.marine.copernicus.eu/product/GLOBAL_MULTIYEAR_PHY_001_030</span></li>
+      <li>Copernicus Marine GLORYS12 and global analysis &amp; forecast, physics and biogeochemistry, as ARCO stores. <span class="why">The cube.</span><span class="url">data.marine.copernicus.eu/product/GLOBAL_MULTIYEAR_PHY_001_030</span></li>
       <li>INCOIS ERDDAP, Argo 10-day variational analysis with per-cell error. <span class="why">The Bay volume.</span><span class="url">erddap.incois.gov.in/erddap</span></li>
       <li>Ifremer Argo ERDDAP, core and synthetic BGC floats. <span class="why">Floats anywhere.</span><span class="url">erddap.ifremer.fr/erddap</span></li>
       <li>Argo GDAC, HTTPS mirror. <span class="why">Float files, QC flags, data mode.</span><span class="url">data-argo.ifremer.fr</span></li>
@@ -400,7 +401,7 @@ standing inside it. In any browser.</p>
       <li>INCOIS Potential Fishing Zone advisories. <span class="why">Read as published.</span><span class="url">incois.gov.in/MarineFisheries/TextDataHome?mfid=1</span></li>
       <li>NCEP GFS 10 m wind via UCAR THREDDS. <span class="why">Wind forecast.</span><span class="url">thredds.ucar.edu</span></li>
       <li>NASA GIBS Blue Marble relief. <span class="why">Land.</span><span class="url">gibs.earthdata.nasa.gov</span></li>
-      <li>The brief's two <span class="mono">ftp.ifremer.fr</span> links. <span class="why">Do not connect; replaced by 3 and 4.</span></li>
+      <li>The brief's two FTP links. <span class="why">Dead; replaced by 3, 4.</span></li>
     </ol>
   </div>
   <div class="col" style="gap:8px">

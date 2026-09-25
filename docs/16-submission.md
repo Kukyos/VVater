@@ -53,7 +53,9 @@ copy, whose Arial runs wider than IBM Plex.
 Every number is read from `data/eval-latest.json`; a missing key crashes `figures.py`
 (hard rule 1). The v2 figures come from `run_eval.v2_numbers()`:
 
-- the catalogue: variable count, first and last day across every era
+- the catalogue: variable count, first and last day across every era, and how many
+  variables reach back to the first day (six exist only from 2021–22)
+- the hero cube (`amphan_before` to 1,000 m, as captured): its native level count
 - the two Amphan cubes: levels, payload, open time from the disk cache, surface mean,
   and the cooling between them
 - the Argo casts in the Amphan cube

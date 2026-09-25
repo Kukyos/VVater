@@ -334,10 +334,16 @@ def v2_numbers() -> dict:
             "biogeochemistry": sum(v["group"] == "biogeochemistry" for v in variables),
             "first_day": min(starts)[:10], "last_day": max(ends)[:10], "today": cat["today"],
         }
+        # Not every variable reaches back that far: pH, w and the carbon system exist only
+        # in the analysis & forecast. Counted, so "every day since" is said of the right ones.
+        first = out["catalog"]["first_day"]
+        out["catalog"]["from_first_day"] = sum(
+            any(e["from"][:10] == first for e in v["eras"]) for v in variables)
         c = out["catalog"]
         print(f"  variables        {c['variables']} ({c['depth_resolved']} depth-resolved, "
               f"{c['biogeochemistry']} biogeochemistry, {c['derived_teos10']} TEOS-10 derived)")
-        print(f"  days             {c['first_day']} to {c['last_day']} (today {c['today']})")
+        print(f"  days             {c['first_day']} to {c['last_day']} (today {c['today']}); "
+              f"{c['from_first_day']} variables reach back to {c['first_day']}")
     except Exception as exc:  # no network
         print(f"  unavailable: {exc}")
         out["catalog"] = {"unavailable": str(exc)}
@@ -367,6 +373,14 @@ def v2_numbers() -> dict:
                   f"open {first_s:.2f} s from disk cache, {again_s * 1000:.0f} ms again  "
                   f"surface mean {sea[key]:.2f} C")
         out["amphan_cooling_c"] = round(sea["amphan_before"] - sea["amphan_after"], 2)
+        # The deck's hero picture is the before cube taken down to 1,000 m, not the
+        # scenario's 300 m: its own level count, so the caption describes the picture.
+        sc = scen["amphan_before"]
+        c = cube.build(sc.variable, cube.Box.parse(*sc.box), sc.day, 1000.0)
+        out["hero"] = {"scenario": sc.key, "depth_max": 1000, "levels": int(c.values.shape[0]),
+                       "deepest_level_m": round(float(c.depths[-1]), 1)}
+        print(f"  hero           {sc.key} to 1,000 m: {out['hero']['levels']} native levels, "
+              f"deepest {out['hero']['deepest_level_m']} m")
         print(f"  surface cooling  {out['amphan_cooling_c']:.2f} C, box mean, before minus after")
 
         sc = scen["amphan_before"]

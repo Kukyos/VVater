@@ -241,11 +241,12 @@ Run 2026-09-25. Harness output, verbatim:
 ```
 v2 · catalogue
   variables        23 (19 depth-resolved, 11 biogeochemistry, 2 TEOS-10 derived)
-  days             1993-01-01 to 2026-10-04 (today 2026-09-25)
+  days             1993-01-01 to 2026-10-04 (today 2026-09-25); 17 variables reach back to 1993-01-01
 
 v2 · Amphan cubes and their floats
   amphan_before  2020-05-14  91x109x28 levels  open 0.08 s from disk cache, 0 ms again  surface mean 30.81 C
   amphan_after   2020-05-22  91x109x28 levels  open 0.07 s from disk cache, 0 ms again  surface mean 30.04 C
+  hero           amphan_before to 1,000 m: 35 native levels, deepest 902.3 m
   surface cooling  0.77 C, box mean, before minus after
   Argo casts       17 within +/-2 days, 1689 levels, 201 rejected by QC, modes {'R': 0, 'A': 1, 'D': 16}
 
@@ -256,6 +257,10 @@ v2 · hosting (python -m server.tools.measure_hosting)
 - The open time is with the cube's chunks already in `data/cache/arco`; a cold open waits
   on Copernicus and is not measured here. The same call took 0.46 s earlier the same day
   with a cold process: the number is small and noisy, not a benchmark.
+- Six of the 23 variables (vertical velocity, pH, DIC, alkalinity, iron, phytoplankton)
+  exist only in the analysis & forecast, from 2021–22; the deck says "17 of them from 1993".
+- The deck's hero is the before cube taken to 1,000 m, so its level count is measured
+  separately from the scenario's own 300 m cube.
 - The cooling is the mean of the top level over every water cell of the box, on the
   model's own grid; it is not a track-following wake measurement.
 - The hosting figures are read from `data/hosting-latest.json`, written by

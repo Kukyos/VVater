@@ -46,7 +46,7 @@ import { ChatPanel, type ChatHooks } from "./chat";
 import { Tour } from "./learn/tour";
 import { demo as lessonsDemo } from "./learn/lessons";
 import { CubeController, formatValue, shiftDay } from "./cube/controller";
-import { demo as cubeDataDemo } from "./cube/data";
+import { demo as cubeDataDemo, matchVariable } from "./cube/data";
 import { drawColumn } from "./cube/column";
 import { OceanLayer } from "./ocean";
 import { demo as flowDemo } from "./flow";
@@ -2142,13 +2142,8 @@ async function main(): Promise<void> {
         // says it built the asked one.
         let variable: string | undefined;
         if (a.variable) {
-          const want = String(a.variable).toLowerCase().replace(/[_\s]+/g, " ").trim();
-          const opts = [...el<HTMLSelectElement>("cube-variable").options];
-          const norm = (t: string) => t.toLowerCase().replace(/[_\s]+/g, " ").replace(/\s*\(.*\)$/, "").trim();
-          const hit = opts.find((o) => norm(o.value) === want || norm(o.text) === want)
-            ?? opts.find((o) => norm(o.text).includes(want) || want.includes(norm(o.text)));
-          if (!hit) throw new Error(`no variable "${a.variable}" in the catalogue`);
-          variable = hit.value;
+          variable = matchVariable(String(a.variable), [...el<HTMLSelectElement>("cube-variable").options]);
+          if (!variable) throw new Error(`no variable "${a.variable}" in the catalogue`);
         }
         // Depths are a fixed list; take the shallowest that still reaches the asked depth.
         let depth: number | undefined;

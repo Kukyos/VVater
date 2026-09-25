@@ -1,5 +1,5 @@
 {
-  "generated": "2026-09-25T18:57:13",
+  "generated": "2026-09-25T19:11:02",
   "region": {
     "name": "Bay of Bengal",
     "lon": [
@@ -35,7 +35,7 @@
       "latitude": 19,
       "longitude": 23
     },
-    "fetch_seconds": 0.07,
+    "fetch_seconds": 0.068,
     "float32_mb": 0.545,
     "finite_fraction": 0.4989,
     "min": 2.388,
@@ -44,7 +44,7 @@
   "regrid": {
     "native_levels": 24,
     "output_levels": 24,
-    "resample_ms": 192.0,
+    "resample_ms": 186.6,
     "stretch": "uniform in sqrt(depth)",
     "levels": 24,
     "z_min_m": 5.0,
@@ -1331,7 +1331,7 @@
       0.0008631937992834291,
       1.4960088661086222
     ],
-    "seconds": 0.381,
+    "seconds": 0.384,
     "method": "RK2 midpoint, normalised steps of 0.12 deg, max 40 steps",
     "caveat": "Streamlines show the instantaneous flow pattern, not particle trajectories through time."
   },
@@ -1344,7 +1344,8 @@
       "biogeochemistry": 11,
       "first_day": "1993-01-01",
       "last_day": "2026-10-04",
-      "today": "2026-09-25"
+      "today": "2026-09-25",
+      "from_first_day": 17
     },
     "amphan_before": {
       "day": "2020-05-14",
@@ -1366,11 +1367,17 @@
         109
       ],
       "payload_mb": 1.15,
-      "open_seconds_disk_cache": 0.07,
+      "open_seconds_disk_cache": 0.08,
       "open_seconds_memory": 0.0,
       "surface_mean_c": 30.04
     },
     "amphan_cooling_c": 0.77,
+    "hero": {
+      "scenario": "amphan_before",
+      "depth_max": 1000,
+      "levels": 35,
+      "deepest_level_m": 902.3
+    },
     "amphan_before_casts": {
       "found": 17,
       "shown": 17,

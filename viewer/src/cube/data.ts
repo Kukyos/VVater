@@ -210,6 +210,19 @@ export function niceStep(lo: number, hi: number, lines = 10): number {
   return (m < 1.5 ? 1 : m < 3.5 ? 2 : m < 7.5 ? 5 : 10) * p;
 }
 
+/**
+ * A catalogue variable from a loose name ("dissolved oxygen", "Oxygen", "sound_speed"):
+ * the key or the title exactly, else a title containing the name. Never the other way
+ * round: "phyto" contains "ph" and would build pH.
+ */
+export function matchVariable(want: string, options: { value: string; text: string }[]): string | undefined {
+  const norm = (t: string) => t.toLowerCase().replace(/[_\s]+/g, " ").replace(/\s*\(.*\)$/, "").trim();
+  const w = norm(want);
+  if (!w) return undefined;
+  return (options.find((o) => norm(o.value) === w || norm(o.text) === w)
+    ?? options.find((o) => norm(o.text).includes(w)))?.value;
+}
+
 // ------------------------------------------------------------------ self-check
 
 /** The sampling rules, checked once in development against a hand-built cube. */
@@ -250,4 +263,12 @@ export function demo(): void {
   ok(depthTicks(0, 2000, "stretched")[0] === 0 && depthTicks(0, 2000, "linear").includes(2000),
     "ticks start at the top and reach the bottom");
   ok(niceStep(2.7, 29.2) === 2, "contour step");
+  const opts = [{ value: "ph", text: "pH" }, { value: "oxygen", text: "Dissolved oxygen (mmol/m³)" },
+    { value: "phytoplankton", text: "Phytoplankton carbon (mmol/m³)" },
+    { value: "sound_speed", text: "Speed of sound (m/s)" }];
+  ok(matchVariable("dissolved oxygen", opts) === "oxygen" && matchVariable("Oxygen", opts) === "oxygen",
+    "a variable by its title, in part or whole");
+  ok(matchVariable("phyto", opts) === "phytoplankton", "phyto is phytoplankton, not pH");
+  ok(matchVariable("sound_speed", opts) === "sound_speed" && matchVariable("pH", opts) === "ph", "by key");
+  ok(matchVariable("salinity", opts) === undefined, "an unknown name matches nothing");
 }
