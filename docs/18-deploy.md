@@ -39,9 +39,35 @@ dashboard after the blueprint creates the service; they're deliberately not comm
 
 **Memory.** From an empty cache (as on Render after every deploy), `/api/catalog` plus one Bay temperature cube peaks at 233 MB; before the stores shared one boto3 client the catalog alone reached 582 MB and Render killed the process. Measured earlier, locally, over a realistic session (the Bay cube, whole ocean, winds,
 fishing zones, PFZ advisories, a second cube in the Gulf Stream, immersive): 126 MB idle,
-377 MB at peak. Render's free plan allows 512 MB. It fits, but each new cube adds to the
-caches: a long session with many different cubes can be restarted by Render for memory.
-The Starter plan has the same 512 MB; the Standard plan's 2 GB removes the concern.
+377 MB at peak. A fuller session (every scenario, see "What a host needs" below) peaks at
+638 MB, over the free plan's 512 MB: Render will restart the process during a thorough
+demo. The Starter plan has the same 512 MB; the Standard plan's 2 GB removes the concern.
+
+## What a host needs (measured)
+
+`python -m server.tools.measure_hosting` on 2026-09-25: a cold cache, one session touching
+every feature (all 9 scenario cubes with casts, an Argo profile, currents, wind and
+fishing each; the whole-ocean temperature and salinity; PFZ; a second variable; the INCOIS
+volume; Argo observations), 97 requests, all 200, `ZARR_CONCURRENCY` 32 (the default).
+
+| | Measured | Ask the host for |
+|---|---|---|
+| **RAM** | 128 MB idle after boot; 193 MB after the catalog; 638 MB peak; 430 MB settled at the end | **1 GB** minimum. 2 GB for several visitors at once, since each new cube adds to the caches |
+| **CPU** | 53 CPU-seconds over a 19-minute session; median 15 % of one core while busy, peak 1.6 cores | **1 vCPU** works, **2** is comfortable. The time goes to waiting on Copernicus, not computing |
+| **Disk, install** | Python 3.14 + `server/requirements.txt`: 605 MB of packages | 1 GB |
+| **Disk, cache** | 1.2 GB after one full session; `data/cache` is never pruned (7.3 GB on the development laptop) | **5–10 GB persistent**. Ephemeral disk works but every restart is a cold start |
+| **Egress per visitor** | Default page (Bay cube, the next day prefetched, surface temperature and currents, casts): about 8 MB gzipped. Every feature once: 54 MB uncompressed, about 25 MB gzipped | 100 visitors ≈ 1–3 GB |
+| **Inbound** | Chunks from Copernicus's public S3 stores, ERDDAP, UCAR THREDDS | Unrestricted outbound HTTPS |
+| **Process** | One long-lived process; requests take up to 80 s cold (an Argo profile), 44 s for the catalog | **No serverless.** No request timeout under ~120 s, and no sleep-on-idle if possible |
+| **Boot** | 1 s to accept requests | — |
+
+What rules hosts out: 512 MB plans (Render free and Starter, Fly's smallest), serverless
+platforms (Vercel functions, Lambda, Cloud Run with short timeouts), and anything whose
+proxy cuts requests under a minute. What fits: any VM or container host with 1–2 GB RAM
+and 1–2 vCPU (Oracle Cloud's Always Free Ampere VM, a Hugging Face Docker Space at 16 GB,
+a small Hetzner or DigitalOcean box, Render Standard; check each one's current terms), or this laptop via ngrok (below).
+`ZARR_CONCURRENCY=8` lowers the peak at the cost of slower cube loads; its effect on the
+638 MB peak was not measured.
 
 **Cold start.** The free plan sleeps after 15 minutes without a request; the first request
 after that takes about a minute, and the disk cache (`data/cache/`) starts empty after
