@@ -8,7 +8,7 @@ film that is not in that JSON.
 > That figure was typed by hand and was wrong; the harness says 11.67 m. It is the reason
 > `--json` now exists.
 
-Run: **2026-09-22**. INCOIS Argo 10-day Variational Analysis, Bay of Bengal
+Run: **2026-09-22** (v1 sections), **2026-09-25** (v2 section). INCOIS Argo 10-day Variational Analysis, Bay of Bengal
 (78–100°E, 5–23°N), demo date **2018-08-25**, pairing ±5 days.
 
 ## Why 2018-08-25
@@ -233,6 +233,33 @@ Delimited-text ingestion  (same deployment, NetCDF path vs text path)
 Separately, by hand on 2026-09-23 and not a harness figure: Argo float 2902596 exported
 as CSV from Ifremer's ERDDAP and uploaded through the viewer co-located to the same bias
 and RMSE as the NetCDF path, to seven decimal places.
+
+## v2: the cube, its floats, the host
+
+Run 2026-09-25. Harness output, verbatim:
+
+```
+v2 · catalogue
+  variables        23 (19 depth-resolved, 11 biogeochemistry, 2 TEOS-10 derived)
+  days             1993-01-01 to 2026-10-04 (today 2026-09-25)
+
+v2 · Amphan cubes and their floats
+  amphan_before  2020-05-14  91x109x28 levels  open 0.08 s from disk cache, 0 ms again  surface mean 30.81 C
+  amphan_after   2020-05-22  91x109x28 levels  open 0.07 s from disk cache, 0 ms again  surface mean 30.04 C
+  surface cooling  0.77 C, box mean, before minus after
+  Argo casts       17 within +/-2 days, 1689 levels, 201 rejected by QC, modes {'R': 0, 'A': 1, 'D': 16}
+
+v2 · hosting (python -m server.tools.measure_hosting)
+  2026-09-25: peak 639 MB, idle 128 MB, CPU peak 254 %, cache 1165 MB, 97/97 requests 200
+```
+
+- The open time is with the cube's chunks already in `data/cache/arco`; a cold open waits
+  on Copernicus and is not measured here. The same call took 0.46 s earlier the same day
+  with a cold process: the number is small and noisy, not a benchmark.
+- The cooling is the mean of the top level over every water cell of the box, on the
+  model's own grid; it is not a track-following wake measurement.
+- The hosting figures are read from `data/hosting-latest.json`, written by
+  `measure_hosting`; `18-deploy.md` explains them.
 
 ## Assumptions carried on every record
 

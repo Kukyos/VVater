@@ -259,5 +259,5 @@ hosts redeployed from it.
   "When the live site cannot reach the API").
 
 Everything runs locally end to end. What is knowingly incomplete is in `11-deferred.md`.
-The deck in `submission/sih/final/` still shows v1 and is rebuilt from `16-submission.md`
-with v2 screenshots before submission.
+The deck in `submission/sih/final/` was rebuilt for v2 on 2026-09-25 from fresh captures
+(`submission/sih/capture.cjs`) and the harness's new v2 numbers; `16-submission.md`.

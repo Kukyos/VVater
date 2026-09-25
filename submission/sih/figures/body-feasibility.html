@@ -4,33 +4,35 @@
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;600&family=IBM+Plex+Mono&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="deck.css"></head>
 <body><div class="slide">
-<div class="stats" style="grid-template-columns: repeat(3, 1fr); gap: 60px">
-  <div class="stat"><b>35 + 112</b><span>Argo float profiles and glider casts, paired with the model</span></div>
-  <div class="stat"><b>0.55 MB</b><span>one full 3D timestep, as sent to the browser</span></div>
-  <div class="stat"><b>0.45 s</b><span>to compare 127 casts with the model and build the 3D error layer</span></div>
+<div class="stats" style="grid-template-columns: repeat(4, 1fr); gap: 60px">
+  <div class="stat"><b>23</b><span>variables, every day from 1993-01-01 to 2026-10-04, forecast days labelled</span></div>
+  <div class="stat"><b>0.08 s</b><span>to open the Amphan cube from the disk cache (1.15 MB to the browser)</span></div>
+  <div class="stat"><b>639 MB</b><span>peak memory over a full cold session: 97 of 97 requests answered</span></div>
+  <div class="stat"><b>35 + 112</b><span>Argo profiles and glider casts co-located with the INCOIS model</span></div>
 </div>
-<div class="cols grow feas" style="grid-template-columns: 1.1fr 1fr; gap: 110px">
-  <div class="col" style="gap:14px">
+<div class="cols grow feas" style="grid-template-columns: 1.05fr 1fr; gap: 100px">
+  <div class="col" style="gap:12px">
     <h2 style="margin:0">Measured finding: model error by depth</h2>
-    <svg width="2000" height="1230" viewBox="0 0 2000 1230"><line x1="90" x2="2000" y1="1160.0" y2="1160.0" stroke="#D5DCE4" stroke-width="2"/><text x="74" y="1172.0" font-size="34" text-anchor="end" fill="#7A8594">0</text><line x1="90" x2="2000" y1="782.5108225108225" y2="782.5108225108225" stroke="#D5DCE4" stroke-width="2"/><text x="74" y="794.5108225108225" font-size="34" text-anchor="end" fill="#7A8594">1</text><line x1="90" x2="2000" y1="405.0216450216451" y2="405.0216450216451" stroke="#D5DCE4" stroke-width="2"/><text x="74" y="417.0216450216451" font-size="34" text-anchor="end" fill="#7A8594">2</text><rect x="178.66666666666669" y="685.8358441558441" width="202.66666666666669" height="474.16415584415586" fill="#A9B2BE"/><text x="280.0" y="673.8358441558441" font-size="38" font-weight="600" text-anchor="middle" fill="#16202B">1.26</text><rect x="393.33333333333337" y="70.0" width="202.66666666666669" height="1090.0" fill="#1F4E79"/><text x="494.66666666666674" y="58.0" font-size="38" font-weight="600" text-anchor="middle" fill="#16202B">2.89</text><text x="387.33333333333337" y="1210" font-size="36" text-anchor="middle" fill="#4F5B69">0-300 m</text><rect x="812.0" y="1026.5953246753247" width="202.66666666666669" height="133.40467532467528" fill="#A9B2BE"/><text x="913.3333333333334" y="1014.5953246753247" font-size="38" font-weight="600" text-anchor="middle" fill="#16202B">0.35</text><rect x="1026.6666666666667" y="1043.884329004329" width="202.66666666666669" height="116.11567099567105" fill="#1F4E79"/><text x="1128.0" y="1031.884329004329" font-size="38" font-weight="600" text-anchor="middle" fill="#16202B">0.31</text><text x="1020.6666666666667" y="1210" font-size="36" text-anchor="middle" fill="#4F5B69">300-950 m</text><rect x="1445.3333333333335" y="1088.3903030303031" width="202.66666666666669" height="71.60969696969687" fill="#A9B2BE"/><text x="1546.6666666666667" y="1076.3903030303031" font-size="38" font-weight="600" text-anchor="middle" fill="#16202B">0.19</text><rect x="1660.0000000000002" y="1072.4602597402597" width="202.66666666666669" height="87.53974025974026" fill="#1F4E79"/><text x="1761.3333333333335" y="1060.4602597402597" font-size="38" font-weight="600" text-anchor="middle" fill="#16202B">0.23</text><text x="1654.0000000000002" y="1210" font-size="36" text-anchor="middle" fill="#4F5B69">950-2000 m</text><text x="74" y="30" font-size="34" text-anchor="end" fill="#7A8594">&#176;C</text></svg>
+    <svg width="1900" height="1110" viewBox="0 0 1900 1110"><line x1="90" x2="1900" y1="1040.0" y2="1040.0" stroke="#D5DCE4" stroke-width="2"/><text x="74" y="1052.0" font-size="34" text-anchor="end" fill="#7A8594">0</text><line x1="90" x2="1900" y1="704.0692640692641" y2="704.0692640692641" stroke="#D5DCE4" stroke-width="2"/><text x="74" y="716.0692640692641" font-size="34" text-anchor="end" fill="#7A8594">1</text><line x1="90" x2="1900" y1="368.13852813852816" y2="368.13852813852816" stroke="#D5DCE4" stroke-width="2"/><text x="74" y="380.13852813852816" font-size="34" text-anchor="end" fill="#7A8594">2</text><rect x="174.0" y="618.0374025974027" width="192.0" height="421.96259740259734" fill="#A9B2BE"/><text x="270.0" y="606.0374025974027" font-size="38" font-weight="600" text-anchor="middle" fill="#16202B">1.26</text><rect x="378.0" y="70.0" width="192.0" height="970.0" fill="#1F4E79"/><text x="474.0" y="58.0" font-size="38" font-weight="600" text-anchor="middle" fill="#16202B">2.89</text><text x="372.0" y="1090" font-size="36" text-anchor="middle" fill="#4F5B69">0-300 m</text><rect x="774.0" y="921.282077922078" width="192.0" height="118.71792207792203" fill="#A9B2BE"/><text x="870.0" y="909.282077922078" font-size="38" font-weight="600" text-anchor="middle" fill="#16202B">0.35</text><rect x="978.0" y="936.6677056277056" width="192.0" height="103.33229437229443" fill="#1F4E79"/><text x="1074.0" y="924.6677056277056" font-size="38" font-weight="600" text-anchor="middle" fill="#16202B">0.31</text><text x="972.0" y="1090" font-size="36" text-anchor="middle" fill="#4F5B69">300-950 m</text><rect x="1374.0" y="976.2739393939394" width="192.0" height="63.72606060606063" fill="#A9B2BE"/><text x="1470.0" y="964.2739393939394" font-size="38" font-weight="600" text-anchor="middle" fill="#16202B">0.19</text><rect x="1578.0" y="962.0976623376623" width="192.0" height="77.90233766233769" fill="#1F4E79"/><text x="1674.0" y="950.0976623376623" font-size="38" font-weight="600" text-anchor="middle" fill="#16202B">0.23</text><text x="1572.0" y="1090" font-size="36" text-anchor="middle" fill="#4F5B69">950-2000 m</text><text x="74" y="30" font-size="34" text-anchor="end" fill="#7A8594">&#176;C</text></svg>
     <div class="legend"><i style="background:#A9B2BE"></i>Argo (the model already used them)
       <i style="background:#1F4E79"></i>Glider (independent)</div>
-    <p style="font-size:38px" class="muted">Below 300 m the model and the instruments agree. In the
-    top 300 m — the warm layer a cyclone feeds on — the independent glider finds an error of
-    <b class="red">2.89 °C</b>. VVater makes that gap visible.</p>
+    <p style="font-size:37px" class="muted">Below 300 m the INCOIS model and the instruments agree.
+    In the top 300 m, the warm layer a cyclone feeds on, the independent glider finds an error of
+    <b class="red">2.89 °C</b>. A single pooled number hides it; the 3D
+    view shows it.</p>
   </div>
-  <div class="col" style="gap:14px">
+  <div class="col" style="gap:12px">
     <h2 style="margin:0">Risks we hit, and what we did</h2>
     <table class="risks">
-      <tr><th>Risk</th><th>Handled by</th></tr>
-      <tr><td>Brief's data links are dead</td><td class="why">Both are <span class="mono">ftp://</span> and blocked; replaced with tested HTTPS mirrors.</td></tr>
-      <tr><td>Bad float readings</td><td class="why">510 of 11,525 levels fail QC; drawn red, never dropped.</td></tr>
-      <tr><td>Files not quite standard</td><td class="why">Odd units and axes read defensively; every fix recorded with the data.</td></tr>
-      <tr><td>Unknown GPUs at INCOIS</td><td class="why">Four quality tiers, picked by measuring real frames at start-up.</td></tr>
-      <tr><td>Copernicus needs an account</td><td class="why">INCOIS data needs none and is the default; Copernicus only adds currents.</td></tr>
+      <tr><td>The brief's data links are dead</td><td class="why">Both are <span class="mono">ftp://</span> and blocked; replaced with tested HTTPS sources.</td></tr>
+      <tr><td>The model fails QC too</td><td class="why">6 INCOIS cells read above 40 °C at depth; masked and counted, reported.</td></tr>
+      <tr><td>Bad float readings</td><td class="why">510 of 11,525 levels fail QC in the Bay; drawn red, never dropped.</td></tr>
+      <tr><td>An AI that invents numbers</td><td class="why">It reaches data only through our API; an untraceable number is flagged on screen.</td></tr>
+      <tr><td>A small host ran out of memory</td><td class="why">Shared S3 client and capped caches; we ask for 1 GB, measured 639 MB peak.</td></tr>
     </table>
-    <div class="card" style="margin-top:14px"><h3>Runs on what INCOIS has</h3><p>One Python
-    process and static files. Any modern browser, no install, no account.</p></div>
+    <figure class="shot"><img src="crop-residual.jpg" style="height:660px; object-fit:cover">
+      <figcaption><b>Where the INCOIS model is wrong.</b> Each block is a place someone measured,
+      coloured by measured minus model. Unmeasured water stays empty: 95% of it.</figcaption></figure>
   </div>
 </div>
 </div></body></html>

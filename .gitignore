@@ -34,3 +34,6 @@ video/out/
 # ...but the deck we build from it is ours
 !submission/sih/final/*.pptx
 dist/
+
+# derived from the shots by figures.py
+submission/sih/figures/crop-*.jpg

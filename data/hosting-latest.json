@@ -1,0 +1,1403 @@
+{
+ "zarr_concurrency": "32",
+ "boot_s": 1.6,
+ "idle_mb": 128,
+ "peak_mb": 639,
+ "settled_mb": 428,
+ "max_threads": 83,
+ "cpu_total_s": 36.1,
+ "wall_s": 498.8,
+ "cpu_pct_p50": 15.4,
+ "cpu_pct_max": 253.5,
+ "cores": 24,
+ "sent_mb": 54.1,
+ "cache_disk_mb": 1165,
+ "requests": [
+  {
+   "path": "/api/meta",
+   "q": {},
+   "status": 200,
+   "s": 1.4,
+   "cpu_s": 0.1,
+   "kb": 1,
+   "rss_mb": 144
+  },
+  {
+   "path": "/api/catalog",
+   "q": {},
+   "status": 200,
+   "s": 39.4,
+   "cpu_s": 3.5,
+   "kb": 14,
+   "rss_mb": 193
+  },
+  {
+   "path": "/api/global/layers",
+   "q": {},
+   "status": 200,
+   "s": 0.0,
+   "cpu_s": 0.0,
+   "kb": 1,
+   "rss_mb": 193
+  },
+  {
+   "path": "/api/global/meta",
+   "q": {
+    "layer": "temperature",
+    "day": "2018-10-30"
+   },
+   "status": 200,
+   "s": 28.9,
+   "cpu_s": 2.5,
+   "kb": 0,
+   "rss_mb": 303
+  },
+  {
+   "path": "/api/global/data",
+   "q": {
+    "layer": "temperature",
+    "day": "2018-10-30"
+   },
+   "status": 200,
+   "s": 0.0,
+   "cpu_s": 0.0,
+   "kb": 3831,
+   "rss_mb": 303
+  },
+  {
+   "path": "/api/global/meta",
+   "q": {
+    "layer": "salinity",
+    "day": "2018-10-30"
+   },
+   "status": 200,
+   "s": 0.5,
+   "cpu_s": 0.3,
+   "kb": 0,
+   "rss_mb": 311
+  },
+  {
+   "path": "/api/global/data",
+   "q": {
+    "layer": "salinity",
+    "day": "2018-10-30"
+   },
+   "status": 200,
+   "s": 0.0,
+   "cpu_s": 0.0,
+   "kb": 3831,
+   "rss_mb": 311
+  },
+  {
+   "path": "/api/pfz",
+   "q": {},
+   "status": 200,
+   "s": 1.4,
+   "cpu_s": 0.7,
+   "kb": 27,
+   "rss_mb": 311
+  },
+  {
+   "path": "/api/cube/meta",
+   "q": {
+    "variable": "temperature",
+    "lon0": 78,
+    "lon1": 100,
+    "lat0": 5,
+    "lat1": 23,
+    "day": "2018-08-25"
+   },
+   "status": 200,
+   "s": 16.2,
+   "cpu_s": 1.9,
+   "kb": 4,
+   "rss_mb": 318
+  },
+  {
+   "path": "/api/cube/data",
+   "q": {
+    "variable": "temperature",
+    "lon0": 78,
+    "lon1": 100,
+    "lat0": 5,
+    "lat1": 23,
+    "day": "2018-08-25"
+   },
+   "status": 200,
+   "s": 0.0,
+   "cpu_s": 0.0,
+   "kb": 2888,
+   "rss_mb": 318
+  },
+  {
+   "path": "/api/cube/casts",
+   "q": {
+    "variable": "temperature",
+    "lon0": 78,
+    "lon1": 100,
+    "lat0": 5,
+    "lat1": 23,
+    "day": "2018-08-25"
+   },
+   "status": 200,
+   "s": 4.2,
+   "cpu_s": 0.2,
+   "kb": 51,
+   "rss_mb": 322
+  },
+  {
+   "path": "/api/cube/profile",
+   "q": {
+    "variable": "temperature",
+    "platform": "2901895",
+    "cycle": 152,
+    "lon0": 78,
+    "lon1": 100,
+    "lat0": 5,
+    "lat1": 23,
+    "day": "2018-08-25"
+   },
+   "status": 200,
+   "s": 17.3,
+   "cpu_s": 0.2,
+   "kb": 10,
+   "rss_mb": 332
+  },
+  {
+   "path": "/api/cube/currents/meta",
+   "q": {
+    "lon0": 78,
+    "lon1": 100,
+    "lat0": 5,
+    "lat1": 23,
+    "day": "2018-08-25"
+   },
+   "status": 200,
+   "s": 3.8,
+   "cpu_s": 0.1,
+   "kb": 0,
+   "rss_mb": 335
+  },
+  {
+   "path": "/api/cube/currents/data",
+   "q": {
+    "lon0": 78,
+    "lon1": 100,
+    "lat0": 5,
+    "lat1": 23,
+    "day": "2018-08-25"
+   },
+   "status": 200,
+   "s": 0.0,
+   "cpu_s": 0.0,
+   "kb": 113,
+   "rss_mb": 335
+  },
+  {
+   "path": "/api/wind/meta",
+   "q": {
+    "day": "2018-08-25"
+   },
+   "status": 200,
+   "s": 14.7,
+   "cpu_s": 2.3,
+   "kb": 0,
+   "rss_mb": 413
+  },
+  {
+   "path": "/api/wind/data",
+   "q": {
+    "day": "2018-08-25"
+   },
+   "status": 200,
+   "s": 0.0,
+   "cpu_s": 0.0,
+   "kb": 2025,
+   "rss_mb": 413
+  },
+  {
+   "path": "/api/fishing",
+   "q": {
+    "lon0": 78,
+    "lon1": 100,
+    "lat0": 5,
+    "lat1": 23,
+    "day": "2018-08-25"
+   },
+   "status": 200,
+   "s": 9.7,
+   "cpu_s": 0.5,
+   "kb": 10,
+   "rss_mb": 423
+  },
+  {
+   "path": "/api/cube/meta",
+   "q": {
+    "variable": "temperature",
+    "lon0": 80,
+    "lon1": 95,
+    "lat0": 5,
+    "lat1": 23,
+    "day": "2020-05-14"
+   },
+   "status": 200,
+   "s": 7.6,
+   "cpu_s": 0.6,
+   "kb": 3,
+   "rss_mb": 423
+  },
+  {
+   "path": "/api/cube/data",
+   "q": {
+    "variable": "temperature",
+    "lon0": 80,
+    "lon1": 95,
+    "lat0": 5,
+    "lat1": 23,
+    "day": "2020-05-14"
+   },
+   "status": 200,
+   "s": 0.0,
+   "cpu_s": 0.0,
+   "kb": 1976,
+   "rss_mb": 423
+  },
+  {
+   "path": "/api/cube/casts",
+   "q": {
+    "variable": "temperature",
+    "lon0": 80,
+    "lon1": 95,
+    "lat0": 5,
+    "lat1": 23,
+    "day": "2020-05-14"
+   },
+   "status": 200,
+   "s": 2.4,
+   "cpu_s": 0.2,
+   "kb": 45,
+   "rss_mb": 425
+  },
+  {
+   "path": "/api/cube/profile",
+   "q": {
+    "variable": "temperature",
+    "platform": "2901892",
+    "cycle": 212,
+    "lon0": 80,
+    "lon1": 95,
+    "lat0": 5,
+    "lat1": 23,
+    "day": "2020-05-14"
+   },
+   "status": 200,
+   "s": 14.7,
+   "cpu_s": 0.1,
+   "kb": 11,
+   "rss_mb": 427
+  },
+  {
+   "path": "/api/cube/currents/meta",
+   "q": {
+    "lon0": 80,
+    "lon1": 95,
+    "lat0": 5,
+    "lat1": 23,
+    "day": "2020-05-14"
+   },
+   "status": 200,
+   "s": 2.6,
+   "cpu_s": 0.2,
+   "kb": 0,
+   "rss_mb": 428
+  },
+  {
+   "path": "/api/cube/currents/data",
+   "q": {
+    "lon0": 80,
+    "lon1": 95,
+    "lat0": 5,
+    "lat1": 23,
+    "day": "2020-05-14"
+   },
+   "status": 200,
+   "s": 0.0,
+   "cpu_s": 0.0,
+   "kb": 77,
+   "rss_mb": 428
+  },
+  {
+   "path": "/api/wind/meta",
+   "q": {
+    "day": "2020-05-14"
+   },
+   "status": 200,
+   "s": 4.4,
+   "cpu_s": 1.9,
+   "kb": 0,
+   "rss_mb": 432
+  },
+  {
+   "path": "/api/wind/data",
+   "q": {
+    "day": "2020-05-14"
+   },
+   "status": 200,
+   "s": 0.0,
+   "cpu_s": 0.0,
+   "kb": 2025,
+   "rss_mb": 432
+  },
+  {
+   "path": "/api/fishing",
+   "q": {
+    "lon0": 80,
+    "lon1": 95,
+    "lat0": 5,
+    "lat1": 23,
+    "day": "2020-05-14"
+   },
+   "status": 200,
+   "s": 1.9,
+   "cpu_s": 0.1,
+   "kb": 8,
+   "rss_mb": 440
+  },
+  {
+   "path": "/api/cube/meta",
+   "q": {
+    "variable": "temperature",
+    "lon0": 80,
+    "lon1": 95,
+    "lat0": 5,
+    "lat1": 23,
+    "day": "2020-05-22"
+   },
+   "status": 200,
+   "s": 7.6,
+   "cpu_s": 0.6,
+   "kb": 3,
+   "rss_mb": 438
+  },
+  {
+   "path": "/api/cube/data",
+   "q": {
+    "variable": "temperature",
+    "lon0": 80,
+    "lon1": 95,
+    "lat0": 5,
+    "lat1": 23,
+    "day": "2020-05-22"
+   },
+   "status": 200,
+   "s": 0.0,
+   "cpu_s": 0.0,
+   "kb": 1976,
+   "rss_mb": 438
+  },
+  {
+   "path": "/api/cube/casts",
+   "q": {
+    "variable": "temperature",
+    "lon0": 80,
+    "lon1": 95,
+    "lat0": 5,
+    "lat1": 23,
+    "day": "2020-05-22"
+   },
+   "status": 200,
+   "s": 2.9,
+   "cpu_s": 0.1,
+   "kb": 58,
+   "rss_mb": 442
+  },
+  {
+   "path": "/api/cube/profile",
+   "q": {
+    "variable": "temperature",
+    "platform": "2902394",
+    "cycle": 167,
+    "lon0": 80,
+    "lon1": 95,
+    "lat0": 5,
+    "lat1": 23,
+    "day": "2020-05-22"
+   },
+   "status": 200,
+   "s": 17.2,
+   "cpu_s": 0.1,
+   "kb": 17,
+   "rss_mb": 442
+  },
+  {
+   "path": "/api/cube/currents/meta",
+   "q": {
+    "lon0": 80,
+    "lon1": 95,
+    "lat0": 5,
+    "lat1": 23,
+    "day": "2020-05-22"
+   },
+   "status": 200,
+   "s": 3.0,
+   "cpu_s": 0.1,
+   "kb": 0,
+   "rss_mb": 443
+  },
+  {
+   "path": "/api/cube/currents/data",
+   "q": {
+    "lon0": 80,
+    "lon1": 95,
+    "lat0": 5,
+    "lat1": 23,
+    "day": "2020-05-22"
+   },
+   "status": 200,
+   "s": 0.0,
+   "cpu_s": 0.0,
+   "kb": 77,
+   "rss_mb": 443
+  },
+  {
+   "path": "/api/wind/meta",
+   "q": {
+    "day": "2020-05-22"
+   },
+   "status": 200,
+   "s": 4.6,
+   "cpu_s": 1.6,
+   "kb": 0,
+   "rss_mb": 445
+  },
+  {
+   "path": "/api/wind/data",
+   "q": {
+    "day": "2020-05-22"
+   },
+   "status": 200,
+   "s": 0.0,
+   "cpu_s": 0.0,
+   "kb": 2025,
+   "rss_mb": 445
+  },
+  {
+   "path": "/api/fishing",
+   "q": {
+    "lon0": 80,
+    "lon1": 95,
+    "lat0": 5,
+    "lat1": 23,
+    "day": "2020-05-22"
+   },
+   "status": 200,
+   "s": 2.3,
+   "cpu_s": 0.1,
+   "kb": 8,
+   "rss_mb": 453
+  },
+  {
+   "path": "/api/cube/meta",
+   "q": {
+    "variable": "temperature",
+    "lon0": 50,
+    "lon1": 78,
+    "lat0": 5,
+    "lat1": 25,
+    "day": "2019-10-15"
+   },
+   "status": 200,
+   "s": 7.9,
+   "cpu_s": 0.4,
+   "kb": 3,
+   "rss_mb": 457
+  },
+  {
+   "path": "/api/cube/data",
+   "q": {
+    "variable": "temperature",
+    "lon0": 50,
+    "lon1": 78,
+    "lat0": 5,
+    "lat1": 25,
+    "day": "2019-10-15"
+   },
+   "status": 200,
+   "s": 0.0,
+   "cpu_s": 0.0,
+   "kb": 1823,
+   "rss_mb": 457
+  },
+  {
+   "path": "/api/cube/casts",
+   "q": {
+    "variable": "temperature",
+    "lon0": 50,
+    "lon1": 78,
+    "lat0": 5,
+    "lat1": 25,
+    "day": "2019-10-15"
+   },
+   "status": 200,
+   "s": 7.0,
+   "cpu_s": 0.1,
+   "kb": 106,
+   "rss_mb": 458
+  },
+  {
+   "path": "/api/cube/profile",
+   "q": {
+    "variable": "temperature",
+    "platform": "1901517",
+    "cycle": 306,
+    "lon0": 50,
+    "lon1": 78,
+    "lat0": 5,
+    "lat1": 25,
+    "day": "2019-10-15"
+   },
+   "status": 200,
+   "s": 0.2,
+   "cpu_s": 0.0,
+   "kb": 4,
+   "rss_mb": 458
+  },
+  {
+   "path": "/api/cube/currents/meta",
+   "q": {
+    "lon0": 50,
+    "lon1": 78,
+    "lat0": 5,
+    "lat1": 25,
+    "day": "2019-10-15"
+   },
+   "status": 200,
+   "s": 1.0,
+   "cpu_s": 0.0,
+   "kb": 0,
+   "rss_mb": 458
+  },
+  {
+   "path": "/api/cube/currents/data",
+   "q": {
+    "lon0": 50,
+    "lon1": 78,
+    "lat0": 5,
+    "lat1": 25,
+    "day": "2019-10-15"
+   },
+   "status": 200,
+   "s": 0.0,
+   "cpu_s": 0.0,
+   "kb": 72,
+   "rss_mb": 458
+  },
+  {
+   "path": "/api/wind/meta",
+   "q": {
+    "day": "2019-10-15"
+   },
+   "status": 200,
+   "s": 3.6,
+   "cpu_s": 0.9,
+   "kb": 0,
+   "rss_mb": 457
+  },
+  {
+   "path": "/api/wind/data",
+   "q": {
+    "day": "2019-10-15"
+   },
+   "status": 200,
+   "s": 0.0,
+   "cpu_s": 0.0,
+   "kb": 2025,
+   "rss_mb": 457
+  },
+  {
+   "path": "/api/fishing",
+   "q": {
+    "lon0": 50,
+    "lon1": 78,
+    "lat0": 5,
+    "lat1": 25,
+    "day": "2019-10-15"
+   },
+   "status": 200,
+   "s": 2.6,
+   "cpu_s": 0.2,
+   "kb": 14,
+   "rss_mb": 469
+  },
+  {
+   "path": "/api/cube/meta",
+   "q": {
+    "variable": "temperature",
+    "lon0": -80,
+    "lon1": -50,
+    "lat0": 30,
+    "lat1": 45,
+    "day": "2020-02-15"
+   },
+   "status": 200,
+   "s": 6.4,
+   "cpu_s": 0.2,
+   "kb": 3,
+   "rss_mb": 471
+  },
+  {
+   "path": "/api/cube/data",
+   "q": {
+    "variable": "temperature",
+    "lon0": -80,
+    "lon1": -50,
+    "lat0": 30,
+    "lat1": 45,
+    "day": "2020-02-15"
+   },
+   "status": 200,
+   "s": 0.0,
+   "cpu_s": 0.0,
+   "kb": 1470,
+   "rss_mb": 471
+  },
+  {
+   "path": "/api/cube/casts",
+   "q": {
+    "variable": "temperature",
+    "lon0": -80,
+    "lon1": -50,
+    "lat0": 30,
+    "lat1": 45,
+    "day": "2020-02-15"
+   },
+   "status": 200,
+   "s": 7.6,
+   "cpu_s": 0.2,
+   "kb": 99,
+   "rss_mb": 472
+  },
+  {
+   "path": "/api/cube/profile",
+   "q": {
+    "variable": "temperature",
+    "platform": "4901464",
+    "cycle": 268,
+    "lon0": -80,
+    "lon1": -50,
+    "lat0": 30,
+    "lat1": 45,
+    "day": "2020-02-15"
+   },
+   "status": 200,
+   "s": 0.2,
+   "cpu_s": 0.1,
+   "kb": 17,
+   "rss_mb": 474
+  },
+  {
+   "path": "/api/cube/currents/meta",
+   "q": {
+    "lon0": -80,
+    "lon1": -50,
+    "lat0": 30,
+    "lat1": 45,
+    "day": "2020-02-15"
+   },
+   "status": 200,
+   "s": 0.8,
+   "cpu_s": 0.0,
+   "kb": 0,
+   "rss_mb": 474
+  },
+  {
+   "path": "/api/cube/currents/data",
+   "q": {
+    "lon0": -80,
+    "lon1": -50,
+    "lat0": 30,
+    "lat1": 45,
+    "day": "2020-02-15"
+   },
+   "status": 200,
+   "s": 0.0,
+   "cpu_s": 0.0,
+   "kb": 58,
+   "rss_mb": 474
+  },
+  {
+   "path": "/api/wind/meta",
+   "q": {
+    "day": "2020-02-15"
+   },
+   "status": 200,
+   "s": 3.8,
+   "cpu_s": 1.1,
+   "kb": 0,
+   "rss_mb": 473
+  },
+  {
+   "path": "/api/wind/data",
+   "q": {
+    "day": "2020-02-15"
+   },
+   "status": 200,
+   "s": 0.0,
+   "cpu_s": 0.0,
+   "kb": 2025,
+   "rss_mb": 473
+  },
+  {
+   "path": "/api/fishing",
+   "q": {
+    "lon0": -80,
+    "lon1": -50,
+    "lat0": 30,
+    "lat1": 45,
+    "day": "2020-02-15"
+   },
+   "status": 200,
+   "s": 4.2,
+   "cpu_s": 0.2,
+   "kb": 12,
+   "rss_mb": 485
+  },
+  {
+   "path": "/api/cube/meta",
+   "q": {
+    "variable": "temperature",
+    "lon0": 125,
+    "lon1": 155,
+    "lat0": 25,
+    "lat1": 42,
+    "day": "2020-02-15"
+   },
+   "status": 200,
+   "s": 3.4,
+   "cpu_s": 0.2,
+   "kb": 3,
+   "rss_mb": 480
+  },
+  {
+   "path": "/api/cube/data",
+   "q": {
+    "variable": "temperature",
+    "lon0": 125,
+    "lon1": 155,
+    "lat0": 25,
+    "lat1": 42,
+    "day": "2020-02-15"
+   },
+   "status": 200,
+   "s": 0.0,
+   "cpu_s": 0.0,
+   "kb": 1663,
+   "rss_mb": 480
+  },
+  {
+   "path": "/api/cube/casts",
+   "q": {
+    "variable": "temperature",
+    "lon0": 125,
+    "lon1": 155,
+    "lat0": 25,
+    "lat1": 42,
+    "day": "2020-02-15"
+   },
+   "status": 200,
+   "s": 5.7,
+   "cpu_s": 0.1,
+   "kb": 118,
+   "rss_mb": 483
+  },
+  {
+   "path": "/api/cube/profile",
+   "q": {
+    "variable": "temperature",
+    "platform": "2902748",
+    "cycle": 210,
+    "lon0": 125,
+    "lon1": 155,
+    "lat0": 25,
+    "lat1": 42,
+    "day": "2020-02-15"
+   },
+   "status": 200,
+   "s": 18.7,
+   "cpu_s": 0.2,
+   "kb": 8,
+   "rss_mb": 485
+  },
+  {
+   "path": "/api/cube/currents/meta",
+   "q": {
+    "lon0": 125,
+    "lon1": 155,
+    "lat0": 25,
+    "lat1": 42,
+    "day": "2020-02-15"
+   },
+   "status": 200,
+   "s": 1.1,
+   "cpu_s": 0.0,
+   "kb": 0,
+   "rss_mb": 484
+  },
+  {
+   "path": "/api/cube/currents/data",
+   "q": {
+    "lon0": 125,
+    "lon1": 155,
+    "lat0": 25,
+    "lat1": 42,
+    "day": "2020-02-15"
+   },
+   "status": 200,
+   "s": 0.0,
+   "cpu_s": 0.0,
+   "kb": 65,
+   "rss_mb": 484
+  },
+  {
+   "path": "/api/wind/meta",
+   "q": {
+    "day": "2020-02-15"
+   },
+   "status": 200,
+   "s": 0.0,
+   "cpu_s": 0.0,
+   "kb": 0,
+   "rss_mb": 484
+  },
+  {
+   "path": "/api/wind/data",
+   "q": {
+    "day": "2020-02-15"
+   },
+   "status": 200,
+   "s": 0.0,
+   "cpu_s": 0.0,
+   "kb": 2025,
+   "rss_mb": 485
+  },
+  {
+   "path": "/api/fishing",
+   "q": {
+    "lon0": 125,
+    "lon1": 155,
+    "lat0": 25,
+    "lat1": 42,
+    "day": "2020-02-15"
+   },
+   "status": 200,
+   "s": 0.0,
+   "cpu_s": 0.0,
+   "kb": 13,
+   "rss_mb": 485
+  },
+  {
+   "path": "/api/cube/meta",
+   "q": {
+    "variable": "temperature",
+    "lon0": 10,
+    "lon1": 35,
+    "lat0": -45,
+    "lat1": -30,
+    "day": "2019-07-15"
+   },
+   "status": 200,
+   "s": 12.6,
+   "cpu_s": 1.7,
+   "kb": 4,
+   "rss_mb": 482
+  },
+  {
+   "path": "/api/cube/data",
+   "q": {
+    "variable": "temperature",
+    "lon0": 10,
+    "lon1": 35,
+    "lat0": -45,
+    "lat1": -30,
+    "day": "2019-07-15"
+   },
+   "status": 200,
+   "s": 0.0,
+   "cpu_s": 0.0,
+   "kb": 2737,
+   "rss_mb": 482
+  },
+  {
+   "path": "/api/cube/casts",
+   "q": {
+    "variable": "temperature",
+    "lon0": 10,
+    "lon1": 35,
+    "lat0": -45,
+    "lat1": -30,
+    "day": "2019-07-15"
+   },
+   "status": 200,
+   "s": 7.6,
+   "cpu_s": 0.1,
+   "kb": 40,
+   "rss_mb": 485
+  },
+  {
+   "path": "/api/cube/profile",
+   "q": {
+    "variable": "temperature",
+    "platform": "1901833",
+    "cycle": 127,
+    "lon0": 10,
+    "lon1": 35,
+    "lat0": -45,
+    "lat1": -30,
+    "day": "2019-07-15"
+   },
+   "status": 200,
+   "s": 0.1,
+   "cpu_s": 0.1,
+   "kb": 31,
+   "rss_mb": 408
+  },
+  {
+   "path": "/api/cube/currents/meta",
+   "q": {
+    "lon0": 10,
+    "lon1": 35,
+    "lat0": -45,
+    "lat1": -30,
+    "day": "2019-07-15"
+   },
+   "status": 200,
+   "s": 1.7,
+   "cpu_s": 0.0,
+   "kb": 0,
+   "rss_mb": 410
+  },
+  {
+   "path": "/api/cube/currents/data",
+   "q": {
+    "lon0": 10,
+    "lon1": 35,
+    "lat0": -45,
+    "lat1": -30,
+    "day": "2019-07-15"
+   },
+   "status": 200,
+   "s": 0.0,
+   "cpu_s": 0.0,
+   "kb": 107,
+   "rss_mb": 410
+  },
+  {
+   "path": "/api/wind/meta",
+   "q": {
+    "day": "2019-07-15"
+   },
+   "status": 200,
+   "s": 4.6,
+   "cpu_s": 2.0,
+   "kb": 0,
+   "rss_mb": 410
+  },
+  {
+   "path": "/api/wind/data",
+   "q": {
+    "day": "2019-07-15"
+   },
+   "status": 200,
+   "s": 0.0,
+   "cpu_s": 0.0,
+   "kb": 2025,
+   "rss_mb": 410
+  },
+  {
+   "path": "/api/fishing",
+   "q": {
+    "lon0": 10,
+    "lon1": 35,
+    "lat0": -45,
+    "lat1": -30,
+    "day": "2019-07-15"
+   },
+   "status": 200,
+   "s": 1.7,
+   "cpu_s": 0.1,
+   "kb": 10,
+   "rss_mb": 419
+  },
+  {
+   "path": "/api/cube/meta",
+   "q": {
+    "variable": "temperature",
+    "lon0": 170,
+    "lon1": 270,
+    "lat0": -10,
+    "lat1": 10,
+    "day": "2015-12-01"
+   },
+   "status": 200,
+   "s": 13.9,
+   "cpu_s": 1.2,
+   "kb": 3,
+   "rss_mb": 417
+  },
+  {
+   "path": "/api/cube/data",
+   "q": {
+    "variable": "temperature",
+    "lon0": 170,
+    "lon1": 270,
+    "lat0": -10,
+    "lat1": 10,
+    "day": "2015-12-01"
+   },
+   "status": 200,
+   "s": 0.0,
+   "cpu_s": 0.0,
+   "kb": 933,
+   "rss_mb": 417
+  },
+  {
+   "path": "/api/cube/casts",
+   "q": {
+    "variable": "temperature",
+    "lon0": 170,
+    "lon1": 270,
+    "lat0": -10,
+    "lat1": 10,
+    "day": "2015-12-01"
+   },
+   "status": 200,
+   "s": 33.1,
+   "cpu_s": 0.6,
+   "kb": 401,
+   "rss_mb": 417
+  },
+  {
+   "path": "/api/cube/profile",
+   "q": {
+    "variable": "temperature",
+    "platform": "3900585",
+    "cycle": 310,
+    "lon0": 170,
+    "lon1": 270,
+    "lat0": -10,
+    "lat1": 10,
+    "day": "2015-12-01"
+   },
+   "status": 200,
+   "s": 14.4,
+   "cpu_s": 0.5,
+   "kb": 4,
+   "rss_mb": 419
+  },
+  {
+   "path": "/api/cube/currents/meta",
+   "q": {
+    "lon0": 170,
+    "lon1": 270,
+    "lat0": -10,
+    "lat1": 10,
+    "day": "2015-12-01"
+   },
+   "status": 200,
+   "s": 3.1,
+   "cpu_s": 0.1,
+   "kb": 0,
+   "rss_mb": 420
+  },
+  {
+   "path": "/api/cube/currents/data",
+   "q": {
+    "lon0": 170,
+    "lon1": 270,
+    "lat0": -10,
+    "lat1": 10,
+    "day": "2015-12-01"
+   },
+   "status": 200,
+   "s": 0.0,
+   "cpu_s": 0.0,
+   "kb": 37,
+   "rss_mb": 420
+  },
+  {
+   "path": "/api/wind/meta",
+   "q": {
+    "day": "2015-12-01"
+   },
+   "status": 200,
+   "s": 4.5,
+   "cpu_s": 1.9,
+   "kb": 0,
+   "rss_mb": 417
+  },
+  {
+   "path": "/api/wind/data",
+   "q": {
+    "day": "2015-12-01"
+   },
+   "status": 200,
+   "s": 0.0,
+   "cpu_s": 0.0,
+   "kb": 2025,
+   "rss_mb": 417
+  },
+  {
+   "path": "/api/fishing",
+   "q": {
+    "lon0": 170,
+    "lon1": 270,
+    "lat0": -10,
+    "lat1": 10,
+    "day": "2015-12-01"
+   },
+   "status": 200,
+   "s": 1.8,
+   "cpu_s": 0.2,
+   "kb": 44,
+   "rss_mb": 429
+  },
+  {
+   "path": "/api/cube/meta",
+   "q": {
+    "variable": "temperature",
+    "lon0": -75,
+    "lon1": -50,
+    "lat0": -65,
+    "lat1": -52,
+    "day": "2019-02-15"
+   },
+   "status": 200,
+   "s": 6.2,
+   "cpu_s": 0.1,
+   "kb": 4,
+   "rss_mb": 425
+  },
+  {
+   "path": "/api/cube/data",
+   "q": {
+    "variable": "temperature",
+    "lon0": -75,
+    "lon1": -50,
+    "lat0": -65,
+    "lat1": -52,
+    "day": "2019-02-15"
+   },
+   "status": 200,
+   "s": 0.0,
+   "cpu_s": 0.0,
+   "kb": 2376,
+   "rss_mb": 425
+  },
+  {
+   "path": "/api/cube/casts",
+   "q": {
+    "variable": "temperature",
+    "lon0": -75,
+    "lon1": -50,
+    "lat0": -65,
+    "lat1": -52,
+    "day": "2019-02-15"
+   },
+   "status": 200,
+   "s": 5.6,
+   "cpu_s": 0.1,
+   "kb": 8,
+   "rss_mb": 427
+  },
+  {
+   "path": "/api/cube/profile",
+   "q": {
+    "variable": "temperature",
+    "platform": "3901297",
+    "cycle": 77,
+    "lon0": -75,
+    "lon1": -50,
+    "lat0": -65,
+    "lat1": -52,
+    "day": "2019-02-15"
+   },
+   "status": 200,
+   "s": 21.0,
+   "cpu_s": 0.2,
+   "kb": 29,
+   "rss_mb": 431
+  },
+  {
+   "path": "/api/cube/currents/meta",
+   "q": {
+    "lon0": -75,
+    "lon1": -50,
+    "lat0": -65,
+    "lat1": -52,
+    "day": "2019-02-15"
+   },
+   "status": 200,
+   "s": 1.0,
+   "cpu_s": 0.0,
+   "kb": 0,
+   "rss_mb": 431
+  },
+  {
+   "path": "/api/cube/currents/data",
+   "q": {
+    "lon0": -75,
+    "lon1": -50,
+    "lat0": -65,
+    "lat1": -52,
+    "day": "2019-02-15"
+   },
+   "status": 200,
+   "s": 0.0,
+   "cpu_s": 0.0,
+   "kb": 93,
+   "rss_mb": 431
+  },
+  {
+   "path": "/api/wind/meta",
+   "q": {
+    "day": "2019-02-15"
+   },
+   "status": 200,
+   "s": 4.8,
+   "cpu_s": 1.9,
+   "kb": 0,
+   "rss_mb": 423
+  },
+  {
+   "path": "/api/wind/data",
+   "q": {
+    "day": "2019-02-15"
+   },
+   "status": 200,
+   "s": 0.0,
+   "cpu_s": 0.0,
+   "kb": 2025,
+   "rss_mb": 423
+  },
+  {
+   "path": "/api/fishing",
+   "q": {
+    "lon0": -75,
+    "lon1": -50,
+    "lat0": -65,
+    "lat1": -52,
+    "day": "2019-02-15"
+   },
+   "status": 200,
+   "s": 3.8,
+   "cpu_s": 0.2,
+   "kb": 9,
+   "rss_mb": 434
+  },
+  {
+   "path": "/api/cube/data",
+   "q": {
+    "variable": "salinity",
+    "lon0": 78,
+    "lon1": 100,
+    "lat0": 5,
+    "lat1": 23,
+    "day": "2018-08-25"
+   },
+   "status": 200,
+   "s": 5.7,
+   "cpu_s": 0.7,
+   "kb": 2888,
+   "rss_mb": 431
+  },
+  {
+   "path": "/api/surface/meta",
+   "q": {
+    "variable": "temperature",
+    "day": "2018-08-25"
+   },
+   "status": 200,
+   "s": 0.0,
+   "cpu_s": 0.0,
+   "kb": 1,
+   "rss_mb": 431
+  },
+  {
+   "path": "/api/surface/data",
+   "q": {
+    "variable": "temperature",
+    "day": "2018-08-25"
+   },
+   "status": 200,
+   "s": 0.0,
+   "cpu_s": 0.0,
+   "kb": 3831,
+   "rss_mb": 431
+  },
+  {
+   "path": "/api/meta",
+   "q": {},
+   "status": 200,
+   "s": 0.0,
+   "cpu_s": 0.0,
+   "kb": 1,
+   "rss_mb": 431
+  },
+  {
+   "path": "/api/volume/meta",
+   "q": {
+    "variable": "temperature",
+    "source": "incois_vam",
+    "time_index": 0
+   },
+   "status": 200,
+   "s": 0.0,
+   "cpu_s": 0.0,
+   "kb": 1,
+   "rss_mb": 431
+  },
+  {
+   "path": "/api/volume/data",
+   "q": {
+    "variable": "temperature",
+    "source": "incois_vam",
+    "time_index": 0,
+    "n": 200000
+   },
+   "status": 200,
+   "s": 0.0,
+   "cpu_s": 0.0,
+   "kb": 82,
+   "rss_mb": 431
+  },
+  {
+   "path": "/api/observations",
+   "q": {
+    "on": "2018-08-25",
+    "variable": "temperature"
+   },
+   "status": 200,
+   "s": 61.9,
+   "cpu_s": 1.6,
+   "kb": 29,
+   "rss_mb": 432
+  },
+  {
+   "path": "/api/cube/data",
+   "q": {
+    "variable": "temperature",
+    "lon0": 78,
+    "lon1": 100,
+    "lat0": 5,
+    "lat1": 23,
+    "day": "2018-08-25"
+   },
+   "status": 200,
+   "s": 1.8,
+   "cpu_s": 0.1,
+   "kb": 2888,
+   "rss_mb": 428
+  }
+ ],
+ "measured": "2026-09-25"
+}

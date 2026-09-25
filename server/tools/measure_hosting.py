@@ -6,7 +6,7 @@ Argo profile, currents, wind, fishing, PFZ, the whole-ocean layers, the INCOIS v
 
     python -m server.tools.measure_hosting [ZARR_CONCURRENCY]   # ~20 min, needs network
 
-Results in docs/18-deploy.md, "What a host needs". Needs psutil (not in requirements.txt).
+Results in docs/18-deploy.md, "What a host needs", and data/hosting-latest.json for the harness. Needs psutil (not in requirements.txt).
 """
 import json, os, shutil, subprocess, sys, tempfile, threading, time, urllib.error, urllib.parse, urllib.request
 from pathlib import Path
@@ -127,4 +127,7 @@ out = {
     "cache_disk_mb": round(disk), "requests": log,
 }
 (HERE.parent / f"vvater-measure-{env['ZARR_CONCURRENCY']}.json").write_text(json.dumps(out, indent=1))
+# The copy the eval harness reads, so the deck's hosting figures trace to a file.
+out["measured"] = time.strftime("%Y-%m-%d")
+(REPO / "data" / "hosting-latest.json").write_text(json.dumps(out, indent=1))
 print(json.dumps({k: v for k, v in out.items() if k != "requests"}, indent=1))

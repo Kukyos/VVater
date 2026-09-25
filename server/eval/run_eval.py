@@ -15,10 +15,14 @@ from datetime import date
 from pathlib import Path
 
 import numpy as np
+import truststore
 import xarray as xr
 
-from server.ocean import (argo, cf, colocate, config, currents, glider, heat, regrid, residual,
-                          sources, textcast)
+truststore.inject_into_ssl()  # INCOIS serves an incomplete chain; never verify=False
+
+# TLS first, then anything that fetches.
+from server.ocean import (argo, cf, colocate, config, currents, glider,  # noqa: E402
+                          heat, regrid, residual, sources, textcast)
 
 CACHE = Path(__file__).resolve().parents[2] / "data" / "cache"
 CENTRE = config.DEMO_DATE
@@ -296,6 +300,8 @@ def main(write_json: bool = False) -> None:
         print(f"  unavailable: {exc}")
         record["currents"] = {"unavailable": str(exc)}
 
+    record["v2"] = v2_numbers()
+
     _rule("Assumptions on the record")
     for note in rows[0]["cf_assumptions"]:
         print(f"  - {note}")
@@ -305,6 +311,93 @@ def main(write_json: bool = False) -> None:
         out = Path(__file__).resolve().parents[2] / "data" / "eval-latest.json"
         out.write_text(json.dumps(record, indent=2, default=str), encoding="utf-8")
         print(f"\nwrote {out.relative_to(out.parents[1])}")
+
+
+def v2_numbers() -> dict:
+    """The Ocean Cube's numbers: catalogue, one scenario cube, its floats, Amphan's cooling,
+    and the hosting measurement. Each part is measured here or read from the file the
+    measuring tool wrote, never typed in."""
+    from server.ocean import catalog, cube, cubecasts
+
+    out: dict = {"scenarios": len(config.SCENARIOS)}
+    _rule("v2 · catalogue")
+    try:
+        cat = catalog.describe()
+        variables = cat["variables"]
+        starts = [e["from"] for v in variables for e in v["eras"]]
+        ends = [e["to"] for v in variables for e in v["eras"]]
+        out["catalog"] = {
+            "variables": len(variables),
+            "depth_resolved": sum(v["depth"] for v in variables),
+            "derived_teos10": sum(bool(v["derived"]) and "TEOS-10" in v["formula"]
+                                  for v in variables),
+            "biogeochemistry": sum(v["group"] == "biogeochemistry" for v in variables),
+            "first_day": min(starts)[:10], "last_day": max(ends)[:10], "today": cat["today"],
+        }
+        c = out["catalog"]
+        print(f"  variables        {c['variables']} ({c['depth_resolved']} depth-resolved, "
+              f"{c['biogeochemistry']} biogeochemistry, {c['derived_teos10']} TEOS-10 derived)")
+        print(f"  days             {c['first_day']} to {c['last_day']} (today {c['today']})")
+    except Exception as exc:  # no network
+        print(f"  unavailable: {exc}")
+        out["catalog"] = {"unavailable": str(exc)}
+
+    _rule("v2 · Amphan cubes and their floats")
+    try:
+        scen = {s.key: s for s in config.SCENARIOS}
+        sea = {}
+        for key in ("amphan_before", "amphan_after"):
+            sc = scen[key]
+            box = cube.Box.parse(*sc.box)
+            t0 = time.perf_counter()
+            c = cube.build(sc.variable, box, sc.day, float(sc.depth_max))
+            first_s = time.perf_counter() - t0
+            t0 = time.perf_counter()
+            cube.build(sc.variable, box, sc.day, float(sc.depth_max))
+            again_s = time.perf_counter() - t0
+            nz, ny, nx = c.values.shape
+            top = c.values[0]
+            sea[key] = float(np.nanmean(top))
+            out[key] = {"day": sc.day, "levels": nz, "cells": [nx, ny],
+                        "payload_mb": round(len(c.payload()) / 1e6, 2),
+                        "open_seconds_disk_cache": round(first_s, 2),
+                        "open_seconds_memory": round(again_s, 3),
+                        "surface_mean_c": round(sea[key], 2)}
+            print(f"  {key:14s} {sc.day}  {nx}x{ny}x{nz} levels  "
+                  f"open {first_s:.2f} s from disk cache, {again_s * 1000:.0f} ms again  "
+                  f"surface mean {sea[key]:.2f} C")
+        out["amphan_cooling_c"] = round(sea["amphan_before"] - sea["amphan_after"], 2)
+        print(f"  surface cooling  {out['amphan_cooling_c']:.2f} C, box mean, before minus after")
+
+        sc = scen["amphan_before"]
+        cs = cubecasts.casts(sc.variable, cube.Box.parse(*sc.box), sc.day, float(sc.depth_max))
+        levels = sum(x["levels"] for x in cs["casts"])
+        rejected = sum(x["levelsRejected"] for x in cs["casts"])
+        modes = {m: sum(x["dataMode"] == m for x in cs["casts"]) for m in "RAD"}
+        out["amphan_before_casts"] = {"found": cs["found"], "shown": cs["shown"],
+                                      "levels": levels, "levels_rejected": rejected,
+                                      "data_modes": modes, "window": [cs["from"], cs["to"]]}
+        print(f"  Argo casts       {cs['found']} within +/-{cs['window_days']} days, "
+              f"{levels} levels, {rejected} rejected by QC, modes {modes}")
+    except Exception as exc:
+        print(f"  unavailable: {exc}")
+        out["amphan"] = {"unavailable": str(exc)}
+
+    _rule("v2 · hosting (python -m server.tools.measure_hosting)")
+    hosting = Path(__file__).resolve().parents[2] / "data" / "hosting-latest.json"
+    if hosting.exists():
+        h = json.loads(hosting.read_text(encoding="utf-8"))
+        out["hosting"] = {k: h[k] for k in ("measured", "idle_mb", "peak_mb", "settled_mb",
+                                           "cpu_pct_max", "cpu_total_s", "wall_s", "sent_mb",
+                                           "cache_disk_mb", "boot_s")}
+        out["hosting"]["requests"] = len(h["requests"])
+        out["hosting"]["requests_ok"] = sum(r["status"] == 200 for r in h["requests"])
+        print(f"  {h['measured']}: peak {h['peak_mb']} MB, idle {h['idle_mb']} MB, "
+              f"CPU peak {h['cpu_pct_max']:.0f} %, cache {h['cache_disk_mb']} MB, "
+              f"{out['hosting']['requests_ok']}/{out['hosting']['requests']} requests 200")
+    else:
+        print("  no data/hosting-latest.json; run python -m server.tools.measure_hosting")
+    return out
 
 
 if __name__ == "__main__":

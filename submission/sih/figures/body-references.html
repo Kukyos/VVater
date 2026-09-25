@@ -6,38 +6,45 @@
 <body><div class="slide">
 <div class="banner"><span>Source code, docs and every measured number:</span>
   <span class="mono">https://github.com/Kukyos/VVater</span>
-  <span class="note">public repository · all links below opened 2026-09-23</span></div>
-<div class="cols grow refcols" style="grid-template-columns: 1fr 1fr; gap: 90px">
-  <div class="col" style="gap:10px">
-    <h2 style="margin:0">Data we fetched — each one probed, not assumed</h2>
+  <span class="note">public repository · links below opened 2026-09-25</span></div>
+<div class="cols grow refcols" style="grid-template-columns: 1fr 1fr 1fr; gap: 70px">
+  <div class="col" style="gap:8px">
+    <h2 style="margin:0">Data, each source probed</h2>
     <ol class="refs">
-      <li>INCOIS ERDDAP — Argo 10-day variational analysis (<span class="mono">incois_argo_10d_VAM</span>), temperature and salinity with per-cell error. <span class="why">The primary volume; no credentials.</span><span class="url">erddap.incois.gov.in/erddap/griddap/incois_argo_10d_VAM.html</span></li>
-      <li>Copernicus Marine — GLORYS12 global reanalysis, GLOBAL_MULTIYEAR_PHY_001_030. <span class="why">Currents, and the global surface layer.</span><span class="url">data.marine.copernicus.eu/product/GLOBAL_MULTIYEAR_PHY_001_030</span></li>
-      <li>Argo Global Data Assembly Centre, HTTPS mirror. <span class="why">Float profiles with QC flags and data mode.</span><span class="url">data-argo.ifremer.fr</span></li>
-      <li>U.S. IOOS Glider DAC — Rutgers <i>ru29</i> deployment, NetCDF and CSV. <span class="why">The independent check.</span><span class="url">gliders.ioos.us/erddap</span></li>
-      <li>INCOIS Live Access Server. <span class="why">Named in the brief; reachable, not yet ingested.</span><span class="url">las.incois.gov.in/las</span></li>
-      <li>The brief's two <span class="mono">ftp.ifremer.fr</span> links. <span class="why">Probed: do not connect (port 21). Replaced by 3.</span><span class="url">ftp://ftp.ifremer.fr/ifremer/argo · …/glider/v2</span></li>
-      <li>Argo Program overview, Scripps Institution of Oceanography. <span class="why">What a float is and does.</span><span class="url">argo.ucsd.edu</span></li>
-      <li>Smart India Hackathon 2026, problem statement 26067 (MoES / INCOIS Ocean Valley). <span class="why">Quoted verbatim in the repository.</span><span class="url">github.com/Kukyos/VVater/blob/main/docs/01-problem-statement.md</span></li>
+      <li>Copernicus Marine GLORYS12 reanalysis and global analysis &amp; forecast, physics and PISCES biogeochemistry, read as ARCO stores. <span class="why">The cube.</span><span class="url">data.marine.copernicus.eu/product/GLOBAL_MULTIYEAR_PHY_001_030</span></li>
+      <li>INCOIS ERDDAP, Argo 10-day variational analysis with per-cell error. <span class="why">The Bay volume.</span><span class="url">erddap.incois.gov.in/erddap</span></li>
+      <li>Ifremer Argo ERDDAP, core and synthetic BGC floats. <span class="why">Floats anywhere.</span><span class="url">erddap.ifremer.fr/erddap</span></li>
+      <li>Argo GDAC, HTTPS mirror. <span class="why">Float files, QC flags, data mode.</span><span class="url">data-argo.ifremer.fr</span></li>
+      <li>U.S. IOOS Glider DAC, Rutgers <i>ru29</i>. <span class="why">The independent check.</span><span class="url">gliders.ioos.us/erddap</span></li>
+      <li>INCOIS Potential Fishing Zone advisories. <span class="why">Read as published.</span><span class="url">incois.gov.in/MarineFisheries/TextDataHome?mfid=1</span></li>
+      <li>NCEP GFS 10 m wind via UCAR THREDDS. <span class="why">Wind forecast.</span><span class="url">thredds.ucar.edu</span></li>
+      <li>NASA GIBS Blue Marble relief. <span class="why">Land.</span><span class="url">gibs.earthdata.nasa.gov</span></li>
+      <li>The brief's two <span class="mono">ftp.ifremer.fr</span> links. <span class="why">Do not connect; replaced by 3 and 4.</span></li>
     </ol>
-    <div class="card grey" style="margin-top:6px"><h3>How these links were checked</h3><p>Every
-      URL was opened on 2026-09-23 with a browser user agent and returned HTTP 200, except the two
-      FTP links (dead, listed as such) and the AMS journal page, which refuses scripted requests;
-      its DOI resolves.</p></div>
   </div>
-  <div class="col" style="gap:10px">
-    <h2 style="margin:0">Standards and methods the code follows</h2>
-    <ol class="refs" style="counter-reset: ref 8">
-      <li>Wong et al., Argo Quality Control Manual for CTD and Trajectory Data. <span class="why">Range test and QC flags.</span><span class="url">doi.org/10.13155/33951</span></li>
-      <li>U.S. IOOS QARTOD manuals. <span class="why">Glider QC flags.</span><span class="url">ioos.noaa.gov/project/qartod</span></li>
-      <li>NetCDF Climate and Forecast (CF) Conventions. <span class="why">Read defensively; assumptions recorded.</span><span class="url">cfconventions.org</span></li>
+  <div class="col" style="gap:8px">
+    <h2 style="margin:0">Standards and methods</h2>
+    <ol class="refs" style="counter-reset: ref 9">
+      <li>Wong et al., Argo Quality Control Manual. <span class="why">QC flags, range test.</span><span class="url">doi.org/10.13155/33951</span></li>
+      <li>U.S. IOOS QARTOD manuals. <span class="why">Glider QC.</span><span class="url">ioos.noaa.gov/project/qartod</span></li>
+      <li>CF Conventions for NetCDF. <span class="why">Read defensively.</span><span class="url">cfconventions.org</span></li>
       <li>OGC Web Map Service 1.3.0. <span class="why">The WMS endpoint.</span><span class="url">ogc.org/standards/wms</span></li>
-      <li>IOC, SCOR, IAPSO (2010), TEOS-10 seawater equation. <span class="why">Pressure to depth, heat capacity.</span><span class="url">teos-10.org</span></li>
-      <li>Leipper &amp; Volgenau (1972), Hurricane heat potential of the Gulf of Mexico, J. Phys. Oceanogr. 2. <span class="why">Heat above 26 °C.</span><span class="url">doi.org/10.1175/1520-0485(1972)002&lt;0218:HHPOTG&gt;2.0.CO;2</span></li>
-      <li>Thyng et al. (2016), True colors of oceanography, Oceanography 29(3). <span class="why">cmocean palettes.</span><span class="url">doi.org/10.5670/oceanog.2016.66</span></li>
-      <li>CesiumJS <span class="mono">VoxelPrimitive</span> reference. <span class="why">The volume renderer (experimental, pinned).</span><span class="url">cesium.com/learn/cesiumjs/ref-doc/VoxelPrimitive.html</span></li>
-      <li>xarray and FastAPI documentation. <span class="why">Ingest and API.</span><span class="url">docs.xarray.dev · fastapi.tiangolo.com</span></li>
-      <li>Unidata NetCDF. <span class="why">The file format the brief names.</span><span class="url">unidata.ucar.edu/software/netcdf</span></li>
+      <li>IOC, SCOR, IAPSO (2010), TEOS-10. <span class="why">Density, sound speed.</span><span class="url">teos-10.org</span></li>
+      <li>Leipper &amp; Volgenau (1972), J. Phys. Oceanogr. 2. <span class="why">Heat above 26 °C.</span><span class="url">doi.org/10.1175/1520-0485(1972)002&lt;0218:HHPOTG&gt;2.0.CO;2</span></li>
+      <li>Thyng et al. (2016), Oceanography 29(3). <span class="why">cmocean palettes.</span><span class="url">doi.org/10.5670/oceanog.2016.66</span></li>
+      <li>CesiumJS. <span class="why">The globe and renderer.</span><span class="url">cesium.com/platform/cesiumjs</span></li>
+    </ol>
+  </div>
+  <div class="col" style="gap:8px">
+    <h2 style="margin:0">What the course cites</h2>
+    <ol class="refs" style="counter-reset: ref 17">
+      <li>Gray (1968), Mon. Weather Rev. 96, 669–700. <span class="why">Cyclones need water above ~26 °C.</span></li>
+      <li>Price (1981), J. Phys. Oceanogr. 11, 153–175. <span class="why">A cyclone cools the sea.</span></li>
+      <li>Schott &amp; McCreary (2001), Prog. Oceanogr. 51, 1–123. <span class="why">The monsoon current reverses.</span></li>
+      <li>India Meteorological Department, report on Super Cyclonic Storm Amphan (2020). <span class="why">Landfall, 20 May.</span></li>
+      <li>WMO Guide to Wave Analysis and Forecasting (WMO-No. 702). <span class="why">Wind makes waves.</span></li>
+      <li>Argo Program, "How Argo floats work". <span class="why">Floats.</span><span class="url">argo.ucsd.edu</span></li>
+      <li>SIH 2026 problem statement 26067, quoted verbatim. <span class="url">github.com/Kukyos/VVater/blob/main/docs/01-problem-statement.md</span></li>
     </ol>
   </div>
 </div>

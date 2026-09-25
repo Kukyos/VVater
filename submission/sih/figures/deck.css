@@ -126,3 +126,39 @@ svg text { font-family: "IBM Plex Sans", sans-serif; }
 .points.big li { padding: 22px 0; font-size: 42px; }
 .points.big li span { font-size: 38px; }
 .risks td { font-size: 40px; padding-top: 30px; padding-bottom: 30px; }
+
+/* ---------------------------------------------------------------- v2 deck */
+.hero { display: flex; flex-direction: column; min-height: 0; }
+.hero img { flex: 1; min-height: 0; object-fit: cover; }
+.hero figcaption { font-size: 35px; }
+.points.tight li { padding: 10px 0; font-size: 37px; }
+.points.tight li span { font-size: 34px; }
+.tiles { display: grid; grid-template-columns: 1fr 1fr; gap: 26px 30px; flex: 1; min-height: 0; }
+.tiles figure { display: flex; flex-direction: column; min-height: 0; }
+.tiles img { width: 100%; flex: 1; min-height: 0; object-fit: cover; display: block; border: 2px solid #0c0d0f; }
+.tiles figcaption { font-size: 34px; color: var(--muted); line-height: 1.28; margin-top: 8px; }
+.tiles figcaption b { color: var(--navy); display: block; font-size: 38px; }
+.brief td { font-size: 35px; padding: 15px 16px 15px 0; }
+.brief td:first-child { white-space: normal; width: 42%; }
+.brief td:first-child::before { content: "\2713  "; color: var(--green); font-weight: 600; }
+.stack { font-size: 33px; color: var(--muted); line-height: 1.32; border-top: 6px solid var(--navy); padding-top: 14px; margin-top: auto; }
+.stack b { color: var(--navy); margin-right: 10px; }
+.aud { gap: 16px; }
+.aud h2 { margin: 0; }
+.aud .shot img { height: 560px; object-fit: cover; }
+.pair { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+.pair img { width: 100%; height: 560px; object-fit: cover; display: block; border: 2px solid #0c0d0f; }
+.pair figcaption { font-size: 34px; color: var(--muted); margin-top: 6px; text-align: center; }
+.cap { font-size: 35px; color: var(--muted); line-height: 1.32; }
+.cap b { color: var(--ink); }
+.aud .points li { padding: 10px 0; font-size: 37px; }
+.aud .points li span { font-size: 34px; }
+.next { display: flex; gap: 50px; align-items: baseline; background: var(--panel); padding: 20px 34px; font-size: 36px; color: var(--muted); }
+.next b { color: var(--navy); font-size: 38px; text-transform: uppercase; letter-spacing: .04em; }
+.next span::before { content: "·  "; color: var(--faint); }
+/* v2 per-slide fit, checked by figures.py --check and by eye */
+.feas .risks td { font-size: 37px; padding-top: 18px; padding-bottom: 18px; }
+.aud .shot img, .pair img { height: 900px; }
+.refcols .refs li { padding-top: 30px; padding-bottom: 30px; }
+.refcols .refs li::before { top: 30px; }
+.brief td { padding-top: 24px; padding-bottom: 24px; font-size: 37px; }

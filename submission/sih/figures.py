@@ -1,20 +1,21 @@
 """Write the five slide bodies as HTML, with every number read from the eval harness.
 
     python -m server.eval.run_eval --json    # first, to refresh data/eval-latest.json
+    node submission/sih/capture.cjs          # the screenshots (see docs/16-submission.md)
     python submission/sih/figures.py         # -> figures/body-*.html
     python submission/sih/render.py          # -> figures/body-*.png
     python submission/sih/figures.py --check # every body filled, no empty bands
     python submission/sih/build.py           # -> final/VVater-SIH2026.pptx
 
-The first rule in docs/00-start-here.md ("The one architectural rule") is that no figure appears anywhere the harness did not produce.
-That rule is only real if the deck *reads* the harness output rather than quoting it from
-memory, so every number below comes out of `data/eval-latest.json` and a missing key is a
-crash rather than a plausible-looking wrong number.
+The first rule in docs/00-start-here.md ("The one architectural rule") is that no figure
+appears anywhere the harness did not produce. That rule is only real if the deck *reads*
+the harness output rather than quoting it from memory, so every number below comes out of
+`data/eval-latest.json` and a missing key is a crash rather than a plausible-looking wrong
+number.
 
-Who reads this: a judge who is not an oceanographer has to understand the problem and the
-answer from slide 2 alone; an INCOIS forecaster has to find something they did not know.
-So each slide carries a plain-language layer (what, why, for whom) and a technical layer
-(how, measured), and every picture is a capture of the running build.
+Who reads this: an evaluator who will not open the live site. Every slide carries a real
+capture of the running build, and each caption says what the picture proves. The text is
+points, not paragraphs.
 """
 
 import json
@@ -26,8 +27,21 @@ FIGURES = Path(__file__).resolve().parent / "figures"
 EVAL = ROOT / "data" / "eval-latest.json"
 REPO = "github.com/Kukyos/VVater"
 
-SHOTS = ["shot-workspace.png", "shot-region.png", "shot-map.png", "shot-simple.png",
-         "shot-fly.png", "shot-resid.png"]
+# Captures from capture.cjs, and the crop of each that a slide shows: (left, top, right,
+# bottom) in the capture's own pixels. Crops of real captures, never mock-ups.
+CROPS = {
+    "hero": ("shot-hero.png", (250, 120, 3092, 1560)),
+    "floats": ("shot-float.png", (1200, 560, 3200, 1760)),
+    "anywhere": ("shot-gulf.png", (0, 150, 3092, 1680)),
+    "planet": ("shot-globe.png", (300, 0, 2800, 1400)),
+    "assistant": ("shot-assistant.png", (600, 70, 3200, 1500)),
+    "before": ("shot-amphan-before.png", (200, 0, 2892, 1680)),
+    "after": ("shot-amphan-after.png", (200, 0, 2892, 1680)),
+    "learn": ("shot-learn.png", (0, 70, 3200, 1760)),
+    "fishing": ("shot-fishing.png", (0, 70, 3200, 1760)),
+    "immersive": ("shot-immersive.png", (160, 180, 3040, 1680)),
+    "residual": ("shot-residual.png", (0, 200, 3092, 1600)),
+}
 BODIES = ["body-solution", "body-technical", "body-feasibility", "body-impact",
           "body-references"]
 
@@ -44,12 +58,12 @@ def signed(value, digits=1) -> str:
     return f"{float(value):+.{digits}f}".replace("-", "&#8722;")
 
 
-def crop_assistant() -> None:
-    """The assistant panel from the workspace capture, so slide 2 shows it at a readable
-    size. A crop of a real capture, not a mock-up."""
+def crops() -> None:
     from PIL import Image
-    Image.open(FIGURES / "shot-workspace.png").crop((2352, 150, 3200, 1045)).save(
-        FIGURES / "shot-assistant.png")
+    for name, (shot, box) in CROPS.items():
+        # JPEG: the Canva copy embeds these as they are, and PNG made it 32 MB.
+        Image.open(FIGURES / shot).convert("RGB").crop(box).save(
+            FIGURES / f"crop-{name}.jpg", quality=90)
 
 
 def load() -> dict:
@@ -57,10 +71,14 @@ def load() -> dict:
         raise SystemExit(
             f"missing {EVAL.relative_to(ROOT)}. Run: python -m server.eval.run_eval --json"
         )
-    missing = [s for s in SHOTS if not (FIGURES / s).exists()]
+    missing = sorted({s for s, _ in CROPS.values() if not (FIGURES / s).exists()})
     if missing:
-        raise SystemExit(f"missing screenshots {missing}; see docs/16-submission.md")
-    return json.loads(EVAL.read_text(encoding="utf-8"))
+        raise SystemExit(f"missing screenshots {missing}; run submission/sih/capture.cjs")
+    e = json.loads(EVAL.read_text(encoding="utf-8"))
+    if "v2" not in e or "unavailable" in e["v2"].get("catalog", {}) or "hosting" not in e["v2"]:
+        raise SystemExit("eval-latest.json has no complete v2 section; rerun the harness "
+                         "with the network up, after python -m server.tools.measure_hosting")
+    return e
 
 
 def page(name: str, body: str) -> None:
@@ -108,13 +126,15 @@ def band_chart(bands: dict, width=1180, height=620) -> str:
     return "".join(out)
 
 
-def flowchart(empty_pct: str) -> str:
-    """The pipeline with its three decisions, as the brief asks: a flow chart.
+def flowchart(v2: dict) -> str:
+    """How a cube is made, and what happens to data that fails a test.
 
-    Each decision is one the code really makes; the "no" branch of each is the part a
-    reviewer should notice, because it is where most tools quietly drop or invent data.
+    The left lane is the cube generator: only the ARCO chunks a box touches are read. The
+    right lane is the floats. Diamonds are decisions the code makes; the red and amber
+    branches are where most tools quietly drop a reading or paint over it.
     """
-    W, H = 1840, 1420
+    cat = v2["catalog"]
+    W, H = 2260, 1440
     s = [f'<svg width="{W}" height="{H}" viewBox="0 0 {W} {H}">',
          '<defs><marker id="a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">'
          '<path d="M0 0L10 5L0 10z" fill="#4F5B69"/></marker></defs>']
@@ -131,7 +151,7 @@ def flowchart(empty_pct: str) -> str:
                  f'fill="#FFF8E6" stroke="#B9770E" stroke-width="3"/>')
         top = cy - (len(lines) - 1) * 22 + 12
         for i, line in enumerate(lines):
-            s.append(f'<text x="{cx}" y="{top + i * 44}" font-size="36" font-weight="600" text-anchor="middle" fill="#16202B">{line}</text>')
+            s.append(f'<text x="{cx}" y="{top + i * 44}" font-size="35" font-weight="600" text-anchor="middle" fill="#16202B">{line}</text>')
 
     def arrow(points, label=None, at=None, colour="#4F5B69"):
         pts = " ".join(f"{x},{y}" for x, y in points)
@@ -140,42 +160,67 @@ def flowchart(empty_pct: str) -> str:
             lx, ly = at
             s.append(f'<text x="{lx}" y="{ly}" font-size="34" font-weight="600" fill="{colour}">{label}</text>')
 
-    L, BW = 20, 840          # spine column
+    # ---- the cube lane
+    L, BW = 0, 900
     cx = L + BW / 2
-    R = 1000                  # branch column
-    RW = W - R - 10
+    box(L, 0, BW, 170, "1  You ask: box · day · variable",
+        [f"anywhere, {cat['first_day'][:4]} to {cat['last_day']}, {cat['variables']} variables",
+         "by hand, by a named scenario, or by the assistant"])
+    arrow([(cx, 170), (cx, 214)])
+    diamond(cx, 306, 560, 184, ["Reanalysis covers", "that day?"])
+    arrow([(cx + 280, 306), (BW + 50, 306)], "no", (cx + 300, 292), "#B9770E")
+    box(BW + 50, 238, 560, 136, "Analysis & forecast", ["labelled forecast on screen"],
+        fill="#FEF5E7", edge="#B9770E")
+    arrow([(cx, 398), (cx, 446)], "yes", (cx + 16, 432))
+    box(L, 446, BW, 210, "2  Read only the chunks the box touches",
+        ["Copernicus ARCO zarr stores on S3,", "cached on disk: no copy of the ocean,",
+         "a day seen once opens from the cache"])
+    # the chunk idea, drawn: the store's grid, the box, the chunks actually read
+    gx, gy, cs = BW + 70, 452, 44
+    for i in range(10):
+        for j in range(5):
+            hit = 3 <= i <= 6 and 1 <= j <= 3
+            s.append(f'<rect x="{gx + i * cs}" y="{gy + j * cs}" width="{cs - 4}" height="{cs - 4}" '
+                     f'fill="{"#2E86C1" if hit else "#E6ECF3"}"/>')
+    s.append(f'<rect x="{gx + 3 * cs + 18}" y="{gy + cs + 12}" width="{3 * cs + 6}" height="{2 * cs + 12}" '
+             f'fill="none" stroke="#C0392B" stroke-width="5"/>')
+    s.append(f'<text x="{gx}" y="{gy + 5 * cs + 34}" font-size="32" fill="#4F5B69">'
+             f'<tspan fill="#C0392B" font-weight="600">box</tspan> · '
+             f'<tspan fill="#2E86C1" font-weight="600">chunks read</tspan></text>')
+    arrow([(cx, 656), (cx, 700)])
+    box(L, 700, BW, 170, "3  Native levels only, then derived fields",
+        ["never more depth levels than the model has", "TEOS-10 density and speed of sound"])
+    arrow([(cx, 870), (cx, 914)])
+    diamond(cx, 1006, 560, 184, ["Value inside the", "published range?"])
+    arrow([(cx + 280, 1006), (BW + 50, 1006)], "no", (cx + 300, 992), "#C0392B")
+    box(BW + 50, 938, 560, 136, "Masked and counted", ["in the provenance panel"],
+        fill="#FDEDEC", edge="#C0392B")
+    arrow([(cx, 1098), (cx, 1142)], "yes", (cx + 16, 1128))
+    box(L, 1142, BW, 124, "4  float32 cube → six painted faces", [])
+    s.append(f'<text x="{L + 30}" y="{1142 + 96}" font-size="34" fill="#4F5B69">each face a section through the data</text>')
 
-    box(L, 0, BW, 170, "1  Fetch", ["INCOIS analysis · Copernicus GLORYS12", "Argo floats · IOOS gliders · your CSV/TSV"])
-    arrow([(cx, 170), (cx, 222)])
-    box(L, 222, BW, 170, "2  Read and normalise", ["NetCDF (xarray) and text (by column name)", "odd units and axes fixed, every fix recorded"])
-    arrow([(cx, 392), (cx, 432)])
-    diamond(cx, 530, 600, 196, ["Level passes", "its QC flag?"])
-    arrow([(cx + 300, 530), (R, 530)], "no", (cx + 330, 515), "#C0392B")
-    box(R, 452, RW - 130, 156, "Drawn red as rejected", ["kept on the chart, never silently dropped"], fill="#FDEDEC", edge="#C0392B")
-    arrow([(cx, 628), (cx, 680)], "yes", (cx + 16, 666))
-    box(L, 680, BW, 170, "3  Regrid and pair", ["depth levels ≤ what the source has", "each cast vs nearest analysis, ±5 days"])
-    arrow([(cx, 850), (cx, 890)])
-    diamond(cx, 988, 600, 196, ["Grid cell has a", "measurement?"])
-    arrow([(cx + 300, 988), (R, 988)], "no", (cx + 330, 973), "#B9770E")
-    box(R, 910, RW - 130, 156, "Left empty, not guessed", [f"{empty_pct}% of the volume, shown as such"], fill="#FEF5E7", edge="#B9770E")
-    arrow([(cx, 1086), (cx, 1130)], "yes", (cx + 16, 1118))
-    box(L, 1130, BW, 120, "4  Compare: observed − model", [])
-    s.append(f'<text x="{L + 30}" y="{1130 + 96}" font-size="34" fill="#4F5B69">residual per cell · cyclone heat potential</text>')
+    # ---- the float lane
+    R, RW = 1620, W - 1620
+    rcx = R + RW / 2
+    box(R, 0, RW, 170, "Floats in the box", ["Ifremer Argo ERDDAP,", "core and BGC, ±2 days"],
+        fill="#EAF2FB", edge="#2E86C1")
+    arrow([(rcx, 170), (rcx, 214)])
+    diamond(rcx, 306, 560, 184, ["Level passes", "its QC flag?"])
+    arrow([(rcx, 398), (rcx, 446)], "no", (rcx + 16, 432), "#C0392B")
+    box(R, 446, RW, 136, "Drawn red", ["kept, never dropped"], fill="#FDEDEC", edge="#C0392B")
+    arrow([(rcx, 582), (rcx, 700)], "kept", (rcx + 16, 650), "#C0392B")
+    arrow([(rcx - 280, 306), (R - 20, 306), (R - 20, 700), (R, 700)], "yes", (R - 90, 290))
+    box(R, 700, RW, 210, "Stick in the cube", ["coloured on the cube's bar;",
+                                                "click: co-located with the", "model on its own day"],
+        fill="#EAF2FB", edge="#2E86C1")
+    arrow([(rcx, 910), (rcx, 1330)])
 
-    # the currents branch, off the fetch step
-    diamond(R + 220, 150, 440, 196, ["Source carries", "currents (u, v)?"])
-    arrow([(L + BW, 85), (R + 10, 85), (R + 10, 150), (R + 10, 150)])
-    arrow([(R + 440, 150), (R + 480, 150)], "yes", (R + 428, 112))
-    box(R + 480, 60, RW - 480, 180, "Streamlines", ["RK2 on the server,", "at the slice depth"], fill="#EAF2FB", edge="#2E86C1")
-    arrow([(R + 220, 248), (R + 220, 300)], "no", (R + 236, 285), "#4F5B69")
-    box(R, 300, 520, 124, "Control says why", ["INCOIS has no u, v"], fill="#F1F4F8", edge="#A9B2BE")
-
-    # everything lands in the API and the viewer
-    y = 1290
-    box(0, y, W, 130, "5  FastAPI  →  browser (CesiumJS)", [], fill="#1F4E79", edge="#1F4E79", ink="#FFFFFF")
-    s.append(f'<text x="30" y="{y + 100}" font-size="34" fill="#CFE3F5">volumes as float32 · WMS · CSV upload · assistant  →  Simple globe · Region 3D · Map 2D · Fly · profiles</text>')
-    arrow([(cx, 1250), (cx, y)])
-    arrow([(W - 60, 240), (W - 60, y)])
+    # ---- everything lands in the API and the browser
+    y = 1330
+    box(0, y, W, 110, "", [], fill="#1F4E79", edge="#1F4E79")
+    s.append(f'<text x="30" y="{y + 70}" font-size="38" font-weight="600" fill="#FFFFFF">5  FastAPI → CesiumJS in any browser'
+             f'<tspan font-weight="400" fill="#CFE3F5">   ·  Region 3D · Map 2D · Globe · Fly · Immersive · Learn · Assistant</tspan></text>')
+    arrow([(cx, 1266), (cx, y)])
     s.append("</svg>")
     return "".join(s)
 
@@ -185,224 +230,202 @@ def flowchart(empty_pct: str) -> str:
 def main() -> None:
     FIGURES.mkdir(parents=True, exist_ok=True)
     e = load()
-    crop_assistant()
+    crops()
 
     bands = e["depth_bands"]
-    shallow, deep = bands["0-300 m"], bands["300-950 m"]
+    shallow = bands["0-300 m"]
     res, field, argo, glider = e["residual"], e["field"], e["argo"], e["glider"]
-    coloc, rng, cur = e["colocation"], e["field_range_test"], e["currents"]
-    tchp, text, regrid = e["tchp"], e["text_ingest"], e["regrid"]
-    levels = regrid["output_levels"]
+    rng, tchp = e["field_range_test"], e["tchp"]
     ta, tg = tchp["argo"], tchp["glider"]
+    v2 = e["v2"]
+    cat, host = v2["catalog"], v2["hosting"]
+    before, after, casts = v2["amphan_before"], v2["amphan_after"], v2["amphan_before_casts"]
     empty_pct = f"{100 - float(res['coverage_percent']):.0f}"
-    # The region box, as the harness recorded it: width along its middle latitude.
-    import math
-    (lon0, lon1), (lat0, lat1) = e["region"]["lon"], e["region"]["lat"]
-    width_km = round((lon1 - lon0) * 111.32 * math.cos(math.radians((lat0 + lat1) / 2)) / 100) * 100
-    depth_km = float(regrid["z_max_m"]) / 1000
 
     # ============================================================ 2 solution
     page("body-solution", f"""
-<p class="lead" style="font-size:56px">Forecasters get the ocean model and the measurements in separate tools, as flat maps.
-<b>VVater puts both in one 3D scene in the browser, and you can ask it questions or fly over it.</b></p>
-<div class="cols grow" style="grid-template-columns: 1180px 1fr; gap: 90px">
-  <div class="col" style="gap:14px">
-    <h2 style="margin:0">The problem</h2>
-    <ul class="points">
-      <li><b>The ocean is 3D; the tools are flat</b><span>A cyclone feeds on a warm layer tens of
-        metres thick. A surface map cannot show how thick.</span></li>
-      <li><b>Model and measurements live apart</b><span>The model in one program, float and glider
-        files in another; comparing them is done by eye.</span></li>
+<p class="lead" style="font-size:56px">Cut a block out of the ocean <b>anywhere on Earth, on any day
+since {cat["first_day"][:4]}</b>, and look at it from the side, with the real Argo floats
+standing inside it. In any browser.</p>
+<div class="cols grow" style="grid-template-columns: 2280px 1fr; gap: 80px">
+  <figure class="shot hero">
+    <img src="crop-hero.jpg">
+    <figcaption><b>The Bay of Bengal on {before["day"]}, two days before Cyclone Amphan formed</b>,
+    cut open to 1,000 m. The warm lid, the thermocline under it and the cold water below are
+    drawn on the model's own {before["levels"]} depth levels. Each dashed stick is an Argo float that
+    surfaced within two days, coloured by what it measured ({casts["found"]} floats; a level that
+    fails QC is drawn red, never dropped). Model: Copernicus GLORYS12, 1/12°.</figcaption>
+  </figure>
+  <div class="col" style="gap:16px">
+    <h2 style="margin:0">The gap the brief names</h2>
+    <ul class="points tight">
+      <li><b>Tools are flat 2D or desktop-bound</b><span>a cyclone feeds on a warm layer tens of metres thick; a map cannot show it</span></li>
+      <li><b>Model and instruments live apart</b><span>forecasters toggle between packages to compare them</span></li>
     </ul>
-    <h2 style="margin:18px 0 0">What we built</h2>
-    <ul class="points">
-      <li><b>One link, no install</b><span>any browser; deployable on INCOIS servers</span></li>
-      <li><b>Model and measurements in one 3D scene</b><span>the INCOIS model with
-        {argo["profiles"]} Argo float profiles and {glider["casts"]} glider casts</span></li>
-      <li><b>Click a float, see the gap</b><span>its profile against the model, in °C and in cyclone
-        heat potential</span></li>
-      <li><b>Bad readings stay visible</b><span>failed quality checks drawn red, never dropped</span></li>
-    </ul>
-    <div class="thumbs" style="grid-template-columns: repeat(3, 1fr); margin-top:10px">
-      <figure><img src="shot-simple.png"><figcaption><b>Simple</b>the whole ocean</figcaption></figure>
-      <figure><img src="shot-region.png"><figcaption><b>Region 3D</b>the water column</figcaption></figure>
-      <figure><img src="shot-map.png"><figcaption><b>Map 2D</b>any depth</figcaption></figure>
-    </div>
-  </div>
-  <div class="col" style="gap:14px">
-    <h2 style="margin:0">What is new</h2>
-    <div class="cols grow" style="grid-template-columns: 900px 1fr; gap: 60px">
-      <figure class="shot novel">
-        <h3>1 · Ask the ocean in plain words</h3>
-        <img src="shot-assistant.png">
-        <figcaption><b>Answers from the data and drives the viewer.</b> Here it opened the float,
-          drew its profile and compared it with the model. Any number it cannot trace to the
-          data is flagged.</figcaption>
-      </figure>
-      <figure class="shot novel">
-        <h3>2 · Fly over the Bay like a plane</h3>
-        <img src="shot-fly.png" style="aspect-ratio: 16 / 9; object-fit: cover; object-position: 50% 70%">
-        <figcaption><b>A flight view with pilot controls</b>: speed, turn, altitude 8–250 km.
-          The 3D water column, the currents and every float pass underneath at 40× depth.</figcaption>
-        <ul class="points" style="margin-top:18px">
-          <li><b>Why it matters</b><span>a 2,000 m-deep ocean becomes something a student, a
-            forecaster or a minister can see and move through, not a stack of flat maps</span></li>
-          <li><b>How to fly</b><span>W/S speed · A/D turn · R/F altitude · drag to steer</span></li>
-        </ul>
-      </figure>
+    <h2 style="margin:10px 0 0">What is new</h2>
+    <div class="tiles">
+      <figure><img src="crop-anywhere.jpg"><figcaption><b>Any ocean, any day</b>{cat["variables"]} variables, physics and biogeochemistry. Here the Gulf Stream.</figcaption></figure>
+      <figure><img src="crop-floats.jpg"><figcaption><b>Floats inside the model</b>click one: its dive against the model, with QC, data mode and file</figcaption></figure>
+      <figure><img src="crop-planet.jpg"><figcaption><b>One colour bar for the planet</b>the globe in the cube's colours, currents and winds flowing</figcaption></figure>
+      <figure><img src="crop-assistant.jpg"><figcaption><b>Ask it, and it acts</b>"make a cube of oxygen in the Arabian Sea": built, and the control ringed</figcaption></figure>
     </div>
   </div>
 </div>
 """)
 
     # ============================================================ 3 technical
+    rows = [
+        ("3D volume, depth slices, time steps", "cube faces as sections, cut planes, a day-by-day timeline; the INCOIS voxel volume"),
+        ("Isosurface", "20 °C isotherm, one click (INCOIS Bay volume)"),
+        ("Argo, glider, BGC, click for a profile", "core and BGC floats, a glider, CSV casts; profile against the model"),
+        ("NetCDF and delimited-text parsers", "xarray, and a text reader checked cast for cast against the NetCDF path"),
+        ("Colour bar editor", "palette, min/max, linear or log"),
+        ("Opacity, vertical exaggeration", "both sliders, the stretch printed on screen"),
+        ("REST API, no client install", "FastAPI; the browser is the whole client"),
+        ("Open standards", "OGC WMS; CF read defensively. WCS not built"),
+        ("New sensors, variables, ML products", "one parser function and one config line each"),
+        ("Outreach and e-learning", "a six-lesson course, immersive view, cinematic tour"),
+    ]
+    table = "".join(f'<tr><td>{a}</td><td class="why">{b}</td></tr>' for a, b in rows)
     page("body-technical", f"""
-<div class="cols grow" style="grid-template-columns: 1840px 1fr; gap: 90px">
-  <div class="col">
-    <h2 style="margin:0">From raw files to the scene — and what happens to bad or missing data</h2>
-    {flowchart(empty_pct)}
-    <p class="muted" style="font-size:36px">Diamonds are decisions the code makes. The red and amber
-    branches are where most tools quietly drop a bad reading or paint over a gap; here both stay
-    on screen, labelled.</p>
+<div class="cols grow" style="grid-template-columns: 2260px 1fr; gap: 90px">
+  <div class="col" style="gap:14px">
+    <h2 style="margin:0">How a cube is made, and what happens to data that fails a test</h2>
+    {flowchart(v2)}
   </div>
-  <div class="col" style="gap:22px">
-    <h2 style="margin:0">What we used, and why</h2>
-    <ul class="points big">
-      <li><b>CesiumJS</b><span>a real 3D globe with a built-in volume renderer</span></li>
-      <li><b>TypeScript + Vite</b><span>the viewer; no heavy UI framework</span></li>
-      <li><b>Python: FastAPI + xarray</b><span>reads the NetCDF and text files the brief names</span></li>
-      <li><b>Raw float32 volumes</b><span>one full 3D timestep is {n2(field["float32_mb"])} MB, straight to the GPU</span></li>
-      <li><b>OGC WMS</b><span>the same layers open in QGIS or any national portal</span></li>
-      <li><b>Groq LLM + our own tools</b><span>the assistant can only answer through our data API</span></li>
-    </ul>
-    <figure class="shot" style="margin-top:10px"><img src="shot-resid.png" style="height: 500px; object-fit: cover; object-position: 50% 45%">
-      <figcaption><b>Step 4 on screen:</b> each block is a place someone measured, coloured by
-      measured minus model (red warmer, blue colder). Unmeasured water stays empty.</figcaption></figure>
+  <div class="col" style="gap:14px">
+    <h2 style="margin:0">The brief, line by line</h2>
+    <table class="brief"><tr><th>The brief asks for</th><th>Built as</th></tr>{table}</table>
+    <p class="stack"><b>Stack</b> CesiumJS · TypeScript + Vite · Python FastAPI + xarray ·
+    Copernicus ARCO · INCOIS and Ifremer ERDDAP · OGC WMS · an LLM that can only reach the data
+    through our own API</p>
   </div>
 </div>
 """)
 
     # ============================================================ 4 feasibility
     page("body-feasibility", f"""
-<div class="stats" style="grid-template-columns: repeat(3, 1fr); gap: 60px">
-  <div class="stat"><b>{argo["profiles"]} + {glider["casts"]}</b><span>Argo float profiles and glider casts, paired with the model</span></div>
-  <div class="stat"><b>{n2(field["float32_mb"])} MB</b><span>one full 3D timestep, as sent to the browser</span></div>
-  <div class="stat"><b>{res["build_seconds"]} s</b><span>to compare {res["casts"]} casts with the model and build the 3D error layer</span></div>
+<div class="stats" style="grid-template-columns: repeat(4, 1fr); gap: 60px">
+  <div class="stat"><b>{cat["variables"]}</b><span>variables, every day from {cat["first_day"]} to {cat["last_day"]}, forecast days labelled</span></div>
+  <div class="stat"><b>{before["open_seconds_disk_cache"]} s</b><span>to open the Amphan cube from the disk cache ({before["payload_mb"]} MB to the browser)</span></div>
+  <div class="stat"><b>{host["peak_mb"]} MB</b><span>peak memory over a full cold session: {host["requests_ok"]} of {host["requests"]} requests answered</span></div>
+  <div class="stat"><b>{argo["profiles"]} + {glider["casts"]}</b><span>Argo profiles and glider casts co-located with the INCOIS model</span></div>
 </div>
-<div class="cols grow feas" style="grid-template-columns: 1.1fr 1fr; gap: 110px">
-  <div class="col" style="gap:14px">
+<div class="cols grow feas" style="grid-template-columns: 1.05fr 1fr; gap: 100px">
+  <div class="col" style="gap:12px">
     <h2 style="margin:0">Measured finding: model error by depth</h2>
-    {band_chart(bands, width=2000, height=1230)}
+    {band_chart(bands, width=1900, height=1110)}
     <div class="legend"><i style="background:#A9B2BE"></i>Argo (the model already used them)
       <i style="background:#1F4E79"></i>Glider (independent)</div>
-    <p style="font-size:38px" class="muted">Below 300 m the model and the instruments agree. In the
-    top 300 m — the warm layer a cyclone feeds on — the independent glider finds an error of
-    <b class="red">{n2(shallow["glider"]["rmse"])} °C</b>. VVater makes that gap visible.</p>
+    <p style="font-size:37px" class="muted">Below 300 m the INCOIS model and the instruments agree.
+    In the top 300 m, the warm layer a cyclone feeds on, the independent glider finds an error of
+    <b class="red">{n2(shallow["glider"]["rmse"])} °C</b>. A single pooled number hides it; the 3D
+    view shows it.</p>
   </div>
-  <div class="col" style="gap:14px">
+  <div class="col" style="gap:12px">
     <h2 style="margin:0">Risks we hit, and what we did</h2>
     <table class="risks">
-      <tr><th>Risk</th><th>Handled by</th></tr>
-      <tr><td>Brief's data links are dead</td><td class="why">Both are <span class="mono">ftp://</span> and blocked; replaced with tested HTTPS mirrors.</td></tr>
-      <tr><td>Bad float readings</td><td class="why">{argo["levels_rejected"]} of {argo["levels"]:,} levels fail QC; drawn red, never dropped.</td></tr>
-      <tr><td>Files not quite standard</td><td class="why">Odd units and axes read defensively; every fix recorded with the data.</td></tr>
-      <tr><td>Unknown GPUs at INCOIS</td><td class="why">Four quality tiers, picked by measuring real frames at start-up.</td></tr>
-      <tr><td>Copernicus needs an account</td><td class="why">INCOIS data needs none and is the default; Copernicus only adds currents.</td></tr>
+      <tr><td>The brief's data links are dead</td><td class="why">Both are <span class="mono">ftp://</span> and blocked; replaced with tested HTTPS sources.</td></tr>
+      <tr><td>The model fails QC too</td><td class="why">{rng["failed"]} INCOIS cells read above 40 °C at depth; masked and counted, reported.</td></tr>
+      <tr><td>Bad float readings</td><td class="why">{argo["levels_rejected"]} of {argo["levels"]:,} levels fail QC in the Bay; drawn red, never dropped.</td></tr>
+      <tr><td>An AI that invents numbers</td><td class="why">It reaches data only through our API; an untraceable number is flagged on screen.</td></tr>
+      <tr><td>A small host ran out of memory</td><td class="why">Shared S3 client and capped caches; we ask for 1 GB, measured {host["peak_mb"]} MB peak.</td></tr>
     </table>
-    <div class="card" style="margin-top:14px"><h3>Runs on what INCOIS has</h3><p>One Python
-    process and static files. Any modern browser, no install, no account.</p></div>
+    <figure class="shot"><img src="crop-residual.jpg" style="height:660px; object-fit:cover">
+      <figcaption><b>Where the INCOIS model is wrong.</b> Each block is a place someone measured,
+      coloured by measured minus model. Unmeasured water stays empty: {empty_pct}% of it.</figcaption></figure>
   </div>
 </div>
 """)
 
     # ============================================================ 5 impact
     page("body-impact", f"""
-<div class="cols grow" style="grid-template-columns: 1fr 1fr 1.05fr; gap: 70px">
-  <div class="col">
-    <h2 style="margin:0">For the cyclone forecaster</h2>
-    <div class="card"><span class="num">{signed(tg["mean_difference_kj_cm2"])}</span><p>kJ/cm² —
-      model minus measured <b>cyclone heat potential</b> along the independent glider track
-      ({tg["with_d26"]} casts, one deployment; measured mean {n1(tg["mean_observed_kj_cm2"])}). Against
-      Argo, which the model already absorbs: {signed(ta["mean_difference_kj_cm2"])}.</p></div>
+<div class="cols grow" style="grid-template-columns: 1.25fr 1fr 1fr 1fr; gap: 60px">
+  <div class="col aud">
+    <h2>Cyclone forecasters</h2>
+    <div class="pair"><figure><img src="crop-before.jpg"><figcaption>{before["day"]}</figcaption></figure>
+      <figure><img src="crop-after.jpg"><figcaption>{after["day"]}</figcaption></figure></div>
+    <p class="cap"><b>Amphan's cold wake.</b> The same Bay, before and after landfall, on one
+    28–31.5 °C bar: the surface mean fell {n2(v2["amphan_cooling_c"])} °C.</p>
     <ul class="points">
-      <li><b>Fuel, in the unit already used</b><span>heat above 26 °C, per float and per glider cast</span></li>
-      <li><b>20 °C isotherm in one click</b><span>the standard proxy for how deep the warm layer goes</span></li>
-      <li><b>Model and truth side by side</b><span>no second program, no copying numbers between tools</span></li>
-      <li><b>Confidence visible</b><span>uncertain water drawn faint; unmeasured water drawn empty</span></li>
-    </ul>
-    <h2 style="margin:6px 0 0">For INCOIS operations</h2>
-    <ul class="points">
-      <li><b>Search and rescue, fisheries, climate</b><span>currents and temperature at any depth, in the same view</span></li>
-      <li><b>New instruments without re-engineering</b><span>drop a CSV of casts on the globe; it is paired with the model at once</span></li>
-      <li><b>Open standards</b><span>WMS layers open in QGIS and national portals</span></li>
+      <li><b>{signed(tg["mean_difference_kj_cm2"])} kJ/cm²</b><span>model minus measured cyclone heat potential on the independent glider track</span></li>
+      <li><b>Forecast days, labelled</b><span>the cube runs to {cat["last_day"]}</span></li>
     </ul>
   </div>
-  <div class="col">
-    <h2 style="margin:0">For students, public and policy</h2>
-    <div class="card green"><span class="num">{res["coverage_percent"]}%</span><p>of the Bay's
-      water column had a measurement in this window. Shown honestly, that is itself the case
-      for more floats — a sentence a policymaker can repeat.</p></div>
+  <div class="col aud">
+    <h2>Fishermen</h2>
+    <figure class="shot"><img src="crop-fishing.jpg" style="object-position: 0% 50%"></figure>
+    <p class="cap"><b>INCOIS's own Potential Fishing Zone advisories</b>, read as published for all
+    fourteen sectors, next to an indicative zone layer with today's sea state.</p>
     <ul class="points">
-      <li><b>True scale in one click</b><span>the Bay really is a film of water: {depth_km:g} km deep, {width_km:,} km wide. Then 40×, to read it</span></li>
-      <li><b>From planet to profile</b><span>a simple globe, then the Bay in 3D, then fly over it, then one float's dive</span></li>
-      <li><b>Runs in a school's browser</b><span>exhibitions, e-learning and outreach, as the brief asks</span></li>
-      <li><b>Ask it in plain words</b><span>a built-in assistant answers from the data and moves the view for you</span></li>
-    </ul>
-    <h2 style="margin:6px 0 0">Where it goes next</h2>
-    <ul class="points">
-      <li><b>More regions and years</b><span>the region and window are configuration, not code</span></li>
-      <li><b>More sensors</b><span>CTD, moorings, HF radar, ADCP: each one parser</span></li>
-      <li><b>Machine-learning products</b><span>any gridded output renders as another volume</span></li>
+      <li><b>Official first</b><span>the indicator is labelled "not an advisory" everywhere</span></li>
     </ul>
   </div>
-  <div class="col" style="gap:20px">
-    <figure class="shot"><img src="shot-resid.png">
-      <figcaption><b>Where the model is wrong.</b> Each block is a place someone measured, coloured
-      by measured minus model (red warmer, blue colder). Everything else is empty on purpose:
-      {empty_pct}% of the volume.</figcaption></figure>
-    <figure class="shot"><img src="shot-simple.png">
-      <figcaption><b>The Simple view, for everyone else.</b> The world's ocean one layer at a
-      time — temperature, salinity, currents, sea level, mixed layer, ice — on a timeline.</figcaption></figure>
+  <div class="col aud">
+    <h2>Students</h2>
+    <figure class="shot"><img src="crop-learn.jpg" style="object-position: 0% 100%"></figure>
+    <p class="cap"><b>Six lessons for class 8–12</b> on real data: your nearest sea, the ocean's
+    layers, the monsoon current, Amphan, Argo floats.</p>
+    <ul class="points">
+      <li><b>Answers from the cube on screen</b><span>quizzes are checked against the data, never by the language model</span></li>
+    </ul>
+  </div>
+  <div class="col aud">
+    <h2>Public and outreach</h2>
+    <figure class="shot"><img src="crop-immersive.jpg"></figure>
+    <p class="cap"><b>Immersive view and a cinematic tour</b>: the planet's currents and winds on
+    one day, for exhibitions and awareness campaigns.</p>
+    <ul class="points">
+      <li><b>One link, no install</b><span>a school's browser is enough</span></li>
+    </ul>
   </div>
 </div>
+<div class="next"><b>Next</b><span>CTD, moorings, HF radar and ADCP as parsers</span><span>machine-learning fields as more variables</span><span>class results for teachers</span><span>a copy on INCOIS servers</span></div>
 """)
 
     # ============================================================ 6 references
     page("body-references", f"""
 <div class="banner"><span>Source code, docs and every measured number:</span>
   <span class="mono">https://{REPO}</span>
-  <span class="note">public repository · all links below opened 2026-09-23</span></div>
-<div class="cols grow refcols" style="grid-template-columns: 1fr 1fr; gap: 90px">
-  <div class="col" style="gap:10px">
-    <h2 style="margin:0">Data we fetched — each one probed, not assumed</h2>
+  <span class="note">public repository · links below opened 2026-09-25</span></div>
+<div class="cols grow refcols" style="grid-template-columns: 1fr 1fr 1fr; gap: 70px">
+  <div class="col" style="gap:8px">
+    <h2 style="margin:0">Data, each source probed</h2>
     <ol class="refs">
-      <li>INCOIS ERDDAP — Argo 10-day variational analysis (<span class="mono">incois_argo_10d_VAM</span>), temperature and salinity with per-cell error. <span class="why">The primary volume; no credentials.</span><span class="url">erddap.incois.gov.in/erddap/griddap/incois_argo_10d_VAM.html</span></li>
-      <li>Copernicus Marine — GLORYS12 global reanalysis, GLOBAL_MULTIYEAR_PHY_001_030. <span class="why">Currents, and the global surface layer.</span><span class="url">data.marine.copernicus.eu/product/GLOBAL_MULTIYEAR_PHY_001_030</span></li>
-      <li>Argo Global Data Assembly Centre, HTTPS mirror. <span class="why">Float profiles with QC flags and data mode.</span><span class="url">data-argo.ifremer.fr</span></li>
-      <li>U.S. IOOS Glider DAC — Rutgers <i>ru29</i> deployment, NetCDF and CSV. <span class="why">The independent check.</span><span class="url">gliders.ioos.us/erddap</span></li>
-      <li>INCOIS Live Access Server. <span class="why">Named in the brief; reachable, not yet ingested.</span><span class="url">las.incois.gov.in/las</span></li>
-      <li>The brief's two <span class="mono">ftp.ifremer.fr</span> links. <span class="why">Probed: do not connect (port 21). Replaced by 3.</span><span class="url">ftp://ftp.ifremer.fr/ifremer/argo · …/glider/v2</span></li>
-      <li>Argo Program overview, Scripps Institution of Oceanography. <span class="why">What a float is and does.</span><span class="url">argo.ucsd.edu</span></li>
-      <li>Smart India Hackathon 2026, problem statement 26067 (MoES / INCOIS Ocean Valley). <span class="why">Quoted verbatim in the repository.</span><span class="url">github.com/Kukyos/VVater/blob/main/docs/01-problem-statement.md</span></li>
+      <li>Copernicus Marine GLORYS12 reanalysis and global analysis &amp; forecast, physics and PISCES biogeochemistry, read as ARCO stores. <span class="why">The cube.</span><span class="url">data.marine.copernicus.eu/product/GLOBAL_MULTIYEAR_PHY_001_030</span></li>
+      <li>INCOIS ERDDAP, Argo 10-day variational analysis with per-cell error. <span class="why">The Bay volume.</span><span class="url">erddap.incois.gov.in/erddap</span></li>
+      <li>Ifremer Argo ERDDAP, core and synthetic BGC floats. <span class="why">Floats anywhere.</span><span class="url">erddap.ifremer.fr/erddap</span></li>
+      <li>Argo GDAC, HTTPS mirror. <span class="why">Float files, QC flags, data mode.</span><span class="url">data-argo.ifremer.fr</span></li>
+      <li>U.S. IOOS Glider DAC, Rutgers <i>ru29</i>. <span class="why">The independent check.</span><span class="url">gliders.ioos.us/erddap</span></li>
+      <li>INCOIS Potential Fishing Zone advisories. <span class="why">Read as published.</span><span class="url">incois.gov.in/MarineFisheries/TextDataHome?mfid=1</span></li>
+      <li>NCEP GFS 10 m wind via UCAR THREDDS. <span class="why">Wind forecast.</span><span class="url">thredds.ucar.edu</span></li>
+      <li>NASA GIBS Blue Marble relief. <span class="why">Land.</span><span class="url">gibs.earthdata.nasa.gov</span></li>
+      <li>The brief's two <span class="mono">ftp.ifremer.fr</span> links. <span class="why">Do not connect; replaced by 3 and 4.</span></li>
     </ol>
-    <div class="card grey" style="margin-top:6px"><h3>How these links were checked</h3><p>Every
-      URL was opened on 2026-09-23 with a browser user agent and returned HTTP 200, except the two
-      FTP links (dead, listed as such) and the AMS journal page, which refuses scripted requests;
-      its DOI resolves.</p></div>
   </div>
-  <div class="col" style="gap:10px">
-    <h2 style="margin:0">Standards and methods the code follows</h2>
-    <ol class="refs" style="counter-reset: ref 8">
-      <li>Wong et al., Argo Quality Control Manual for CTD and Trajectory Data. <span class="why">Range test and QC flags.</span><span class="url">doi.org/10.13155/33951</span></li>
-      <li>U.S. IOOS QARTOD manuals. <span class="why">Glider QC flags.</span><span class="url">ioos.noaa.gov/project/qartod</span></li>
-      <li>NetCDF Climate and Forecast (CF) Conventions. <span class="why">Read defensively; assumptions recorded.</span><span class="url">cfconventions.org</span></li>
+  <div class="col" style="gap:8px">
+    <h2 style="margin:0">Standards and methods</h2>
+    <ol class="refs" style="counter-reset: ref 9">
+      <li>Wong et al., Argo Quality Control Manual. <span class="why">QC flags, range test.</span><span class="url">doi.org/10.13155/33951</span></li>
+      <li>U.S. IOOS QARTOD manuals. <span class="why">Glider QC.</span><span class="url">ioos.noaa.gov/project/qartod</span></li>
+      <li>CF Conventions for NetCDF. <span class="why">Read defensively.</span><span class="url">cfconventions.org</span></li>
       <li>OGC Web Map Service 1.3.0. <span class="why">The WMS endpoint.</span><span class="url">ogc.org/standards/wms</span></li>
-      <li>IOC, SCOR, IAPSO (2010), TEOS-10 seawater equation. <span class="why">Pressure to depth, heat capacity.</span><span class="url">teos-10.org</span></li>
-      <li>Leipper &amp; Volgenau (1972), Hurricane heat potential of the Gulf of Mexico, J. Phys. Oceanogr. 2. <span class="why">Heat above 26 °C.</span><span class="url">doi.org/10.1175/1520-0485(1972)002&lt;0218:HHPOTG&gt;2.0.CO;2</span></li>
-      <li>Thyng et al. (2016), True colors of oceanography, Oceanography 29(3). <span class="why">cmocean palettes.</span><span class="url">doi.org/10.5670/oceanog.2016.66</span></li>
-      <li>CesiumJS <span class="mono">VoxelPrimitive</span> reference. <span class="why">The volume renderer (experimental, pinned).</span><span class="url">cesium.com/learn/cesiumjs/ref-doc/VoxelPrimitive.html</span></li>
-      <li>xarray and FastAPI documentation. <span class="why">Ingest and API.</span><span class="url">docs.xarray.dev · fastapi.tiangolo.com</span></li>
-      <li>Unidata NetCDF. <span class="why">The file format the brief names.</span><span class="url">unidata.ucar.edu/software/netcdf</span></li>
+      <li>IOC, SCOR, IAPSO (2010), TEOS-10. <span class="why">Density, sound speed.</span><span class="url">teos-10.org</span></li>
+      <li>Leipper &amp; Volgenau (1972), J. Phys. Oceanogr. 2. <span class="why">Heat above 26 °C.</span><span class="url">doi.org/10.1175/1520-0485(1972)002&lt;0218:HHPOTG&gt;2.0.CO;2</span></li>
+      <li>Thyng et al. (2016), Oceanography 29(3). <span class="why">cmocean palettes.</span><span class="url">doi.org/10.5670/oceanog.2016.66</span></li>
+      <li>CesiumJS. <span class="why">The globe and renderer.</span><span class="url">cesium.com/platform/cesiumjs</span></li>
+    </ol>
+  </div>
+  <div class="col" style="gap:8px">
+    <h2 style="margin:0">What the course cites</h2>
+    <ol class="refs" style="counter-reset: ref 17">
+      <li>Gray (1968), Mon. Weather Rev. 96, 669–700. <span class="why">Cyclones need water above ~26 °C.</span></li>
+      <li>Price (1981), J. Phys. Oceanogr. 11, 153–175. <span class="why">A cyclone cools the sea.</span></li>
+      <li>Schott &amp; McCreary (2001), Prog. Oceanogr. 51, 1–123. <span class="why">The monsoon current reverses.</span></li>
+      <li>India Meteorological Department, report on Super Cyclonic Storm Amphan (2020). <span class="why">Landfall, 20 May.</span></li>
+      <li>WMO Guide to Wave Analysis and Forecasting (WMO-No. 702). <span class="why">Wind makes waves.</span></li>
+      <li>Argo Program, "How Argo floats work". <span class="why">Floats.</span><span class="url">argo.ucsd.edu</span></li>
+      <li>SIH 2026 problem statement 26067, quoted verbatim. <span class="url">{REPO}/blob/main/docs/01-problem-statement.md</span></li>
     </ol>
   </div>
 </div>

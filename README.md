@@ -12,10 +12,9 @@ plug-in, no account.
 
 ## The Ocean Cube
 
-![The Gulf Stream on 15 February 2020, cut open: the warm current leaving the coast on the top face at 44 m, the thermocline deepening under it on the south wall, solid land to the west](submission/sih/figures/shot-v2-cube.png)
+![The Bay of Bengal on 14 May 2020, two days before Cyclone Amphan formed, cut open to 1,000 m: the warm lid, the thermocline and the cold water below, with Argo floats standing inside as sticks](submission/sih/figures/shot-hero.png)
 
-![The whole ocean around the cube, with that day's currents as moving trails; the cube's top face shows the Gulf Stream's eddies](submission/sih/figures/shot-v2-globe.png)
-
+![The Gulf Stream cube on 15 February 2020 on a globe painted in the cube's own colours, with that day's currents and winds flowing over it](submission/sih/figures/shot-globe.png)
 
 - **Anywhere, any day**: Copernicus Marine models read straight from their cloud stores,
   1993 to the forecast horizon, 23 variables, labelled reanalysis, analysis or forecast.
@@ -31,16 +30,17 @@ plug-in, no account.
 
 
 
-The Bay of Bengal as a volume, 5–2,000 m, with the instruments, the controls and the
-inspector. Four views of the same data:
+The Bay of Bengal as a voxel volume, 5–2,000 m, with the instruments, the controls and the
+inspector, behind *INCOIS Bay volume*. The residual layer: measured minus modelled, one
+block per place somebody measured, and nothing where nobody did.
 
-| Region 3D | Map 2D |
+![The residual layer over the Bay of Bengal: one block per place somebody measured](submission/sih/figures/shot-residual.png)
+
+| Learn | For fishermen |
 |---|---|
-| ![Region 3D: the water column, stretched 40x, with streamlines and floats](submission/sih/figures/shot-region.png) | ![Map 2D: a flat section at the slice depth inside the world's surface temperature](submission/sih/figures/shot-map.png) |
-| **Globe** | **Fly** |
-| ![Globe: the Bay's volume inside the world's sea surface temperature](submission/sih/figures/shot-globe.png) | ![Fly: a fixed-altitude flight over the Bay, floats on the sea surface](submission/sih/figures/shot-fly.png) |
-
-![The residual layer: measured minus modelled, one block per place somebody measured](submission/sih/figures/shot-resid.png)
+| ![A lesson card over the Amphan cube: after the cyclone, was the Bay warmer or cooler?](submission/sih/figures/shot-learn.png) | ![INCOIS Potential Fishing Zone advisories beside the indicative zone layer and sea state](submission/sih/figures/shot-fishing.png) |
+| **Immersive** | **The assistant** |
+| ![The planet's currents and winds on one day, in the immersive view](submission/sih/figures/shot-immersive.png) | ![The assistant, asked for an oxygen cube of the Arabian Sea, has built it](submission/sih/figures/shot-assistant.png) |
 
 ## What it does
 

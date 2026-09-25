@@ -2137,15 +2137,32 @@ async function main(): Promise<void> {
         const set = (id: string, v: unknown) => {
           if (v !== undefined && v !== null && v !== "") el<HTMLInputElement>(id).value = String(v);
         };
-        const has = (id: string, v: unknown) =>
-          [...el<HTMLSelectElement>(id).options].some((o) => o.value === String(v));
+        // The model names variables loosely ("dissolved oxygen", "Oxygen"): match the key or
+        // the title, and refuse rather than build the wrong variable under a reply that
+        // says it built the asked one.
+        let variable: string | undefined;
+        if (a.variable) {
+          const want = String(a.variable).toLowerCase().replace(/[_\s]+/g, " ").trim();
+          const opts = [...el<HTMLSelectElement>("cube-variable").options];
+          const norm = (t: string) => t.toLowerCase().replace(/[_\s]+/g, " ").replace(/\s*\(.*\)$/, "").trim();
+          const hit = opts.find((o) => norm(o.value) === want || norm(o.text) === want)
+            ?? opts.find((o) => norm(o.text).includes(want) || want.includes(norm(o.text)));
+          if (!hit) throw new Error(`no variable "${a.variable}" in the catalogue`);
+          variable = hit.value;
+        }
+        // Depths are a fixed list; take the shallowest that still reaches the asked depth.
+        let depth: number | undefined;
+        if (a.depth_max) {
+          const ds = [...el<HTMLSelectElement>("cube-depth").options].map((o) => Number(o.value)).sort((x, y) => x - y);
+          depth = ds.find((d) => d >= a.depth_max!) ?? ds[ds.length - 1];
+        }
         set("cube-w", clamp(a.west, -180, 180));
         set("cube-e", clamp(a.east, -180, 180));
         set("cube-s", clamp(a.south, -80, 90));
         set("cube-n", clamp(a.north, -80, 90));
-        if (a.variable && has("cube-variable", a.variable)) set("cube-variable", a.variable);
+        if (variable) set("cube-variable", variable);
         if (a.day && /^\d{4}-\d{2}-\d{2}$/.test(a.day)) set("cube-day", a.day);
-        if (a.depth_max && has("cube-depth", a.depth_max)) set("cube-depth", a.depth_max);
+        if (depth) set("cube-depth", depth);
         el("cube-load").click();
       } else if (a.action === "set_control") {
         const node = control(a.target);
