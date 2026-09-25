@@ -469,6 +469,11 @@ export class CubeController {
       this.repaint();
     });
     el<HTMLInputElement>("cube-height").addEventListener("change", () => this.hooks.aim(this));
+    el<HTMLInputElement>("cube-opacity").addEventListener("input", (e) => {
+      this.scene.opacity = Number((e.target as HTMLInputElement).value) / 100;
+      el("cube-opacity-label").textContent = this.scene.opacity.toFixed(2);
+      this.repaint();
+    });
     el<HTMLInputElement>("cube-stretched").addEventListener("change", (e) => {
       // The depth sliders are positions in the depth axis; keep the depths they point at.
       const before = this.currentCut();

@@ -1,6 +1,6 @@
 """The assistant: questions about the data and the viewer, answered from the data.
 
-A language model (Groq, OpenAI-compatible chat completions) is given tools that call the
+A language model (through AIRouter, OpenAI-compatible chat completions) is given tools that call the
 same functions the API serves -- an analysis value at a place and depth, the observation
 list, one cast against the analysis, the harness numbers, a global surface value -- and a
 guide to the interface (docs/17-user-guide.md). It answers from what the tools return.
@@ -29,7 +29,6 @@ import json
 import math
 import os
 import re
-import time
 from pathlib import Path
 from typing import Callable
 
@@ -40,7 +39,9 @@ from . import config, globalsurface
 ROOT = Path(__file__).resolve().parents[2]
 GUIDE = ROOT / "docs" / "17-user-guide.md"
 EVAL = ROOT / "data" / "eval-latest.json"
-GROQ_URL = "https://api.groq.com/openai/v1/chat/completions"
+ROUTER_URL = "https://api.airouter.in/v1"
+# Fast, cheap, reliable at tool calls; tried in this order. Override with AI_ROUTER_MODEL.
+DEFAULT_MODELS = "openai/gpt-4.1-mini,google/gemini-2.5-flash,deepseek/deepseek-v4-flash"
 MAX_ROUNDS = 5          # tool rounds per question before giving up
 MAX_HISTORY = 12        # messages of conversation kept
 MAX_QUESTION = 2_000    # characters
@@ -80,7 +81,8 @@ CONTROLS: dict[str, str] = {
     "cut-top": "range 0-1000: cut the cube's top down", "cut-bottom": "range 0-1000: bottom",
     "cut-west": "range 0-1000: west side in", "cut-east": "range 0-1000: east side in",
     "cut-south": "range 0-1000: south side in", "cut-north": "range 0-1000: north side in",
-    "cube-height": "range 5-80: vertical exaggeration of the cube",
+    "cube-height": "range 5-80: vertical exaggeration of the cube (label 'Vertical ×')",
+    "cube-opacity": "range 10-100: opacity of the cube's faces, percent",
     "cube-stretched": "checkbox: stretched depth", "cube-contours": "checkbox: contour lines",
     "cube-native": "checkbox: native levels only, no interpolation",
     "cut-reset": "button: whole cube (undo cuts)", "cube-home": "button: look at the cube",
@@ -471,33 +473,42 @@ def unverified_numbers(reply: str, evidence: list[str]) -> list[str]:
 Transport = Callable[[dict], dict]
 
 
-def groq_transport(payload: dict) -> dict:
+def models() -> list[str]:
+    """The models to try, in order: `AI_ROUTER_MODEL` is a comma-separated list."""
+    return [m.strip() for m in os.environ.get("AI_ROUTER_MODEL", DEFAULT_MODELS).split(",") if m.strip()]
+
+
+def router_transport(payload: dict) -> dict:
+    """AIRouter (OpenAI-compatible, prepaid). A model that is rate-limited, down or
+    refuses is skipped for the next one in `models()`; the first answer wins."""
     import requests
 
-    key = os.environ.get("GROQ_API_KEY")
+    key = os.environ.get("AI_ROUTER_KEY")
     if not key:
-        raise AssistantUnavailable("the assistant needs GROQ_API_KEY in .env")
-    try:
-        body = {k: v for k, v in payload.items() if not k.startswith("_")}
-        response = requests.post(GROQ_URL, json=body, timeout=45,
-                                 headers={"Authorization": f"Bearer {key}"})
-    except requests.RequestException as exc:
-        raise AssistantUnavailable(f"could not reach the language model ({type(exc).__name__})") from exc
-    if response.status_code == 429:
-        # The free tier is 8,000 tokens a minute. A short wait is worth taking once.
-        wait = float(response.headers.get("retry-after", "60"))
-        if wait <= 12 and not payload.get("_retried"):
-            time.sleep(wait + 0.5)
-            return groq_transport({**payload, "_retried": True})
-        raise AssistantUnavailable("the language model is rate-limited (free tier, 8,000 "
-                                   "tokens a minute); try again in a minute")
-    if response.status_code >= 400:
-        raise AssistantUnavailable(f"the language model refused the request ({response.status_code})")
-    return response.json()
+        raise AssistantUnavailable("the assistant needs AI_ROUTER_KEY in .env")
+    body = {k: v for k, v in payload.items() if not k.startswith("_")}
+    url = os.environ.get("AI_ROUTER_URL", ROUTER_URL).rstrip("/") + "/chat/completions"
+    failures = []
+    for model in models():
+        try:
+            response = requests.post(url, json={**body, "model": model}, timeout=45,
+                                     headers={"Authorization": f"Bearer {key}"})
+        except requests.RequestException as exc:
+            failures.append(f"{model}: {type(exc).__name__}")
+            continue
+        if response.status_code in (401, 402, 403):
+            # A key or balance problem is the same for every model.
+            raise AssistantUnavailable(f"the model router refused the key or the balance "
+                                       f"is used up ({response.status_code})")
+        if response.status_code >= 400:
+            failures.append(f"{model}: {response.status_code}")
+            continue
+        return response.json()
+    raise AssistantUnavailable("no language model answered (" + "; ".join(failures) + ")")
 
 
 def run(messages: list[dict], context: dict | None = None,
-        transport: Transport = groq_transport) -> dict:
+        transport: Transport = router_transport) -> dict:
     """One question in, one answer out, with the tool calls made on the way."""
     history = [m for m in messages if m.get("role") in ("user", "assistant")
                and isinstance(m.get("content"), str)][-MAX_HISTORY:]
@@ -515,8 +526,7 @@ def run(messages: list[dict], context: dict | None = None,
     schema = [{"type": "function", "function": {"name": n, **spec}} for n, (_, spec) in TOOLS.items()]
 
     for _ in range(MAX_ROUNDS):
-        reply = transport({"model": os.environ.get("GROQ_TEXT_MODEL", "openai/gpt-oss-120b"),
-                           "messages": convo, "tools": schema, "temperature": 0.2})
+        reply = transport({"messages": convo, "tools": schema, "temperature": 0.2})
         message = reply["choices"][0]["message"]
         calls = message.get("tool_calls") or []
         if not calls:

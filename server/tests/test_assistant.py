@@ -32,3 +32,14 @@ def test_tool_loop_and_number_check(monkeypatch):
 
 def test_self_checks():
     assistant.demo()
+
+
+def test_chat_cap():
+    from server.ocean import api
+    api._chat_log.clear()
+    allowed = api._chat_allowed
+    assert all(allowed("a", 1000 + i) is None for i in range(api.CHAT_PER_VISITOR_HOUR))
+    assert allowed("a", 2000) is not None      # this visitor is over the hour's cap
+    assert allowed("b", 2000) is None          # another visitor is not
+    assert allowed("a", 1000 + 3_700) is None  # an hour later the first one is back
+    api._chat_log.clear()

@@ -37,8 +37,11 @@ kept and opens at once.
 - **Top, Bottom** — cut the cube from above or below. The top face then shows the water at
   that depth.
 - **West, East, South, North side** — move a side inwards; that wall now shows the inside.
-- **Height** — how tall the cube is drawn. The ocean is a few kilometres deep and thousands
-  wide, so depth is stretched; the number (×250 and so on) says by how much.
+- **Vertical ×** — vertical exaggeration: how tall the cube is drawn. The ocean is a few
+  kilometres deep and thousands wide, so depth is stretched; the number (×250 and so on)
+  says by how much.
+- **Opacity** — below 1 the faces turn see-through, so the far walls and the floats inside
+  show through the near ones.
 - **Stretched depth** — gives the upper ocean, where most change happens, more room. Off,
   depth is drawn evenly. The depth labels on the corner are always true depths.
 - **Contours** — thin lines at round values, like height lines on a map.

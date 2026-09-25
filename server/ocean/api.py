@@ -9,6 +9,7 @@ call so the binary stays a clean typed array and both are independently cacheabl
 """
 
 import io
+import time
 from datetime import date, datetime
 from functools import lru_cache
 
@@ -16,6 +17,7 @@ import numpy as np
 from fastapi import FastAPI, HTTPException, Request, Response
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware.gzip import GZipMiddleware
+from fastapi.concurrency import run_in_threadpool
 from fastapi.responses import JSONResponse
 
 from . import (argo, assistant, catalog, cf, colocate, config, cube, cubecasts, currents, fishing,
@@ -476,6 +478,26 @@ def cube_profile(variable: str, platform: str, cycle: int, lon0: float, lon1: fl
         raise HTTPException(404, str(exc)) from exc
 
 
+# The assistant spends a prepaid balance and the endpoint is public, so questions are
+# capped per visitor and per day. ponytail: in memory, per process; resets on restart.
+CHAT_PER_VISITOR_HOUR = 40
+CHAT_PER_DAY = 1_500
+_chat_log: dict[str, list[float]] = {}
+
+
+def _chat_allowed(visitor: str, now: float) -> str | None:
+    """None if this question may go ahead, else why not. Records it when allowed."""
+    day = [t for t in _chat_log.get("*", []) if now - t < 86_400]
+    mine = [t for t in _chat_log.get(visitor, []) if now - t < 3_600]
+    if len(day) >= CHAT_PER_DAY:
+        return "the assistant has answered its questions for today; try again tomorrow"
+    if len(mine) >= CHAT_PER_VISITOR_HOUR:
+        return "that is a lot of questions in one hour; try again a little later"
+    _chat_log["*"] = day + [now]
+    _chat_log[visitor] = mine + [now]
+    return None
+
+
 @app.post("/api/chat")
 async def chat(request: Request) -> dict:
     """The assistant (assistant.py). Body: {messages: [{role, content}], context: {...}}.
@@ -485,8 +507,15 @@ async def chat(request: Request) -> dict:
     503 when the model is unreachable: the viewer shows that and carries on.
     """
     body = await request.json()
+    # Behind ngrok or Render the caller is the first X-Forwarded-For entry.
+    visitor = (request.headers.get("x-forwarded-for", "").split(",")[0].strip()
+               or (request.client.host if request.client else "?"))
+    refused = _chat_allowed(visitor, time.time())
+    if refused:
+        raise HTTPException(status_code=429, detail=refused)
     try:
-        return assistant.run(body.get("messages", []), body.get("context"))
+        # The model call blocks for seconds; off the event loop, so the globe keeps loading.
+        return await run_in_threadpool(assistant.run, body.get("messages", []), body.get("context"))
     except assistant.AssistantUnavailable as exc:
         raise HTTPException(status_code=503, detail=str(exc)) from exc
     except ValueError as exc:

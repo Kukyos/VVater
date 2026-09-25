@@ -51,31 +51,31 @@ export interface Cut { lon0: number; lon1: number; lat0: number; lat1: number;
                        top: number; bottom: number }
 
 /** A face material: the painted image, with land (alpha 0) cut out rather than blended. */
-function faceMaterial(image: HTMLCanvasElement): Material {
+function faceMaterial(image: HTMLCanvasElement, opacity: number): Material {
   return new Material({
     fabric: {
-      uniforms: { image },
+      uniforms: { image, opacity },
       source: `
         czm_material czm_getMaterial(czm_materialInput materialInput) {
           czm_material material = czm_getDefaultMaterial(materialInput);
           vec4 c = texture(image, materialInput.st);
           if (c.a < 0.5) discard;
           material.diffuse = c.rgb;
-          material.alpha = 1.0;
+          material.alpha = opacity;
           return material;
         }`,
     },
-    translucent: false,
+    translucent: opacity < 1,
   });
 }
 
-const appearance = (image: HTMLCanvasElement) => new MaterialAppearance({
-  material: faceMaterial(image),
+const appearance = (image: HTMLCanvasElement, opacity: number) => new MaterialAppearance({
+  material: faceMaterial(image, opacity),
   // Unlit: a face's colour is a data value through the colour bar, and shading would
   // change what the colour says. Depth is carried by the edges and ticks instead.
   flat: true,
   faceForward: true,
-  translucent: false,
+  translucent: opacity < 1,
   closed: false,
 });
 
@@ -93,6 +93,8 @@ export class CubeScene {
   height = 400_000;
   /** Where the cube's deepest point sits above the ellipsoid: just clear of the globe. */
   base = 4_000;
+  /** Face opacity, 0.1–1: below 1 the far walls show through the near ones. */
+  opacity = 1;
   private style?: Style;
   private cut?: Cut;
 
@@ -145,7 +147,7 @@ export class CubeScene {
     const add = (geometry: unknown, image: HTMLCanvasElement) => {
       next.push(new Primitive({
         geometryInstances: new GeometryInstance({ geometry: geometry as never }),
-        appearance: appearance(image),
+        appearance: appearance(image, this.opacity),
         asynchronous: false,
       }));
     };
