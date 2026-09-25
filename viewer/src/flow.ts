@@ -130,6 +130,9 @@ export class FlowOverlay {
   private movedAt = 0;
   /** Drawn from the scene's postRender rather than its own clock (see follow()). */
   private following = false;
+  /** Fraction of each swarm drawn. A camera that never rests redraws every whole trail
+   * every frame; Fly draws a third so the flight holds its frame rate. */
+  private share = 1;
 
   constructor(private scene: Scene, host: HTMLElement) {
     this.canvas = document.createElement("canvas");
@@ -248,6 +251,17 @@ export class FlowOverlay {
     this.last = 0;
   }
 
+  setShare(share: number): void {
+    if (share === this.share) return;
+    this.share = share;
+    // Particles that sat out have stale positions: no trail back to them.
+    for (const s of this.swarms.values()) {
+      s.lastOk.fill(0);
+      s.histN.fill(0);
+    }
+    this.clear();
+  }
+
   private onRender = () => {
     if (this.frame !== undefined) this.draw(performance.now());
   };
@@ -342,7 +356,8 @@ export class FlowOverlay {
       g.lineWidth = 1.2 * ratio;
       // Four brightness bands by speed, one path each: a few draw calls per frame.
       const paths = [new Path2D(), new Path2D(), new Path2D(), new Path2D()];
-      for (let i = 0; i < s.count; i += 1) {
+      const drawn = Math.round(s.count * this.share);
+      for (let i = 0; i < drawn; i += 1) {
         let lon = s.lon[i];
         let lat = s.lat[i];
         const [u, v] = sample(f, lon, lat);

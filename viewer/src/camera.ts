@@ -11,7 +11,7 @@
  * cannot get lost.
  */
 
-import { Cartesian3, HeadingPitchRange, Math as CesiumMath, Matrix4 } from "@cesium/engine";
+import { Cartesian3, Cartographic, HeadingPitchRange, Math as CesiumMath, Matrix4 } from "@cesium/engine";
 import type { Viewer } from "@cesium/widgets";
 
 const EARTH_RADIUS_M = 6_371_008.8;
@@ -227,7 +227,7 @@ export function greatCircleStep(lat: number, lon: number, bearing: number, dista
 
 export interface FlightState {
   lat: number; lon: number; heading: number; // degrees
-  height: number; // metres above the ellipsoid, the whole point: it never changes by itself
+  height: number; // metres above the ellipsoid; changes by itself only to clear terrain
   speed: number; // m/s over the ground
   look: number; // camera pitch, degrees (negative = down)
 }
@@ -242,12 +242,14 @@ export class FlightCamera {
   private active = false;
   private drag?: { x: number; y: number };
   private last = 0;
-  private frame?: number;
   paused = false;
 
-  static readonly MIN_HEIGHT = 8_000;
+  // Low enough to fly between the Eastern Ghats' ridges; the terrain clearance below keeps
+  // the floor above the ground, since height is ellipsoidal and collision detection is off.
+  static readonly MIN_HEIGHT = 1_500;
   static readonly MAX_HEIGHT = 250_000;
-  static readonly MIN_SPEED = 2_000;
+  static readonly CLEARANCE = 600;
+  static readonly MIN_SPEED = 500;
   static readonly MAX_SPEED = 120_000;
 
   constructor(private viewer: Viewer, private start: FlightState,
@@ -265,13 +267,15 @@ export class FlightCamera {
     window.addEventListener("pointermove", this.move);
     window.addEventListener("pointerup", this.up);
     this.last = 0;
-    this.frame = requestAnimationFrame(this.tick);
+    // The pose is set inside Cesium's own tick, just before it renders, so the globe and
+    // the particles drawn after it see the same camera (as the cinematic does).
+    this.viewer.scene.preUpdate.addEventListener(this.tick);
   }
 
   disable(): void {
     if (!this.active) return;
     this.active = false;
-    if (this.frame) cancelAnimationFrame(this.frame);
+    this.viewer.scene.preUpdate.removeEventListener(this.tick);
     this.viewer.canvas.removeEventListener("pointerdown", this.down);
     window.removeEventListener("pointermove", this.move);
     window.removeEventListener("pointerup", this.up);
@@ -287,8 +291,9 @@ export class FlightCamera {
     this.drag = { x: e.clientX, y: e.clientY };
   };
 
-  private tick = (now: number) => {
+  private tick = () => {
     if (!this.active) return;
+    const now = performance.now();
     const dt = this.last ? Math.min((now - this.last) / 1000, 0.1) : 0;
     this.last = now;
     const s = this.state;
@@ -302,7 +307,6 @@ export class FlightCamera {
     if (k("r")) s.height *= Math.pow(1.8, dt);
     if (k("f")) s.height /= Math.pow(1.8, dt);
     s.speed = Math.min(Math.max(s.speed, FlightCamera.MIN_SPEED), FlightCamera.MAX_SPEED);
-    s.height = Math.min(Math.max(s.height, FlightCamera.MIN_HEIGHT), FlightCamera.MAX_HEIGHT);
     s.look = Math.min(Math.max(s.look, -89), 10);
     if (!this.paused && dt > 0) {
       const next = greatCircleStep(s.lat, s.lon, s.heading, s.speed * dt);
@@ -310,6 +314,10 @@ export class FlightCamera {
       s.lon = next.lon;
       s.heading = next.bearing;
     }
+    // Undefined until the tile under the camera has loaded; the floor alone holds till then.
+    const ground = this.viewer.scene.globe.getHeight(Cartographic.fromDegrees(s.lon, s.lat)) ?? 0;
+    s.height = Math.min(Math.max(s.height, FlightCamera.MIN_HEIGHT, ground + FlightCamera.CLEARANCE),
+      FlightCamera.MAX_HEIGHT);
     s.heading = ((s.heading % 360) + 360) % 360;
     this.viewer.camera.setView({
       destination: Cartesian3.fromDegrees(s.lon, s.lat, s.height),
@@ -320,7 +328,6 @@ export class FlightCamera {
       },
     });
     this.onFrame(s);
-    this.frame = requestAnimationFrame(this.tick);
   };
 }
 

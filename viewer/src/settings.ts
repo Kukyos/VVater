@@ -63,6 +63,9 @@ export class Graphics {
    * until the next change. A still frame costs one render, so the fps target is untouched.
    */
   restSharpen = true;
+  /** Sky on whatever the tier says: Fly's horizon against black read as the edge of a
+   * hole. Honoured by every apply(), so the auto-tuner cannot switch it off mid-flight. */
+  forceSky = false;
   private sharp = false;
   private restTimer?: number;
 
@@ -110,12 +113,13 @@ export class Graphics {
     scene.msaaSamples = v.msaa;
     scene.postProcessStages.fxaa.enabled = v.fxaa;
     this.viewer.resolutionScale = v.resolution;
-    if (scene.skyAtmosphere) scene.skyAtmosphere.show = v.sky;
-    if (scene.skyBox) scene.skyBox.show = v.sky;
-    if (scene.sun) scene.sun.show = v.sky;
-    if (scene.moon) scene.moon.show = v.sky;
-    scene.globe.showGroundAtmosphere = v.sky;
-    scene.fog.enabled = v.sky;
+    const sky = v.sky || this.forceSky;
+    if (scene.skyAtmosphere) scene.skyAtmosphere.show = sky;
+    if (scene.skyBox) scene.skyBox.show = sky;
+    if (scene.sun) scene.sun.show = sky;
+    if (scene.moon) scene.moon.show = sky;
+    scene.globe.showGroundAtmosphere = sky;
+    scene.fog.enabled = sky;
     scene.requestRenderMode = v.onDemand;
     // Infinity: time does not change the scene here (the timeline is ours, not Cesium's
     // clock), so the clock alone must never trigger a frame.

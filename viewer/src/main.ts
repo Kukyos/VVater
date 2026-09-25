@@ -11,6 +11,7 @@ import {
   Color,
   ImageryLayer,
   Ion,
+  IonImageryProvider,
   Math as CesiumMath,
   Color as CesiumColor,
   Rectangle,
@@ -18,8 +19,12 @@ import {
   ScreenSpaceEventHandler,
   ScreenSpaceEventType,
   CesiumTerrainProvider,
+  DirectionalLight,
   EllipsoidTerrainProvider,
+  Matrix4,
   SingleTileImageryProvider,
+  SunLight,
+  Transforms,
   TileMapServiceImageryProvider,
   UrlTemplateImageryProvider,
   WebMercatorTilingScheme,
@@ -238,16 +243,30 @@ async function main(): Promise<void> {
   // Fly and immersive, which are about the planet, get the mountains.
   let worldTerrain: Promise<CesiumTerrainProvider> | undefined;
   const flatTerrain = new EllipsoidTerrainProvider();
+  let terrainWanted = false;
+  let flyImagery: ImageryLayer | undefined;
   async function setTerrain(on: boolean): Promise<void> {
     if (!ION_TOKEN) return;
+    terrainWanted = on;
     if (!on) {
       viewer.scene.terrainProvider = flatTerrain;
+      if (flyImagery) viewer.imageryLayers.remove(flyImagery, false);
       return;
     }
     worldTerrain ??= CesiumTerrainProvider.fromIonAssetId(1, { requestVertexNormals: true });
     try {
-      viewer.scene.terrainProvider = await worldTerrain;
+      const provider = await worldTerrain;
+      // Left Fly before ion answered: the workspace views stay flat.
+      if (!terrainWanted) return;
+      viewer.scene.terrainProvider = provider;
       graphics.kick(1500);
+      // Aerial imagery with it: the NASA relief stops at ~600 m a pixel, a blur from 20 km.
+      // Straight above the base maps, so the ocean colour and every data layer stay on top.
+      flyImagery ??= ImageryLayer.fromProviderAsync(IonImageryProvider.fromAssetId(2));
+      if (!viewer.imageryLayers.contains(flyImagery)) {
+        const under = relief ?? basemap;
+        viewer.imageryLayers.add(flyImagery, under ? viewer.imageryLayers.indexOf(under) + 1 : 0);
+      }
     } catch (error) {
       worldTerrain = undefined;
       status(`Cesium World Terrain unavailable (${(error as Error).message}); the globe stays smooth`, "warn");
@@ -267,6 +286,17 @@ async function main(): Promise<void> {
   const centreLon = (lon0 + lon1) / 2;
   const centreLat = (lat0 + lat1) / 2;
 
+  // Fly's sun: azimuth 250 degrees, 30 degrees up, over the Bay's centre. Low enough that
+  // slopes facing away fall into shade, high enough that the flat sea stays bright.
+  const flightSun = (() => {
+    const az = 250 * (Math.PI / 180);
+    const el = 30 * (Math.PI / 180);
+    const toSun = new Cartesian3(Math.sin(az) * Math.cos(el), Math.cos(az) * Math.cos(el), Math.sin(el));
+    const enu = Transforms.eastNorthUpToFixedFrame(Cartesian3.fromDegrees(centreLon, centreLat));
+    const direction = Matrix4.multiplyByPointAsVector(enu, Cartesian3.negate(toSun, toSun), new Cartesian3());
+    return new DirectionalLight({ direction: Cartesian3.normalize(direction, direction), intensity: 2.2 });
+  })();
+
   // Region and Fly are driven by our own cameras (camera.ts); Globe and Map keep Cesium's.
   const bayBounds = { lon: [lon0, lon1] as [number, number], lat: [lat0, lat1] as [number, number] };
   const bayHome = {
@@ -275,9 +305,10 @@ async function main(): Promise<void> {
   };
   const orbit = new OrbitCamera(viewer, bayBounds, bayHome, () => graphics.kick(250));
   const flight = new FlightCamera(viewer, {
-    // Steep enough to read the colours: at a glancing angle the volume's opacity integrates
-    // along a very long path and the whole field turns one flat haze.
-    lat: lat0 - 1.5, lon: centreLon - 2, heading: 12, height: 90_000, speed: 25_000, look: -40,
+    // Off Sri Lanka's south coast, low, heading north over its highlands into the Bay: the
+    // horizon, the relief and the sea's colour in one frame. From the old 90 km looking
+    // 40 degrees down the screen was one flat sheet of ocean colour.
+    lat: 5.6, lon: 80.4, heading: 15, height: 18_000, speed: 6_000, look: -16,
   }, (f) => {
     graphics.kick(120);
     renderFlightHud(f);
@@ -404,7 +435,8 @@ async function main(): Promise<void> {
     const d = cube.data!;
     void ocean.showCurrents(cube.request.day, top,
       { west: d.west, east: d.east, south: d.south, north: d.north });
-    void ocean.showCubeCurrents(cube.request, top, cube.scene.heightOf(top) + 400);
+    // Fly hides the cube, and its currents drawn on nothing halved the frame rate.
+    if (state.view !== "fly") void ocean.showCubeCurrents(cube.request, top, cube.scene.heightOf(top) + 400);
     void ocean.showAir(cube.request.day).then(() => {
       el("air-note").textContent = ocean.airOn ? ocean.airNote : "";
     });
@@ -969,23 +1001,33 @@ async function main(): Promise<void> {
   }
 
   async function setView(view: ViewName): Promise<void> {
+    const wasFly = state.view === "fly";
     state.view = view;
     for (const name of ALL_VIEWS) el(`view-${name}`).classList.toggle("on", name === view);
     el("flight-hud").classList.toggle("hidden", view !== "fly");
     // Hand the camera back to Cesium before anything else touches it.
     if (view !== "region") orbit.disable();
     if (view !== "fly") flight.disable();
-    // Fly always has a sky, whatever the graphics tier: a horizon against black read as the
-    // edge of a hole. Leaving Fly puts the tier's own choice back.
-    // Immersive turns terrain on itself once it has switched to the globe.
-    void setTerrain(view === "fly");
-    if (view === "fly") {
-      if (viewer.scene.skyAtmosphere) viewer.scene.skyAtmosphere.show = true;
-      viewer.scene.globe.showGroundAtmosphere = true;
-      viewer.scene.fog.enabled = true;
-    } else {
-      graphics.apply();
-    }
+    // Fly always has a sky, whatever the graphics tier. Leaving Fly puts the tier's own
+    // choice back. Immersive turns terrain on itself once it has switched to the globe.
+    const fly = view === "fly";
+    void setTerrain(fly);
+    graphics.forceSky = fly;
+    graphics.apply();
+    // Fly is about the planet: the relief in colour, as immersive shows it. The workspace's
+    // own land style is kept and comes back on the way out.
+    if (!immersive.active) setLand(fly && landStyle !== "offline" ? "colour" : landStyle, landBrightness, false);
+    // Relief is only visible lit: unlit, terrain is the same flat imagery on a bent sheet.
+    // A fixed low afternoon sun from the west-south-west rather than the clock's, which
+    // would put the Bay in darkness for half the day.
+    viewer.scene.globe.enableLighting = fly;
+    viewer.scene.light = fly ? flightSun : new SunLight();
+    // In Fly the camera never rests, so pausing the currents on movement would hide them
+    // for the whole flight. Drawn from the render instead, as in the cinematic.
+    ocean.flow.follow(fly);
+    ocean.flow.setShare(fly ? 1 / 3 : 1);
+    streamlineLayer.pauseOnMove = graphics.quality.pauseOnMove && !fly;
+    graphics.restSharpen = !fly;
     const scene = viewer.scene;
     if (view === "map" && scene.mode !== SceneMode.SCENE2D) {
       // Hidden before the morph, not after: the voxel primitive has no 2D path.
@@ -1003,8 +1045,13 @@ async function main(): Promise<void> {
     // cube stands on the surface, so only the in-place Bay volume needs a see-through sea.
     scene.globe.translucency.enabled =
       view !== "map" && showBay && scene.globe.translucency.frontFaceAlpha < 1;
-    cube.setVisible(!showBay && view !== "map");
+    // Fly is the planet with its ocean surface, as immersive is: the cube stands up to
+    // 600 km tall at its stretched depth, and a flight capped at 250 km was spent inside it.
+    cube.setVisible(!showBay && view !== "map" && !fly);
     ocean.setVisible(!showBay);
+    if (!immersive.active) ocean.flow.ignoreHoles = fly;
+    if (fly) ocean.dropCubeWind();
+    else if (wasFly && !immersive.active) refreshOcean();
     homeCamera(view);
     if (view === "region") orbit.enable();
     placeStreamlines();
@@ -1810,7 +1857,7 @@ async function main(): Promise<void> {
     el<HTMLInputElement>("gfx-fps").checked = q.showFps;
     el<HTMLInputElement>("gfx-pause").checked = q.pauseOnMove;
     ocean.flow.pauseOnMove = q.pauseOnMove;
-    streamlineLayer.pauseOnMove = q.pauseOnMove;
+    streamlineLayer.pauseOnMove = q.pauseOnMove && state.view !== "fly";
     if (!graphics.auto) {
       el("gfx-status").textContent = graphics.tier === "custom"
         ? "custom settings"

@@ -126,9 +126,12 @@ controls below (Layers, Properties) belong to it.
 - **Map 2D** (2) — a flat map of the cube's top face (or, in the Bay volume, the depth
   slice).
 - **Globe** (3) — the whole Earth with the region in the middle.
-- **Fly** (4) — a plane over the sea at a fixed height, so you cannot fly into space.
-  **W S** faster and slower, **A D** turn, **R F** climb and descend (between 8 and
-  250 km), **↑ ↓** look up and down, drag to steer, **P** pause.
+- **Fly** (4) — a plane over the sea at a fixed height, so you cannot fly into space. It
+  starts off Sri Lanka heading north into the Bay. The cube is hidden; the sea shows the
+  cube's variable at its top depth, with the currents moving as you fly. **W S** faster
+  and slower, **A D** turn, **R F** climb and descend (between 1.5 and 250 km; over
+  mountains the plane lifts itself to stay clear), **↑ ↓** look up and down, drag to
+  steer, **P** pause.
 
 Panels fold away with **[** and **]**.
 

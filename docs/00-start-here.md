@@ -103,7 +103,10 @@ buttons, rings a control in orange for five seconds to show where it is, answers
 questions from INCOIS's advisories first (`server/ocean/assistant.py` `CONTROLS`).
 
 **Land**: NASA GIBS Blue Marble relief (grey or colour) over the offline Natural Earth base;
-optional Cesium World Terrain in Fly and immersive when `VITE_CESIUM_ION_TOKEN` is set.
+optional Cesium World Terrain and Bing aerial imagery in Fly and immersive when
+`VITE_CESIUM_ION_TOKEN` is set. Fly lights the relief with a fixed low sun (the clock's sun
+would put the Bay in night half the day) and hides the cube, which at its stretched depth
+stands up to 600 km tall.
 
 **The INCOIS Bay volume is opt-in.** Nothing of v1 loads, draws or shows its controls until
 *INCOIS Bay volume* is ticked.
@@ -129,8 +132,13 @@ Shift- or right-drag to pan, wheel to zoom; **W A S D** pan, **Q E** turn, **R F
 arrows tilt) with the range held between 90 km and 3,600 km and the target near the box.
 Cesium's controller zoomed by distance to a picked point, which on a translucent globe was
 unreliable: one zoom-out and zooming back in barely moved. **Fly** (key `4`) is a
-great-circle flight at a fixed altitude (8–250 km, changed only by R/F), so nobody climbs
-into space. Markers sit on the sea surface with depth testing off.
+great-circle flight at a fixed altitude (1.5–250 km, changed by R/F, and lifted only to
+keep 600 m above the terrain), so nobody climbs into space or into a hill. Its pose is set
+in Cesium's own tick, and the currents are drawn from the render, as in the cinematic: in
+Fly the camera never rests, so pausing them on movement would hide them for the whole
+flight. A third of the particles are drawn there, because a moving camera redraws every
+trail every frame and that, not the globe, was the frame's cost. Markers sit on the sea
+surface with depth testing off.
 
 **Quality:** motion renders at the tuned tier; 350 ms after the scene stops, one frame is
 drawn at full device resolution (up to 2x) and stays until the next change.

@@ -15,7 +15,7 @@ Preview:
 | Variable | Value | Notes |
 |---|---|---|
 | `VITE_API_BASE` | `https://<backend-host>` | No trailing slash, no `/api` — `api.ts` appends `/api/...` itself. Must be HTTPS or the browser blocks it as mixed content. Baked in at build time — redeploy after changing it. |
-| `VITE_CESIUM_ION_TOKEN` | a Cesium ion access token | Optional. Turns on Cesium World Terrain in Fly and immersive. It ships in the public bundle, as every ion token does: restrict it in the ion dashboard (Access Tokens → the token → *Allowed URLs*) to the Vercel domain and `http://localhost:5173`. Visitors need no account. Unset, the globe stays smooth and nothing calls ion. Baked in at build time — redeploy after changing it. Locally it goes in `viewer/.env.local` (gitignored). |
+| `VITE_CESIUM_ION_TOKEN` | a Cesium ion access token | Optional. Turns on Cesium World Terrain and Bing aerial imagery in Fly and immersive. It ships in the public bundle, as every ion token does: restrict it in the ion dashboard (Access Tokens → the token → *Allowed URLs*) to the Vercel domain and `http://localhost:5173`. Visitors need no account. Unset, the globe stays smooth and nothing calls ion. Baked in at build time — redeploy after changing it. Locally it goes in `viewer/.env.local` (gitignored). |
 
 ## Server → Render
 
@@ -76,7 +76,10 @@ every deploy or restart. Open the site a few minutes before a demo and load the 
 `.env` (gitignored, read once at import by `server/ocean/__init__.py`) still works for
 local dev; a real deployment sets these in the host's own env config instead.
 
-## Cesium ion (optional: 3D terrain in Fly and immersive)
+## Cesium ion (optional: 3D terrain and aerial imagery in Fly and immersive)
+
+With the token, Fly and immersive get Cesium World Terrain (asset 1) and Bing Maps aerial
+imagery (asset 2) under the data layers; the workspace views stay flat and never call ion.
 
 Visitors never need an account; the token is built into the site.
 
@@ -84,7 +87,8 @@ Visitors never need an account; the token is built into the site.
    form asking for an app name and a redirect URL is for apps that log users in, and is not
    needed here; cancel it).
 2. **Create token.** Name: `vvater-web`. Scopes: leave the defaults (`assets:read`,
-   `geocode`). Resources: *All assets*, or just *Cesium World Terrain* (asset 1).
+   `geocode`). Resources: *All assets*, or just *Cesium World Terrain* (asset 1) and *Bing
+   Maps Aerial* (asset 2).
 3. **Allowed URLs**: choose *Selected URLs* and add `https://v-vater.vercel.app` and
    `http://localhost:5173` (add preview domains too if they should work). This is what stops
    anyone else spending the quota: the token itself is public in the bundle.
