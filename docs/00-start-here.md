@@ -30,6 +30,7 @@ ERDDAP** for floats anywhere.
 | `16-submission.md` | How the idea deck is built from the template, the harness and real screenshots. | Before touching the deck. |
 | `17-user-guide.md` | Every control and every word on screen, for people. The assistant reads it too. | Before a demo. |
 | `18-deploy.md` | Vercel and Render. v2 runs locally for now. | Before deploying. |
+| `19-course.md` | The course in learner mode: lessons, how answers are computed, sources. | Before editing a lesson. |
 
 ## What is built, as of 2026-09-24 (branch `v2`)
 
@@ -95,6 +96,11 @@ sectors say so), as green points; and an indicative zone layer anywhere (stronge
 fronts with chlorophyll) with a sea state from waves and wind. The indicator is labelled
 not-an-advisory everywhere.
 
+**Learn** (the header button, offered on a first visit, `?learn=1`). A six-lesson course
+for class 8–12 on real data: your city's nearest sea and its waves, the ocean's layers, the
+monsoon reversing a current, Amphan cooling the Bay, Argo floats and QC. Quiz answers are
+computed from the block on screen. One card, docks hidden while it runs. `19-course.md`.
+
 **Immersive** (key `I`, `?immersive=1`). The globe, its currents and winds, nothing else;
 *Cinematic* (key `C`) is a five-shot camera tour with the real dawn sun.
 
@@ -118,7 +124,8 @@ voxel volume in place under the sea, with its uncertainty, observation density, 
 glider and the measured results below. Everything in this section is about that view.
 
 **Assistant** (`server/ocean/assistant.py`, `viewer/src/chat.ts`): questions about the data
-or the viewer, answered by a Groq-hosted model that can only reach the data through tools
+or the viewer, answered by a model reached through AIRouter (three models, tried in order; capped per
+visitor and per day) that can only reach the data through tools
 wrapping the API's own functions (an analysis value at a place and depth, the observation
 list, one cast against the analysis, the harness numbers, a global surface value, the user
 guide). Every number in a reply is checked against the tool results and the question;

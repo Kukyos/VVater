@@ -206,7 +206,15 @@ export class CubeController {
 
   // ---------------------------------------------------------------- loading
 
-  async load(): Promise<void> {
+  /** The newest load, for anything that must wait for the cube on screen (the lessons). */
+  loading: Promise<void> = Promise.resolve();
+
+  load(): Promise<void> {
+    this.loading = this.loadNow();
+    return this.loading;
+  }
+
+  private async loadNow(): Promise<void> {
     const request = this.readRequest();
     if (typeof request === "string") {
       this.hooks.status(request, "warn");

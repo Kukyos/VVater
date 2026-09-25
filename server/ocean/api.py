@@ -396,6 +396,22 @@ def wind_data(day: str) -> Response:
                     headers={"Cache-Control": "public, max-age=3600"})
 
 
+@lru_cache(maxsize=64)
+def _seastate(lat: float, lon: float, day: str) -> dict:
+    return marine.sea_state_near(lat, lon, day)
+
+
+@app.get("/api/seastate")
+def seastate(lat: float, lon: float, day: str) -> dict:
+    """Waves and wind at the sea nearest a place (marine.py), with how far away that is."""
+    try:
+        return _seastate(round(lat, 2), round(lon, 2), day)
+    except ValueError as exc:
+        raise HTTPException(400, str(exc)) from exc
+    except LookupError as exc:
+        raise HTTPException(404, str(exc)) from exc
+
+
 @lru_cache(maxsize=8)
 def _fishing(box: "cube.Box", day: str) -> dict:
     return fishing.assess(box, day)

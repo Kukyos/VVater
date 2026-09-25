@@ -104,6 +104,7 @@ CONTROLS: dict[str, str] = {
     "view-region": "button: Region 3D view", "view-map": "button: Map 2D view",
     "view-globe": "button: Globe view", "view-fly": "button: Fly view",
     "reset-view": "button: reset the camera", "immersive": "button: immersive view",
+    "learn-btn": "button: open the short course on the ocean for students (Learn)",
     "layer-residual": "button: residual vs observed (Bay volume only)",
     "gfx-tier": "select: graphics quality",
 }

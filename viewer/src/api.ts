@@ -476,3 +476,32 @@ export async function chat(messages: { role: string; content: string }[],
   }
   return response.json();
 }
+
+/** Waves and wind at the sea nearest a place (server/ocean/marine.py sea_state_near). */
+export interface SeaState {
+  sea_point: [number, number];
+  distance_km: number;
+  wave_height_m: number;
+  wind_ms: number | null;
+  wave_provenance: { dataset: string; time_utc: string };
+}
+
+export async function getSeaState(lat: number, lon: number, day: string): Promise<SeaState> {
+  const response = await fetch(`${BASE}/api/seastate?lat=${lat}&lon=${lon}&day=${day}`);
+  if (!response.ok) throw await failure(response, "sea state unavailable");
+  return response.json();
+}
+
+/**
+ * A town or city name to a place, through Open-Meteo's free geocoder (no key). Called
+ * from the browser, so only the typed name leaves it, and never through our server.
+ */
+export async function geocode(name: string): Promise<{ name: string; lat: number; lon: number } | undefined> {
+  const url = `https://geocoding-api.open-meteo.com/v1/search?count=1&language=en&format=json` +
+    `&name=${encodeURIComponent(name.trim().slice(0, 80))}`;
+  const response = await globalThis.fetch(url);
+  if (!response.ok) throw new Error(`place search unavailable (${response.status})`);
+  const hit = (await response.json()).results?.[0];
+  return hit ? { name: [hit.name, hit.country].filter(Boolean).join(", "),
+                 lat: hit.latitude, lon: hit.longitude } : undefined;
+}

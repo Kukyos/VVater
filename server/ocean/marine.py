@@ -254,7 +254,66 @@ def wave_height_box(box: cube.Box, day: str) -> dict:
                                       "model analysis and forecast")}
 
 
+def _nearest(values: np.ndarray, lons: np.ndarray, lats: np.ndarray,
+             lat: float, lon: float) -> tuple[int, int, float] | None:
+    """(row, column, km) of the finite cell nearest a point, or None if there is none."""
+    la, lo = np.meshgrid(np.radians(lats), np.radians(lons), indexing="ij")
+    p, q = np.radians(lat), np.radians(lon)
+    # Haversine; on land (NaN) the distance is infinite.
+    a = np.sin((la - p) / 2) ** 2 + np.cos(la) * np.cos(p) * np.sin((lo - q) / 2) ** 2
+    km = np.where(np.isfinite(values), 2 * 6371.0 * np.arcsin(np.sqrt(np.minimum(a, 1))), np.inf)
+    if not np.isfinite(km).any():
+        return None
+    j, i = np.unravel_index(int(np.argmin(km)), km.shape)
+    return int(j), int(i), float(km[j, i])
+
+
+# Search boxes, degrees either side of the point, widened until the sea is found. The
+# last reaches the Bay from anywhere in India (Delhi to the nearest sea is ~1,000 km).
+SEARCH_DEG = (1.0, 4.0, 12.0)
+
+
+def sea_state_near(lat: float, lon: float, day: str) -> dict:
+    """Waves and wind at the sea point nearest a place, for "the sea near you".
+
+    The place may be inland: the answer is the nearest sea cell of the wave model, and its
+    distance from the place is part of the answer, never hidden."""
+    lat = min(max(lat, -78.0), 88.0)
+    for r in SEARCH_DEG:
+        west = (lon - r + 180) % 360 - 180  # Box wants its west edge in -180..180
+        box = cube.Box.parse(west, west + 2 * r, max(lat - r, -80.0), min(lat + r, 90.0))
+        waves = wave_height_box(box, day)
+        hit = _nearest(waves["values"], waves["lons"], waves["lats"], lat, lon)
+        if hit:
+            break
+    else:
+        raise LookupError(f"no sea within {SEARCH_DEG[-1]:.0f} degrees of {lat:.2f}, {lon:.2f}")
+    j, i, km = hit
+    sea_lat, sea_lon = float(waves["lats"][j]), float(waves["lons"][i])
+    sea_lon = sea_lon - 360 if sea_lon > 180 else sea_lon
+    out = {"place": [lat, lon], "sea_point": [round(sea_lat, 3), round(sea_lon, 3)],
+           "distance_km": round(km, 1),
+           "wave_height_m": round(float(waves["values"][j, i]), 2),
+           "wave_provenance": waves["provenance"], "wind_ms": None, "wind_provenance": None}
+    try:
+        west = (sea_lon - 0.5 + 180) % 360 - 180
+        w = wind_speed_box(cube.Box.parse(west, west + 1, sea_lat - 0.5, sea_lat + 0.5), day)
+        near = _nearest(w["values"], w["lons"], w["lats"], sea_lat, sea_lon)
+        if near:
+            out["wind_ms"] = round(float(w["values"][near[0], near[1]]), 1)
+            out["wind_provenance"] = w["provenance"]
+    except LookupError as exc:  # waves are the answer; wind is a bonus that can be missing
+        out["wind_note"] = str(exc)
+    return out
+
+
 def demo() -> None:
+    lats, lons = np.array([10.0, 11.0]), np.array([80.0, 81.0, 82.0])
+    grid = np.array([[np.nan, np.nan, 1.5], [np.nan, 0.8, 2.0]])
+    j, i, km = _nearest(grid, lons, lats, 10.0, 80.0)
+    assert (j, i) == (1, 1) and 150 < km < 160, (j, i, km)  # the land cell at the point is skipped
+    assert _nearest(np.full((2, 3), np.nan), lons, lats, 10, 80) is None
+
     class Fake:
         dataset_id = "x"
 
@@ -303,6 +362,11 @@ def live() -> None:
     h = wave_height_box(cube.Box.parse(80, 95, 5, 20), "2026-09-25")
     print(f"waves {h['values'].shape} in {time.time() - t:.1f} s, "
           f"max {np.nanmax(h['values']):.1f} m")
+    for name, lat, lon in (("Chennai", 13.08, 80.27), ("Delhi", 28.61, 77.21)):
+        t = time.time()
+        s = sea_state_near(lat, lon, "2026-09-25")
+        print(f"{name}: sea {s['distance_km']} km away at {s['sea_point']}, waves "
+              f"{s['wave_height_m']} m, wind {s['wind_ms']} m/s, {time.time() - t:.1f} s")
 
 
 if __name__ == "__main__":

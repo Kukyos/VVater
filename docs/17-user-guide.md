@@ -94,6 +94,25 @@ kept and opens at once.
   advisories and ocean state warnings are at incois.gov.in; always follow harbour and IMD
   warnings.
 
+## Learn (the course)
+
+The **Learn** button (top right) opens a short course on the ocean for school students:
+six lessons of a few minutes each. On a first visit the site offers it by itself. While it
+runs the panels step back and one card sits over the globe:
+
+- **Next** and **Back** move through a lesson; **Lessons** lists them all, with a tick on
+  the ones finished; **✕** leaves the course and puts the panels back as they were.
+- **Your ocean** asks for your town or city, then shows the waves and wind today at the sea
+  nearest it, and how far away that sea is.
+- **The ocean is 3D**, **Rivers in the sea**, **Cyclones run on warm water** and **Who
+  measures the ocean?** each build a block of real ocean and end with a quick question.
+  The answer comes from the block on screen, and the card says what the data shows.
+- **Your turn** brings the panels back one at a time and rings each control in orange.
+- **Ask a question** at the foot of the card is this assistant, moved there while the
+  course runs.
+
+Progress is remembered in this browser only.
+
 ## Immersive view (key I)
 
 The **Immersive** button (top right) hides every panel and leaves the globe, its currents

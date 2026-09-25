@@ -42,7 +42,9 @@ import { captionFor, drawProfile } from "./profile";
 import { Graphics, TIER_ORDER, type TierName } from "./settings";
 import { demo as sectionDemo, sectionCanvas, surfaceCanvas } from "./section";
 import { FlightCamera, OrbitCamera, demo as cameraDemo, typingInto } from "./camera";
-import { ChatPanel } from "./chat";
+import { ChatPanel, type ChatHooks } from "./chat";
+import { Tour } from "./learn/tour";
+import { demo as lessonsDemo } from "./learn/lessons";
 import { CubeController, formatValue, shiftDay } from "./cube/controller";
 import { demo as cubeDataDemo } from "./cube/data";
 import { drawColumn } from "./cube/column";
@@ -122,6 +124,7 @@ async function main(): Promise<void> {
     flowDemo();
     fishingDemo();
     immersiveDemo();
+    lessonsDemo();
   }
 
   const viewer = new Viewer("globe", {
@@ -1061,7 +1064,7 @@ async function main(): Promise<void> {
       view !== "map" && showBay && scene.globe.translucency.frontFaceAlpha < 1;
     // Fly is the planet with its ocean surface, as immersive is: the cube stands up to
     // 600 km tall at its stretched depth, and a flight capped at 250 km was spent inside it.
-    cube.setVisible(!showBay && view !== "map" && !fly);
+    cube.setVisible(!showBay && view !== "map" && !fly && !lessonHidesCube);
     ocean.setVisible(!showBay);
     if (!immersive.active) ocean.flow.ignoreHoles = fly;
     if (fly) ocean.dropCubeWind();
@@ -1089,6 +1092,8 @@ async function main(): Promise<void> {
 
   /** The colour-map controls edit whichever layer is on screen: the cube, or the Bay. */
   const cubeActive = () => !showBay && !!cube.data;
+  /** Set by a lesson that is about the surface alone (learn/lessons.ts, "Your ocean"). */
+  let lessonHidesCube = false;
   function activeColour(): { paletteId: string; reversed: boolean; log: boolean;
                              range: [number, number] } {
     return cubeActive() ? cube.colour
@@ -1221,7 +1226,18 @@ async function main(): Promise<void> {
   }
 
   const handler = new ScreenSpaceEventHandler(viewer.canvas);
+  /** A lesson asking "click on the globe": takes the next click, and only that. */
+  let pickOnce: ((lat: number, lon: number) => void) | undefined;
   handler.setInputAction(async (movement: { position: unknown }) => {
+    if (pickOnce) {
+      const point = viewer.camera.pickEllipsoid(movement.position as never);
+      if (!point) return;
+      const c = Cartographic.fromCartesian(point);
+      const then = pickOnce;
+      pickOnce = undefined;
+      then(CesiumMath.toDegrees(c.latitude), CesiumMath.toDegrees(c.longitude));
+      return;
+    }
     const picked = viewer.scene.pick(movement.position as never);
     const entity = picked?.id;
     const advisory = pfz.pointOf(picked);
@@ -1229,7 +1245,11 @@ async function main(): Promise<void> {
       status(describePfz(advisory.pfz, advisory.sector));
       return;
     }
-    const cast = cubeActive() ? cube.castLayer.castOf(picked) : undefined;
+    // A float's stick is a thin dotted line drawn over the cube's face; everything within a
+    // few pixels is looked through, so it can be clicked without pixel hunting.
+    const cast = !cubeActive() ? undefined : cube.castLayer.castOf(picked) ??
+      viewer.scene.drillPick(movement.position as never, 8, 15, 15)
+        .map((p) => cube.castLayer.castOf(p)).find(Boolean);
     if (cast) {
       await showCubeProfile(cast);
       return;
@@ -2055,7 +2075,8 @@ async function main(): Promise<void> {
     return node;
   }
 
-  const assistant = new ChatPanel({
+  // The one executor for interface actions: the assistant's replies and the lessons.
+  const chatHooks: ChatHooks = {
     context: chatContext,
     apply: async (a) => {
       // Checked again here: the browser applies only what it recognises, clamped.
@@ -2081,6 +2102,20 @@ async function main(): Promise<void> {
         slider.dispatchEvent(new Event("change"));
       } else if (a.action === "fly_to") {
         await flyTo(clamp(a.lon, -180, 180), clamp(a.lat, -80, 80), 900_000);
+      } else if (a.action === "show_cube") {
+        // Lessons only: the first lesson is about the sea surface, with no block on it.
+        lessonHidesCube = a.on === false;
+        cube.setVisible(!showBay && state.view !== "map" && state.view !== "fly" && !lessonHidesCube);
+        graphics.kick();
+      } else if (a.action === "look_down") {
+        // Lessons only (not in either whitelist): a place seen from straight above on the
+        // globe, whatever cube is standing nearby.
+        if (state.view !== "globe") await setView("globe");
+        viewer.camera.flyTo({
+          destination: Cartesian3.fromDegrees(clamp(a.lon, -180, 180), clamp(a.lat, -80, 80), 2_500_000),
+          orientation: { heading: 0, pitch: CesiumMath.toRadians(-90), roll: 0 }, duration: 2.5,
+        });
+        graphics.kick(3000);
       } else if (a.action === "open_profile" && a.platform) {
         await showProfile(a.platform);
       } else if (a.action === "isotherm_20") {
@@ -2112,7 +2147,8 @@ async function main(): Promise<void> {
         }
         node.dispatchEvent(new Event("input", { bubbles: true }));
         node.dispatchEvent(new Event("change", { bubbles: true }));
-        highlight(node);
+        // In a lesson the panels stay hidden: the card says what changed.
+        if (!el("app").classList.contains("learn")) highlight(node);
       } else if (a.action === "click") {
         const node = control(a.target);
         if (!(node instanceof HTMLButtonElement)) throw new Error("only buttons are clicked");
@@ -2126,7 +2162,8 @@ async function main(): Promise<void> {
         immersive.startCinema();
       }
     },
-  });
+  };
+  const assistant = new ChatPanel(chatHooks);
   el("chat-dock").append(assistant.root);
 
   // ---- workspace: docks, views, keys, cursor ------------------------------
@@ -2159,6 +2196,29 @@ async function main(): Promise<void> {
     viewer.resize();
     graphics.kick(300);
   }).observe(el("view"));
+
+  // ---- learner mode: the course (learn/lessons.ts) in one card ------------------
+  let catalogToday = new Date().toISOString().slice(0, 10);
+  const tour = new Tour({
+    run: chatHooks.apply,
+    cube,
+    today: () => catalogToday,
+    docks: (open) => {
+      const was = { left: !app.classList.contains("left-closed"),
+                    right: !app.classList.contains("right-closed") };
+      if (open) {
+        setDock("left", open.left);
+        setDock("right", open.right);
+      }
+      return was;
+    },
+    pick: (then) => {
+      pickOnce = then;
+      return () => { if (pickOnce === then) pickOnce = undefined; };
+    },
+    chat: assistant.root,
+  });
+  el("learn-btn").addEventListener("click", () => tour.toggle());
 
   for (const name of ALL_VIEWS) {
     el(`view-${name}`).addEventListener("click", () => void setView(name));
@@ -2214,13 +2274,28 @@ async function main(): Promise<void> {
     el<HTMLInputElement>("currents").checked = state.showCurrents;
     bindGraphicsPanel();
     await setView("region");
+    // Read before the cube writes its own box and day into the URL.
+    const query = new URLSearchParams(location.search);
+    const linked = ["scenario", "box", "immersive", "view"].some((k) => query.has(k));
     // The cube is the viewer. The INCOIS Bay volume, its floats, streamlines and residual
     // load only when "INCOIS Bay volume" is ticked.
     try {
-      await cube.init(await api.getCatalog());
+      const catalog = await api.getCatalog();
+      catalogToday = catalog.today;
+      await cube.init(catalog);
     } catch (error) {
       status(`the ocean cube is unavailable: ${(error as Error).message}`, "error");
     }
+    // First visit: offer the course. Not over a shared link to a particular view, which
+    // someone sent to show that view; ?learn=1 offers it regardless.
+    if (query.get("learn") === "1") {
+      // Once: a link that keeps ?learn=1 would reopen the course on every reload.
+      const q = new URLSearchParams(location.search);
+      q.delete("learn");
+      history.replaceState(null, "", `${location.pathname}?${q}`);
+      tour.offer(true);
+    }
+    else if (!linked) tour.offer();
     // ?view=map|globe|fly opens a view directly, for links and for headless checks.
     const startView = new URLSearchParams(location.search).get("view") as ViewName | null;
     if (startView && ALL_VIEWS.includes(startView) && startView !== "region") await setView(startView);
