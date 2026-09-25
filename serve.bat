@@ -1,7 +1,7 @@
 @echo off
 rem Serves the API from this laptop to the live Vercel site through an ngrok static domain.
 rem Close both windows to stop. See docs/18-deploy.md, "Laptop as the backend".
-set NGROK_DOMAIN=CHANGE-ME.ngrok-free.app
+set NGROK_DOMAIN=rockstar-wanting-reanalyze.ngrok-free.dev
 set SITE=https://v-vater.vercel.app
 cd /d "%~dp0"
 where ngrok >nul 2>nul || (echo ngrok is not installed: winget install ngrok.ngrok, then ngrok config add-authtoken ^<token^> & pause & exit /b 1)

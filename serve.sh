@@ -1,7 +1,7 @@
 #!/usr/bin/env sh
 # Serves the API from this laptop to the live Vercel site through an ngrok static domain.
 # Ctrl+C stops both. See docs/18-deploy.md, "Laptop as the backend".
-NGROK_DOMAIN=CHANGE-ME.ngrok-free.app
+NGROK_DOMAIN=rockstar-wanting-reanalyze.ngrok-free.dev
 SITE=https://v-vater.vercel.app
 cd "$(dirname "$0")"
 command -v ngrok >/dev/null || { echo "ngrok is not installed: https://ngrok.com/download, then ngrok config add-authtoken <token>"; exit 1; }

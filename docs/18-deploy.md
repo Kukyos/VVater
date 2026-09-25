@@ -73,7 +73,7 @@ judging. Without the variable the globe stays smooth and nothing calls ion.
 ## Laptop as the backend (ngrok)
 
 While no free host keeps the API up (D-40, D-41), the live site can use a laptop as its
-backend. ngrok's free plan gives one **static domain** (`<name>.ngrok-free.app`) that
+backend. ngrok's free plan gives one **static domain** (`<name>.ngrok-free.dev`) that
 never changes, so the Vercel build is pointed at it once and then works whenever the
 laptop is serving.
 
@@ -84,7 +84,7 @@ One-time setup:
    laptop, in ngrok's own config, never in the repo.
 2. In the ngrok dashboard, **Domains** → claim the free static domain. Put it in the
    `NGROK_DOMAIN` line at the top of `serve.bat` and `serve.sh`.
-3. On Vercel set `VITE_API_BASE` to `https://<name>.ngrok-free.app` and redeploy.
+3. On Vercel set `VITE_API_BASE` to `https://<name>.ngrok-free.dev` (this project: `https://rockstar-wanting-reanalyze.ngrok-free.dev`) and redeploy.
 
 Each time: double-click `serve.bat` (or run `./serve.sh`). It starts the API on
 `127.0.0.1:8011` with the Vercel origins allowed, opens the tunnel, and opens the site.
