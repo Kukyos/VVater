@@ -2,6 +2,14 @@
 
 const BASE = import.meta.env.VITE_API_BASE ?? "http://127.0.0.1:8011";
 
+// An ngrok free domain answers browsers with an HTML warning page unless this header is
+// sent (docs/18-deploy.md, laptop backend). Only then: it makes every GET preflighted.
+const fetch: typeof globalThis.fetch = BASE.includes("ngrok")
+  ? (url, init = {}) => globalThis.fetch(url, {
+      ...init, headers: { ...(init.headers as Record<string, string>), "ngrok-skip-browser-warning": "1" },
+    })
+  : globalThis.fetch.bind(globalThis);
+
 export interface Meta {
   region: { name: string; lon: [number, number]; lat: [number, number] };
   depthRange: [number, number];

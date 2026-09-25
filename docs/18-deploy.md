@@ -70,6 +70,43 @@ Visitors never need an account; the token is built into the site.
 The free Community plan is for non-commercial use with a monthly cap; enough for a demo and
 judging. Without the variable the globe stays smooth and nothing calls ion.
 
+## Laptop as the backend (ngrok)
+
+While no free host keeps the API up (D-40, D-41), the live site can use a laptop as its
+backend. ngrok's free plan gives one **static domain** (`<name>.ngrok-free.app`) that
+never changes, so the Vercel build is pointed at it once and then works whenever the
+laptop is serving.
+
+One-time setup:
+
+1. `winget install ngrok.ngrok` (macOS: `brew install ngrok`), sign up at ngrok.com, and
+   run `ngrok config add-authtoken <token>` from the dashboard. The token stays on the
+   laptop, in ngrok's own config, never in the repo.
+2. In the ngrok dashboard, **Domains** → claim the free static domain. Put it in the
+   `NGROK_DOMAIN` line at the top of `serve.bat` and `serve.sh`.
+3. On Vercel set `VITE_API_BASE` to `https://<name>.ngrok-free.app` and redeploy.
+
+Each time: double-click `serve.bat` (or run `./serve.sh`). It starts the API on
+`127.0.0.1:8011` with the Vercel origins allowed, opens the tunnel, and opens the site.
+Closing the two windows takes the site's backend down.
+
+ngrok's free domain answers browsers with a warning page instead of the API unless the
+request carries `ngrok-skip-browser-warning`. `viewer/src/api.ts` adds that header when
+`VITE_API_BASE` is an ngrok domain, and only then, because it makes every request
+preflighted.
+
+Limits:
+
+- The laptop must be on, awake and online: set Windows sleep to *Never* while plugged
+  in, and don't close the lid unless lid-close is set to *Do nothing*.
+- Cube loads are bounded by the laptop's upload speed, not a datacentre's.
+- ngrok's free plan caps bandwidth and requests per month; check the current figures on
+  ngrok's pricing page before a heavy demo.
+- The domain is public. CORS stops other websites, not `curl`: anyone who finds it can
+  call `/api/chat` and spend the Groq key's quota, as with Render.
+- In return: the disk cache stays warm between runs and there is no 512 MB ceiling, so
+  no cold start and no out-of-memory restarts.
+
 ## When the live site cannot reach the API
 
 Check, in order:
