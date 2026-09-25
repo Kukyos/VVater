@@ -41,6 +41,8 @@ export interface ImmersiveHooks {
   describe: () => string;
   setBasemapBrightness: (b: number) => number;
   kick: (ms?: number) => void;
+  /** The cinematic starts or stops: render every frame, particles synced to the render. */
+  cinema: (on: boolean) => void;
 }
 
 interface Pose { lon: number; lat: number; height: number; heading: number; pitch: number }
@@ -51,9 +53,9 @@ interface Shot {
   seconds: number;
   from: Pose;
   to: Pose;
-  /** "noon": the sun high over the shot; "sunrise": just above its horizon. */
-  light: "noon" | "sunrise";
-  ease: "linear" | "inOut" | "in";
+  /** The lighting clock: noon over the shot, or the dawn minute found by sunrise(). */
+  time: JulianDate;
+  ease: "linear" | "glide" | "inOut" | "in";
 }
 
 const DEG = Math.PI / 180;
@@ -107,29 +109,32 @@ function noon(day: Date, lon: number): JulianDate {
 }
 
 function shots(): Shot[] {
-  // First light over the Bay of Bengal, looking along the sun's own bearing.
+  // First light over the Bay of Bengal, looking along the sun's own bearing. The dawn
+  // search is a few thousand ephemeris calls, so it runs once per loop, here, and never
+  // at a cut where it would hold up the first frame of a shot.
+  const today = new Date();
   const dawn = { lon: 88, lat: 12 };
-  const sunTime = sunrise(new Date(), dawn.lon, dawn.lat, DAWN_ELEVATION);
+  const sunTime = sunrise(today, dawn.lon, dawn.lat, DAWN_ELEVATION);
   const az = sunAt(sunTime, dawn.lon, dawn.lat).az;
   const ahead = greatCircleStep(dawn.lat, dawn.lon, az, 320_000);
   const skimEnd = greatCircleStep(9, 84, 40, 700_000);
   return [
     { title: "The ocean, moving", sub: "currents and winds on one day, over the whole planet",
-      seconds: 14, light: "noon", ease: "linear",
+      seconds: 14, time: noon(today, 96), ease: "linear",
       from: { lon: 38, lat: -2, height: 23_000_000, heading: 0, pitch: -90 },
       to: { lon: 96, lat: 8, height: 19_000_000, heading: 0, pitch: -90 } },
-    { title: "Down to the Bay of Bengal", sub: "", seconds: 11, light: "noon", ease: "inOut",
+    { title: "Down to the Bay of Bengal", sub: "", seconds: 11, time: noon(today, 86), ease: "inOut",
       from: { lon: 80, lat: -9, height: 4_500_000, heading: 12, pitch: -72 },
       to: { lon: 86, lat: 5, height: 650_000, heading: 24, pitch: -38 } },
     { title: "Over the water", sub: "each trail is the day's flow at the surface", seconds: 12,
-      light: "noon", ease: "linear",
+      time: noon(today, skimEnd.lon), ease: "glide",
       from: { lon: 84, lat: 9, height: 70_000, heading: 40, pitch: -14 },
       to: { lon: skimEnd.lon, lat: skimEnd.lat, height: 26_000, heading: skimEnd.bearing, pitch: -9 } },
     { title: "First light", sub: "the sun where it stands at dawn today", seconds: 15,
-      light: "sunrise", ease: "linear",
+      time: sunTime, ease: "glide",
       from: { lon: dawn.lon, lat: dawn.lat, height: 30_000, heading: az, pitch: -4.5 },
       to: { lon: ahead.lon, lat: ahead.lat, height: 42_000, heading: ahead.bearing, pitch: -3.5 } },
-    { title: "", sub: "", seconds: 15, light: "sunrise", ease: "in",
+    { title: "", sub: "", seconds: 15, time: sunTime, ease: "in",
       from: { lon: ahead.lon, lat: ahead.lat, height: 42_000, heading: ahead.bearing, pitch: -3.5 },
       to: { lon: 84, lat: 2, height: 15_000_000, heading: 0, pitch: -90 } },
   ];
@@ -137,6 +142,15 @@ function shots(): Shot[] {
 
 const ease = {
   linear: (t: number) => t,
+  // Linear through the middle, eased over the first and last tenth: a camera that is
+  // already moving when the shot fades in, and does not stop dead as it fades out.
+  glide: (t: number) => {
+    const e = 0.1;
+    const v = 1 / (1 - e);  // cruise speed so the whole curve still ends at 1
+    if (t < e) return (v * t * t) / (2 * e);
+    if (t > 1 - e) return 1 - (v * (1 - t) * (1 - t)) / (2 * e);
+    return v * (t - e / 2);
+  },
   inOut: (t: number) => t * t * (3 - 2 * t),
   in: (t: number) => t * t * t,
 };
@@ -155,7 +169,9 @@ export class Immersive {
   };
   private layers = { currents: true, air: true, colour: false };
   private light = true;
-  private cine?: { shots: Shot[]; index: number; started: number; frame?: number };
+  private cine?: { shots: Shot[]; index: number; started: number; rolling: boolean };
+  /** The sky as it was before the cinematic brightened it. */
+  private skySaved?: { glow: number; light: number; mie: Cartesian3; aniso: number };
   private app = document.getElementById("app")!;
 
   constructor(private viewer: Viewer, private hooks: ImmersiveHooks) {
@@ -244,24 +260,59 @@ export class Immersive {
 
   startCinema(): void {
     if (!this.active || this.cine) return;
-    this.viewer.scene.screenSpaceCameraController.enableInputs = false;
+    const scene = this.viewer.scene;
+    scene.screenSpaceCameraController.enableInputs = false;
     this.app.classList.add("cinema");
     document.getElementById("imm-cinema")!.classList.add("on");
-    this.cine = { shots: shots(), index: -1, started: 0 };
+    this.cine = { shots: shots(), index: -1, started: 0, rolling: false };
+    this.brightSky(true);
+    this.hooks.cinema(true);
+    // The pose is set inside Cesium's own tick, just before it renders, so the globe and
+    // the particles drawn after it always see the same camera.
+    scene.preUpdate.addEventListener(this.roll);
     void this.cut();
   }
 
   stopCinema(): void {
     if (!this.cine) return;
-    if (this.cine.frame) cancelAnimationFrame(this.cine.frame);
     this.cine = undefined;
+    const scene = this.viewer.scene;
+    scene.preUpdate.removeEventListener(this.roll);
+    this.hooks.cinema(false);
+    this.brightSky(false);
     this.app.classList.remove("cinema");
     document.getElementById("imm-cinema")!.classList.remove("on");
     document.getElementById("cinema-title")!.classList.remove("on");
     document.getElementById("cinema-fade")!.classList.remove("on");
     this.viewer.clock.currentTime = JulianDate.now();
-    this.viewer.scene.screenSpaceCameraController.enableInputs = true;
+    scene.screenSpaceCameraController.enableInputs = true;
     this.hooks.kick(300);
+  }
+
+  /**
+   * A brighter, softer sun for the film: a wider glow on the disc and more forward
+   * scattering in the sky around it, so a sun on the horizon reads as a bright haze
+   * rather than a hard dot. Set once for the whole film (not per shot) because each
+   * change to the glow rebuilds the sun's texture. Put back exactly on the way out.
+   */
+  private brightSky(on: boolean): void {
+    const { sun, skyAtmosphere: sky } = this.viewer.scene;
+    if (!sun || !sky) return;
+    if (on) {
+      this.skySaved = { glow: sun.glowFactor, light: sky.atmosphereLightIntensity,
+                        mie: Cartesian3.clone(sky.atmosphereMieCoefficient), aniso: sky.atmosphereMieAnisotropy };
+      sun.glowFactor = 4;
+      sky.atmosphereLightIntensity = 72;
+      sky.atmosphereMieCoefficient = Cartesian3.multiplyByScalar(this.skySaved.mie, 2.2, new Cartesian3());
+      sky.atmosphereMieAnisotropy = 0.84;
+    } else if (this.skySaved) {
+      const s = this.skySaved;
+      sun.glowFactor = s.glow;
+      sky.atmosphereLightIntensity = s.light;
+      sky.atmosphereMieCoefficient = s.mie;
+      sky.atmosphereMieAnisotropy = s.aniso;
+      this.skySaved = undefined;
+    }
   }
 
   /** To black, set the next shot up, back from black, and roll. */
@@ -271,45 +322,46 @@ export class Immersive {
     const fade = document.getElementById("cinema-fade")!;
     const title = document.getElementById("cinema-title")!;
     title.classList.remove("on");
+    cine.rolling = false;
     if (cine.index >= 0) {
       fade.classList.add("on");
       await new Promise((r) => setTimeout(r, 480));
       if (this.cine !== cine) return;
     }
     cine.index = (cine.index + 1) % cine.shots.length;
-    if (cine.index === 0) cine.shots = shots();  // a new loop re-reads today's sun
+    if (cine.index === 0 && cine.started) cine.shots = shots();  // a new loop re-reads today's sun
     const shot = cine.shots[cine.index];
-    const place = shot.light === "sunrise" ? cine.shots[3].from : shot.to;
-    this.viewer.clock.currentTime = shot.light === "sunrise"
-      ? sunrise(new Date(), place.lon, place.lat, DAWN_ELEVATION) : noon(new Date(), place.lon);
+    this.viewer.clock.currentTime = shot.time;
     this.pose(shot.from);
     title.innerHTML = shot.title ? `${shot.title}${shot.sub ? `<small>${shot.sub}</small>` : ""}` : "";
     fade.classList.remove("on");
     cine.started = performance.now();
+    cine.rolling = true;
     if (shot.title) setTimeout(() => { if (this.cine === cine) title.classList.add("on"); }, 900);
     setTimeout(() => { if (this.cine === cine) title.classList.remove("on"); },
                (shot.seconds - 2.5) * 1000);
-    const step = () => {
-      if (this.cine !== cine) return;
-      const t = Math.min((performance.now() - cine.started) / (shot.seconds * 1000), 1);
-      const k = ease[shot.ease](t);
-      const a = shot.from;
-      const b = shot.to;
-      this.pose({
-        lon: a.lon + (b.lon - a.lon) * k,
-        lat: a.lat + (b.lat - a.lat) * k,
-        // Height on a log scale: a fall from space slows as it nears the water, as a
-        // camera operator would, instead of arriving at the same speed it left orbit.
-        height: Math.exp(Math.log(a.height) + (Math.log(b.height) - Math.log(a.height)) * k),
-        heading: turn(a.heading, b.heading, k),
-        pitch: a.pitch + (b.pitch - a.pitch) * k,
-      });
-      this.hooks.kick(100);
-      if (t < 1) cine.frame = requestAnimationFrame(step);
-      else void this.cut();
-    };
-    cine.frame = requestAnimationFrame(step);
   }
+
+  /** One frame of the current shot, from the scene's preUpdate. */
+  private roll = () => {
+    const cine = this.cine;
+    if (!cine?.rolling) return;
+    const shot = cine.shots[cine.index];
+    const t = Math.min((performance.now() - cine.started) / (shot.seconds * 1000), 1);
+    const k = ease[shot.ease](t);
+    const a = shot.from;
+    const b = shot.to;
+    this.pose({
+      lon: a.lon + (b.lon - a.lon) * k,
+      lat: a.lat + (b.lat - a.lat) * k,
+      // Height on a log scale: a fall from space slows as it nears the water, as a
+      // camera operator would, instead of arriving at the same speed it left orbit.
+      height: Math.exp(Math.log(a.height) + (Math.log(b.height) - Math.log(a.height)) * k),
+      heading: turn(a.heading, b.heading, k),
+      pitch: a.pitch + (b.pitch - a.pitch) * k,
+    });
+    if (t >= 1) void this.cut();
+  };
 
   private pose(p: Pose): void {
     this.viewer.camera.setView({
@@ -329,6 +381,11 @@ export function demo(): void {
   const hour = JulianDate.toDate(t).getUTCHours();
   // 88E is UTC+5:52 solar: dawn near 00:00 UTC, either side of midnight.
   console.assert(hour === 0 || hour === 23, `immersive: dawn at 88E is near 00 UTC (${hour})`);
+  for (const t of [0, 0.05, 0.1, 0.5, 0.9, 0.95, 1]) {
+    const g = ease.glide(t);
+    console.assert(g >= 0 && g <= 1, `immersive: glide stays in 0..1 (${t} -> ${g})`);
+  }
+  console.assert(Math.abs(ease.glide(1) - 1) < 1e-9 && ease.glide(0) === 0, "immersive: glide ends");
   const deep = sunAt(sunrise(equinox, 88, 12, -5), 88, 12).el;
   console.assert(deep >= -5 && deep < -4, `immersive: a crossing, not the first minute searched (${deep})`);
 }

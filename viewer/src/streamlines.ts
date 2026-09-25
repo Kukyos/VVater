@@ -54,8 +54,30 @@ function speedColor(speed: number, lo: number, hi: number, alpha: number): Color
 export class StreamlineLayer {
   private collection = new PolylineCollection();
   private added = false;
+  /** Shown by the user, as against hidden for a moment while the camera moves. */
+  private wanted = false;
+  /** Hide the lines while the camera moves, as the particle overlay does. */
+  pauseOnMove = true;
+  private lastCamera = new Cartesian3();
+  private movedAt = 0;
 
-  constructor(private scene: Scene) {}
+  constructor(private scene: Scene) {
+    // preUpdate fires on every tick, rendered or not, so the lines come back even when
+    // render-on-demand has gone quiet after the camera stopped.
+    scene.preUpdate.addEventListener(() => {
+      if (!this.wanted) return;
+      const now = performance.now();
+      if (!Cartesian3.equalsEpsilon(scene.camera.positionWC, this.lastCamera, 0, 1)) {
+        this.movedAt = now;
+        Cartesian3.clone(scene.camera.positionWC, this.lastCamera);
+      }
+      const show = !this.pauseOnMove || now - this.movedAt > 200;
+      if (show !== this.collection.show) {
+        this.collection.show = show;
+        if (show) scene.requestRender();
+      }
+    });
+  }
 
   /**
    * Draw a set of streamlines at a given height.
@@ -90,10 +112,12 @@ export class StreamlineLayer {
       this.scene.primitives.add(this.collection);
       this.added = true;
     }
+    this.wanted = true;
     this.collection.show = true;
   }
 
   hide(): void {
+    this.wanted = false;
     this.collection.show = false;
   }
 

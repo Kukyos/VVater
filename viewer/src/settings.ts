@@ -32,11 +32,12 @@ export interface Quality {
   sky: boolean; // atmosphere, stars, sun, moon
   onDemand: boolean; // render only when something changed
   showFps: boolean;
+  pauseOnMove: boolean; // hide particles and streamlines while the camera moves
 }
 
 export type TierName = "high" | "medium" | "low" | "minimum";
 
-export const TIERS: Record<TierName, Omit<Quality, "onDemand" | "showFps">> = {
+export const TIERS: Record<TierName, Omit<Quality, "onDemand" | "showFps" | "pauseOnMove">> = {
   high: { msaa: 4, fxaa: false, resolution: 1, sky: true },
   medium: { msaa: 1, fxaa: true, resolution: 0.75, sky: true },
   low: { msaa: 1, fxaa: true, resolution: 0.6, sky: true },
@@ -51,7 +52,7 @@ const TARGET_FPS = 55;
 const STORAGE_KEY = "vvater.graphics.v2";
 
 export class Graphics {
-  quality: Quality = { ...TIERS.medium, onDemand: true, showFps: false };
+  quality: Quality = { ...TIERS.medium, onDemand: true, showFps: false, pauseOnMove: true };
   tier: TierName | "custom" = "medium";
   auto = true;
   private burstUntil = 0;
@@ -132,7 +133,8 @@ export class Graphics {
 
   /** A manual change to any single lever makes the tier "custom" and stops auto. */
   setCustom(q: Partial<Quality>): void {
-    const isQualityLever = Object.keys(q).some((k) => k !== "onDemand" && k !== "showFps");
+    const isQualityLever = Object.keys(q).some(
+      (k) => k !== "onDemand" && k !== "showFps" && k !== "pauseOnMove");
     if (isQualityLever) {
       this.tier = "custom";
       this.auto = false;

@@ -243,7 +243,8 @@
     pointer-events: none; line-height: 1.6; }
   #app.immersive #immersive-key { display: block; }
   #app.cinema #immersive-key { display: none; }
-  #cinema { position: absolute; inset: 0; pointer-events: none; z-index: 4; display: none; }
+  #cinema { position: absolute; inset: 0; pointer-events: none; z-index: 4; display: none;
+    background: radial-gradient(ellipse at center, transparent 58%, rgba(0, 0, 0, .42) 100%); }
   #app.cinema #cinema { display: block; }
   #cinema::before, #cinema::after { content: ""; position: absolute; left: 0; right: 0;
     height: 9vh; background: #000; }
@@ -487,6 +488,7 @@
         <label class="check"><input type="checkbox" id="gfx-fxaa" /> FXAA edge smoothing</label>
         <label class="check"><input type="checkbox" id="gfx-sky" /> Atmosphere, stars and fog</label>
         <label class="check"><input type="checkbox" id="gfx-ondemand" /> Render only on change</label>
+        <label class="check"><input type="checkbox" id="gfx-pause" /> Hide currents while the camera moves</label>
         <label class="check"><input type="checkbox" id="gfx-fps" /> Show frame rate</label>
         <button id="gfx-measure" class="btn">Measure frame rate</button>
       </div></details>

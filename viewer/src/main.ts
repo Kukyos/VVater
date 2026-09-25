@@ -1808,6 +1808,9 @@ async function main(): Promise<void> {
     el<HTMLInputElement>("gfx-sky").checked = q.sky;
     el<HTMLInputElement>("gfx-ondemand").checked = q.onDemand;
     el<HTMLInputElement>("gfx-fps").checked = q.showFps;
+    el<HTMLInputElement>("gfx-pause").checked = q.pauseOnMove;
+    ocean.flow.pauseOnMove = q.pauseOnMove;
+    streamlineLayer.pauseOnMove = q.pauseOnMove;
     if (!graphics.auto) {
       el("gfx-status").textContent = graphics.tier === "custom"
         ? "custom settings"
@@ -1837,6 +1840,7 @@ async function main(): Promise<void> {
     bind("gfx-sky", "change", (n) => custom({ sky: n.checked }));
     bind("gfx-ondemand", "change", (n) => custom({ onDemand: n.checked }));
     bind("gfx-fps", "change", (n) => custom({ showFps: n.checked }));
+    bind("gfx-pause", "change", (n) => custom({ pauseOnMove: n.checked }));
     el("gfx-measure").addEventListener("click", async () => {
       el("gfx-status").textContent = "measuring…";
       const fps = await graphics.measure(2000);
@@ -1929,6 +1933,14 @@ async function main(): Promise<void> {
       return was;
     },
     kick: (ms) => graphics.kick(ms),
+    cinema: (on) => {
+      // The camera never rests in the film: render every frame, draw the particles from
+      // the render itself, and never swap to the rest resolution (a framebuffer resize at
+      // every cut). On the way out the panel's own settings decide again.
+      ocean.flow.follow(on);
+      graphics.restSharpen = !on;
+      viewer.scene.requestRenderMode = on ? false : graphics.quality.onDemand;
+    },
   });
   el("immersive").addEventListener("click", () => void immersive.enter());
 

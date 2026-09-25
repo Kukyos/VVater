@@ -5,9 +5,11 @@
  * and Windy: each particle lives in longitude/latitude, is advected on the CPU through the
  * field (bilinear, m/s turned into degrees at its latitude), projected through Cesium's
  * camera each frame, and drawn as a short line from where it was to where it is. Trails
- * come from fading the canvas a little every frame rather than clearing it. While the
- * camera moves the canvas is wiped instead, and each trail is redrawn from the last few
- * positions its particle held.
+ * come from fading the canvas a little every frame rather than clearing it. While a hand
+ * moves the camera the particles are paused and hidden (`pauseOnMove`), so the globe has
+ * the whole frame; in the cinematic, where the camera never rests, the canvas is wiped
+ * each frame instead and every trail is redrawn from the last few positions its particle
+ * held.
  *
  * Why not GPU particles inside the Cesium scene: that needs Cesium's private renderer
  * classes (compute commands, framebuffers), which change without deprecation; a plugin that
@@ -65,6 +67,9 @@ const HISTORY = 8;
 const HISTORY_EVERY = 4;
 /** Pixels past the screen edge a point may sit and still anchor a trail into view. */
 const EDGE_PX = 40;
+/** Stillness before paused particles come back: long enough that inertia and a hand
+ * resting mid-drag do not flicker them on and off. */
+const RESUME_MS = 200;
 
 interface Swarm {
   field: Field;
@@ -109,8 +114,22 @@ export class FlowOverlay {
   private cam = new Cartesian3();
   private camLen = 1;
   private checked = false;
+  /** The canvas's CSS size, kept from resize(): reading clientWidth per projected point
+   * was a DOM call hundreds of thousands of times a frame, most of the overlay's JS time. */
+  private cssW = 1;
+  private cssH = 1;
   /** Visual speed: degrees moved per second per m/s of current, scaled by zoom. */
   speed = 1;
+  /**
+   * Hide the particles while the camera moves and bring them back once it rests. A moving
+   * camera is the overlay's most expensive frame (every trail re-projected and redrawn),
+   * and it is exactly when the globe needs the frame budget to stay smooth.
+   */
+  pauseOnMove = true;
+  private paused = false;
+  private movedAt = 0;
+  /** Drawn from the scene's postRender rather than its own clock (see follow()). */
+  private following = false;
 
   constructor(private scene: Scene, host: HTMLElement) {
     this.canvas = document.createElement("canvas");
@@ -126,8 +145,10 @@ export class FlowOverlay {
 
   private resize(): void {
     const ratio = Math.min(window.devicePixelRatio || 1, 2);
-    this.canvas.width = Math.round(this.canvas.clientWidth * ratio);
-    this.canvas.height = Math.round(this.canvas.clientHeight * ratio);
+    this.cssW = this.canvas.clientWidth;
+    this.cssH = this.canvas.clientHeight;
+    this.canvas.width = Math.round(this.cssW * ratio);
+    this.canvas.height = Math.round(this.cssH * ratio);
     this.clear();
   }
 
@@ -212,30 +233,78 @@ export class FlowOverlay {
     return l >= h.west && l <= h.east && lat >= h.south && lat <= h.north;
   }
 
+  /**
+   * Draw each frame from the scene's own postRender instead of this overlay's clock. For a
+   * camera that never stops (the cinematic): two animation-frame loops run in no fixed
+   * order, so the overlay could project this frame's camera over a globe still showing
+   * the last one, and the particles shivered against the water. It also exempts the
+   * overlay from pauseOnMove, which would otherwise blank it for the whole film.
+   */
+  follow(on: boolean): void {
+    if (on === this.following) return;
+    this.following = on;
+    if (on) this.scene.postRender.addEventListener(this.onRender);
+    else this.scene.postRender.removeEventListener(this.onRender);
+    this.last = 0;
+  }
+
+  private onRender = () => {
+    if (this.frame !== undefined) this.draw(performance.now());
+  };
+
   private tick = (now: number) => {
     this.frame = requestAnimationFrame(this.tick);
-    const dt = this.last ? Math.min((now - this.last) / 1000, 0.05) : 1 / 60;
-    this.last = now;
+    if (!this.following) this.draw(now);
+  };
+
+  /** Back from a pause: the view is new and the old trails are gone. */
+  private resume(r: number): void {
+    this.paused = false;
+    this.last = 0;
+    this.updateView();
+    // The canvas is blank already, so a big zoom can reseed everything at once here.
+    const all = r > this.seededRange * 3 || r < this.seededRange / 3;
+    if (all) this.seededRange = r;
+    for (const s of this.swarms.values()) {
+      if (all) for (let i = 0; i < s.count; i += 1) this.seed(s, i, true);
+      s.lastOk.fill(0);
+      s.histN.fill(0);
+    }
+  }
+
+  private draw(now: number): void {
     const camera = this.scene.camera;
     // A moving camera invalidates every trail on screen: wipe instead of smearing. The
     // epsilons are absolute (1 m, 1e-6): a relative 1 counted any zoom as "not moved", and
     // the trails smeared across the globe as white after-images.
     const moved = !Cartesian3.equalsEpsilon(camera.positionWC, this.lastCamera, 0, 1) ||
       !Cartesian3.equalsEpsilon(camera.directionWC, this.lastDirection, 0, 1e-6);
+    const r = Cartesian3.magnitude(camera.positionWC) - EARTH_RADIUS;
+    if (moved) this.movedAt = now;
+    Cartesian3.clone(camera.positionWC, this.lastCamera);
+    Cartesian3.clone(camera.directionWC, this.lastDirection);
+    if (this.pauseOnMove && !this.following && now - this.movedAt < RESUME_MS) {
+      // Moving: nothing advected, nothing drawn, until the camera rests.
+      if (!this.paused) {
+        this.paused = true;
+        this.clear();
+      }
+      return;
+    }
+    if (this.paused) this.resume(r);
+    const dt = this.last ? Math.min((now - this.last) / 1000, 0.05) : 1 / 60;
+    this.last = now;
     if (moved || !this.view) this.updateView();
     // After a zoom by a factor of three, the particles are still packed where the old view
     // was (a clump of white from space after a low pass); move a third of them into the
     // new one each time. Reseeding all of them at once wiped every trail, and a fast climb
     // crosses a factor of three every few frames: the screen went blank.
-    const r = Cartesian3.magnitude(camera.positionWC) - EARTH_RADIUS;
     if (this.view && (r > this.seededRange * 3 || r < this.seededRange / 3)) {
       this.seededRange = r;
       for (const s of this.swarms.values()) {
         for (let i = 0; i < s.count; i += 1) if (Math.random() < 1 / 3) this.seed(s, i, true);
       }
     }
-    Cartesian3.clone(camera.positionWC, this.lastCamera);
-    Cartesian3.clone(camera.directionWC, this.lastDirection);
     this.beginFrame();
     const g = this.g;
     if (moved) {
@@ -246,7 +315,7 @@ export class FlowOverlay {
       g.fillRect(0, 0, this.canvas.width, this.canvas.height);
     }
     g.globalCompositeOperation = "source-over";
-    const ratio = this.canvas.width / Math.max(this.canvas.clientWidth, 1);
+    const ratio = this.canvas.width / Math.max(this.cssW, 1);
     // Degrees a particle moves per second for each m/s of current, per metre of distance
     // from the camera: on screen a current moves at about the same pixel speed near and
     // far, close up and from space. This is a picture's speed, not the water's. It is each
@@ -255,8 +324,11 @@ export class FlowOverlay {
     const perMetre = this.speed * 6 / 1.0e7;
     const c = this.cam;
     const p = this.scratch;
-    g.lineCap = "round";
-    g.lineJoin = "round";
+    // Butt caps and bevel joins: stroking is the overlay's whole cost (projection is a
+    // rounding error beside it), and round caps and joins about doubled the stroke time
+    // of one-segment trails. At a 1.2 px line the difference is not visible.
+    g.lineCap = "butt";
+    g.lineJoin = "bevel";
     for (const s of this.swarms.values()) {
       const f = s.field;
       const style = f.style ?? CURRENTS;
@@ -307,7 +379,11 @@ export class FlowOverlay {
           // Moving: the canvas was wiped, so redraw the whole trail from the positions this
           // particle has been at. Straight streaks along today's flow looked like needles.
           let open = false;
-          for (let k = n - 1; k >= 0; k -= 1) {
+          // ponytail: the cinematic redraws every trail every frame and stroke time goes
+          // with segment count, so it takes every other stored point: half the segments,
+          // the same trail length.
+          const stride = this.following ? 2 : 1;
+          for (let k = n - 1 - Math.max(n - 1, 0) % stride; k >= 0; k -= stride) {
             const h = (i * HISTORY + (newest - k + HISTORY * 2) % HISTORY) * 3;
             if (this.toScreen(s.hist[h], s.hist[h + 1], s.hist[h + 2], this.prevScreen, EDGE_PX)) {
               if (open) path.lineTo(this.prevScreen.x * ratio, this.prevScreen.y * ratio);
@@ -346,7 +422,7 @@ export class FlowOverlay {
         g.stroke(path);
       });
     }
-  };
+  }
 
   /**
    * The globe's part of the screen, in degrees. Undefined when it wraps the date line or
@@ -403,8 +479,8 @@ export class FlowOverlay {
     const pLen = Math.sqrt(x * x + y * y + z * z);
     if ((x * c.x + y * c.y + z * c.z) / (pLen * this.camLen) < EARTH_RADIUS / this.camLen) return false;
     if (!this.project(x, y, z, out)) return false;
-    const w = this.canvas.clientWidth;
-    const h = this.canvas.clientHeight;
+    const w = this.cssW;
+    const h = this.cssH;
     return out.x >= -edge && out.y >= -edge && out.x <= w + edge && out.y <= h + edge;
   }
 
@@ -418,8 +494,8 @@ export class FlowOverlay {
     if (cw <= 0) return false;  // behind the camera
     const cx = m[0] * x + m[4] * y + m[8] * z + m[12];
     const cy = m[1] * x + m[5] * y + m[9] * z + m[13];
-    out.x = (cx / cw + 1) * 0.5 * this.canvas.clientWidth;
-    out.y = (1 - cy / cw) * 0.5 * this.canvas.clientHeight;
+    out.x = (cx / cw + 1) * 0.5 * this.cssW;
+    out.y = (1 - cy / cw) * 0.5 * this.cssH;
     return true;
   }
 }
