@@ -281,7 +281,9 @@
   #learn.in-step .learn-foot { display: flex; }
   .learn-foot .learn-next { margin-left: auto; }
   .learn-choices { display: flex; flex-wrap: wrap; gap: 6px; }
-  .learn-choices .btn { text-align: left; }
+  /* Answers are sentences: they wrap inside the card, never widen it. */
+  .learn-choices .btn { text-align: left; white-space: normal; max-width: 100%; }
+  #learn { overflow-x: hidden; overflow-wrap: anywhere; }
   #learn .btn { padding: 5px 11px; }
   #learn .btn.on { background: var(--accent); color: var(--accent-ink); font-weight: 600; }
   #learn .btn.right { border-color: #5fd38a; color: #5fd38a; }
