@@ -17,6 +17,12 @@ run inside the viewer itself on real data.
   not allowed to. Two actions exist only for lessons and are in neither whitelist:
   `show_cube` (hide the block for a surface lesson) and `look_down` (see a place from
   straight above).
+- **Every question must be answerable from the screen or from what the lesson just said**,
+  never by recalling a number the card printed earlier. The first version asked "were
+  the waves taller or shorter than 1 m?" with no wave layer on screen: only memory could
+  answer it. It now asks what twice the wind would do. The Amphan question put a
+  0.8 °C change on a 29 °C colour bar, where both days look the same; the lesson now sets
+  a 28–31.5 °C bar for both days.
 - **Quiz answers are read from the data on screen** wherever the question is about the
   ocean (`learn/lessons.ts`): "is 500 m colder than the surface" is answered by the cube
   the student is looking at, and the explanation quotes the model's own values. Answers

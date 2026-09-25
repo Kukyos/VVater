@@ -220,6 +220,7 @@ export class Tour {
       }
       if (ticket !== this.run) return;
       s.after?.(this.ctx);
+      for (const a of s.then?.(this.ctx) ?? []) await this.hooks.run(a);
     } catch (error) {
       if (ticket !== this.run) return;
       this.body.innerHTML = `<p class="learn-bad">${esc((error as Error).message)}</p>`;

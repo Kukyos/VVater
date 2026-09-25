@@ -41,6 +41,8 @@ export interface Step {
   do?: (c: Ctx) => ChatAction[];
   /** Runs after `do`, once the cube is on screen: read values into `memo`. */
   after?: (c: Ctx) => void;
+  /** Viewer actions run once the cube is on screen (a colour range for that cube, say). */
+  then?: (c: Ctx) => ChatAction[];
   /** Ask for the student's town or city. */
   place?: boolean;
   /** Next stays locked until this is true (polled): "click a float", say. */
@@ -184,12 +186,18 @@ export const LESSONS: Lesson[] = [
       },
       {
         say: "Quick check.",
+        // Answerable from what the lesson just said, not from memory of a number: the
+        // screen shows wind and currents, and no wave layer to read a height from.
         quiz: {
           kind: "choice",
-          q: (c) => `Were the waves near ${c.place.name} today taller or shorter than one metre?`,
-          options: ["Taller than 1 m", "Shorter than 1 m"],
-          answer: (c) => (c.sea && c.sea.wave_height_m >= 1 ? 0 : 1),
-          why: (c) => c.sea ? `The model says ${fmt(c.sea.wave_height_m)} m.` : "We could not read the waves today.",
+          q: (c) => `Tomorrow the wind near ${c.place.name.split(",")[0]} blows twice as hard, ` +
+            "all day. What happens to the waves?",
+          options: ["They grow bigger", "They get smaller", "Nothing changes"],
+          answer: 0,
+          why: (c) => "Stronger wind, blowing for longer, puts more energy into the sea, so " +
+            "the waves grow." + (c.sea?.wind_ms != null
+              ? ` Today's ${fmt(c.sea.wind_ms)} m/s gave waves of about ${fmt(c.sea.wave_height_m)} m there.`
+              : ""),
         },
       },
       {
@@ -320,10 +328,15 @@ export const LESSONS: Lesson[] = [
         do: () => [{ action: "set_control", target: "cube-scenario", value: "amphan_before" },
                    { action: "set_view", view: "region" }],
         after: (c) => { c.memo.before = surfaceMean(c); },
+        // The change is under a degree; on the full 0-30 °C bar both days look the same.
+        // A narrow bar, kept for the next day (same variable keeps its range), shows it.
+        then: () => [{ action: "set_control", target: "range-min", value: 28 },
+                     { action: "set_control", target: "range-max", value: 31.5 }],
       },
       {
         say: "Amphan grew into a super cyclone over the Bay and crossed the coast on 20 May. " +
-          "Here is the same water on 22 May, two days after landfall.",
+          "Here is the same water on 22 May, two days after landfall, on the same colour " +
+          "bar: from 28 °C (dark) to 31.5 °C (bright yellow). Look at the top of the block.",
         do: () => [{ action: "set_control", target: "cube-scenario", value: "amphan_after" }],
         after: (c) => { c.memo.after = surfaceMean(c); },
       },
