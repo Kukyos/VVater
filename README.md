@@ -75,7 +75,7 @@ python -m uvicorn server.ocean.api:app --port 8011
 cd viewer && npm install && npm run dev           # http://localhost:5173
 ```
 
-On Windows, `start.bat` runs the last two lines in their own windows and opens the browser.
+One click: `start.bat` on Windows, `./start.sh` on macOS and Linux. Each runs the last two lines and opens the browser.
 
 Credentials go in `.env` (see `.env.example`). The INCOIS data needs none. Copernicus
 (currents and the global layers) needs a free Copernicus Marine account; the assistant needs
