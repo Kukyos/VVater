@@ -247,7 +247,7 @@ export class Tour {
         value="${esc(this.saved.place?.name.split(",")[0] ?? "")}" />
       <button class="btn on" type="submit">Go</button>
       <button class="btn" type="button" data-skip>Skip</button>
-      <div class="hint learn-note">Only the name you type is sent, to a free place-name search (Open-Meteo).</div>`;
+      <div class="hint learn-note">Only the name you type is sent, to our server and on to a free place-name search (Open-Meteo).</div>`;
     this.body.append(form);
     const input = form.querySelector("input")!;
     const note = form.querySelector(".learn-note")!;

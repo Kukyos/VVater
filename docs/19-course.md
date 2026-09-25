@@ -21,8 +21,10 @@ run inside the viewer itself on real data.
   ocean (`learn/lessons.ts`): "is 500 m colder than the surface" is answered by the cube
   the student is looking at, and the explanation quotes the model's own values. Answers
   are checked in the browser, never by the language model.
-- **Your city**: the typed name goes to Open-Meteo's free geocoder from the browser (no
-  key; nothing else is sent). `GET /api/seastate` then finds the nearest sea cell of the
+- **Your city**: the typed name goes to `GET /api/geocode`, which asks Open-Meteo's free
+  geocoder (no key; nothing else is sent). It was first called from the browser directly,
+  and a privacy blocker in a real browser refused it ("Failed to fetch"), so the lookup is
+  the server's. `GET /api/seastate` then finds the nearest sea cell of the
   Copernicus wave model (`marine.sea_state_near`) and returns its wave height and wind
   with the distance, so an inland city is told how many hundred kilometres away its
   nearest sea is, rather than given a made-up coast.
@@ -67,4 +69,4 @@ No number from the evaluation harness is quoted in a lesson; nothing here needs
 ## Not done (see `11-deferred.md`)
 
 D-43: no teacher view or class results, progress in one browser only. D-44: English only.
-D-45: the geocoder is a third-party service; offline the place step falls back to Chennai.
+D-45: the geocoder is a third-party service behind our API; offline the place step falls back to Chennai.

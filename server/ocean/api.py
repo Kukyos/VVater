@@ -396,6 +396,38 @@ def wind_data(day: str) -> Response:
                     headers={"Cache-Control": "public, max-age=3600"})
 
 
+@lru_cache(maxsize=256)
+def _geocode(name: str) -> dict | None:
+    import requests
+    try:
+        r = requests.get("https://geocoding-api.open-meteo.com/v1/search", timeout=10,
+                         params={"name": name, "count": 1, "language": "en", "format": "json"})
+        r.raise_for_status()
+    except requests.RequestException as exc:
+        raise LookupError(f"place search unavailable ({type(exc).__name__})") from exc
+    hit = (r.json().get("results") or [None])[0]
+    if not hit:
+        return None
+    return {"name": ", ".join(x for x in (hit.get("name"), hit.get("country")) if x),
+            "lat": hit["latitude"], "lon": hit["longitude"]}
+
+
+@app.get("/api/geocode")
+def geocode(name: str) -> dict:
+    """A town or city to a place, through Open-Meteo's free geocoder (no key). Done here
+    rather than in the browser, where privacy blockers refuse third-party calls."""
+    name = name.strip()[:80]
+    if not name:
+        raise HTTPException(400, "no place name")
+    try:
+        hit = _geocode(name.lower())
+    except LookupError as exc:
+        raise HTTPException(503, str(exc)) from exc
+    if not hit:
+        raise HTTPException(404, f"no place called {name!r} found")
+    return hit
+
+
 @lru_cache(maxsize=64)
 def _seastate(lat: float, lon: float, day: str) -> dict:
     return marine.sea_state_near(lat, lon, day)

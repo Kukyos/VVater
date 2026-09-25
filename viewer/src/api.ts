@@ -493,15 +493,21 @@ export async function getSeaState(lat: number, lon: number, day: string): Promis
 }
 
 /**
- * A town or city name to a place, through Open-Meteo's free geocoder (no key). Called
- * from the browser, so only the typed name leaves it, and never through our server.
+ * A town or city name to a place, through our API (which asks Open-Meteo's free geocoder).
+ * Not called from the browser directly: privacy blockers refuse the third-party request.
  */
 export async function geocode(name: string): Promise<{ name: string; lat: number; lon: number } | undefined> {
-  const url = `https://geocoding-api.open-meteo.com/v1/search?count=1&language=en&format=json` +
-    `&name=${encodeURIComponent(name.trim().slice(0, 80))}`;
-  const response = await globalThis.fetch(url);
-  if (!response.ok) throw new Error(`place search unavailable (${response.status})`);
-  const hit = (await response.json()).results?.[0];
-  return hit ? { name: [hit.name, hit.country].filter(Boolean).join(", "),
-                 lat: hit.latitude, lon: hit.longitude } : undefined;
+  let response: Response;
+  try {
+    response = await fetch(`${BASE}/api/geocode?name=${encodeURIComponent(name.trim().slice(0, 80))}`);
+  } catch {
+    throw new Error("the place search could not be reached");
+  }
+  if (!response.ok) {
+    const detail = String((await response.json().catch(() => ({}))).detail ?? "");
+    // Our own "not found" names the place; a bare "Not Found" is a server without the route.
+    if (response.status === 404 && detail.startsWith("no place")) return undefined;
+    throw new Error(`place search unavailable (${response.status}${detail ? `: ${detail}` : ""})`);
+  }
+  return response.json();
 }
