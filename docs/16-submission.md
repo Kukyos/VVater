@@ -36,13 +36,16 @@ file, not ours, and is not committed.
 
 ## What each slide carries
 
-| Slide | Pictures | Text and numbers |
+The template's last slide says to keep "the idea details pointers (mentioned in previous
+slides)". Each body uses those pointers, word for word or nearly, as its section headings.
+
+| Slide | Template pointers → sections | Pictures |
 |---|---|---|
-| 2 Solution | hero: the Amphan Bay cube cut open with its floats; four tiles for what is new: any ocean (Gulf Stream), floats inside the model, the planet on one colour bar, the assistant acting | one-line pitch; the two gaps the brief names |
-| 3 Technical | a flowchart of how a cube is made (only the ARCO chunks the box touches are read; the chunk grid is drawn) with the float lane and every failing branch | the brief's requirements line by line against what is built; the stack |
-| 4 Feasibility | the residual layer (where the INCOIS model is wrong) | four stat tiles (variables and days covered, cube open time, peak memory, casts co-located); error by depth; the risks we hit |
-| 5 Impact | Amphan before and after; the fishing panel; a course card; the immersive view | one column each for forecasters, fishermen, students, outreach; what comes next |
-| 6 References | none | the repository; 24 sources in three columns: data, standards and methods, what the course cites |
+| 2 | Proposed solution (a one-line pitch, the hero, "in detail"); How it addresses the problem (the problem statement's five key gaps, each with our answer, plus the features it names individually); Innovation and uniqueness (five points) | the hero; two small crops: a float's profile, the assistant |
+| 3 | Methodology and process: the flowchart of how a cube is made, each step placed where it runs (server or browser); Technologies to be used: the architecture in three tiers with pinned versions | none; both diagrams |
+| 4 | Analysis of feasibility (four measured tiles, the error-by-depth finding); Challenges and risks, and our strategies (a two-column table) | the residual layer |
+| 5 | Potential impact on the target audience (forecasters, fishermen, students, public); Benefits: social, economic, environmental | Amphan before and after, the fishing panel, a course card, the immersive globe |
+| 6 | Details and links of the references: 24 sources, the repository, how the links were checked | none |
 
 `figures.py --check` only catches empty space. It cannot see overflow (the body is
 `overflow: hidden`), so look at the rendered PNGs after any rewording, and at the Canva
@@ -115,8 +118,9 @@ logo are pictures. Canva → Create a design → Import file → pick it.
 It re-typesets nothing by hand. Headless Chrome lays out each `figures/body-*.html` with
 Arial swapped in (present here and in Canva, so the measured widths hold), a probe script
 reads back every box, text run, image and svg element, and each becomes a shape at the
-same position. CSS generated content is not read: the green ticks before the brief's rows
-on slide 3 are in the main deck only.
+same position. CSS list markers and bold `tspan` runs inside an svg are not read: the
+benefit bullets on slide 5 and the bold technology names on slide 3 are plain in the Canva
+copy.
 
 ## Link check, 2026-09-25
 

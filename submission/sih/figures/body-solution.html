@@ -4,31 +4,42 @@
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;600&family=IBM+Plex+Mono&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="deck.css"></head>
 <body><div class="slide">
-<p class="lead" style="font-size:56px">Cut a block out of the ocean <b>anywhere on Earth, on any day
-from 1993 to the forecast</b>, and look at it from the side, with the real Argo floats
-standing inside it. In any browser.</p>
-<div class="cols grow" style="grid-template-columns: 2280px 1fr; gap: 80px">
-  <figure class="shot hero">
-    <img src="crop-hero.jpg">
-    <figcaption><b>The Bay of Bengal on 2020-05-14, two days before Cyclone Amphan formed</b>,
-    cut open to 1,000 m. The warm lid, the thermocline under it and the cold water below are
-    drawn on the model's own 35 depth levels. Each dashed stick is an Argo float
-    standing in the water where it dived, within two days (17 floats); click one for its
-    measurements against the model, with QC flags (a failed level is drawn red, never dropped).
-    Model: Copernicus GLORYS12, 1/12°.</figcaption>
-  </figure>
-  <div class="col" style="gap:16px">
-    <h2 style="margin:0">The gap the brief names</h2>
+<div class="cols grow" style="grid-template-columns: 1560px 1180px 1fr; gap: 70px">
+  <div class="col" style="gap:14px">
+    <h2 style="margin:0">Proposed solution</h2>
+    <p class="pitch">A browser platform that cuts a <b>3D block out of the ocean model, anywhere,
+    on any day from 1993 to the forecast</b>, and stands the real Argo floats inside it.</p>
+    <figure class="shot"><img src="crop-hero.jpg" style="height:820px; object-fit:cover">
+      <figcaption><b>Working prototype, captured.</b> The Bay of Bengal on 2020-05-14, before
+      Cyclone Amphan, cut open to 1,000 m on the model's 35 native depth levels; each
+      dashed stick is one of 17 Argo floats within two days.</figcaption></figure>
+    <h3 class="sub">In detail</h3>
     <ul class="points tight">
-      <li><b>Tools are flat 2D or desktop-bound</b><span>a cyclone feeds on a warm layer tens of metres thick; a map cannot show it</span></li>
-      <li><b>Model and instruments live apart</b><span>forecasters toggle between packages to compare them</span></li>
+      <li><b>Model:</b> Copernicus GLORYS12 and PISCES, read from the cloud; the INCOIS Argo analysis for the Bay</li>
+      <li><b>Instruments:</b> Argo core and BGC floats, gliders, your own CSV casts, each with its QC state and source file</li>
+      <li><b>Views:</b> Region 3D, Map 2D, Globe, Fly, immersive; winds, waves, currents, fishing zones</li>
     </ul>
-    <h2 style="margin:10px 0 0">What is new</h2>
-    <div class="tiles">
-      <figure><img src="crop-anywhere.jpg"><figcaption><b>Any ocean, any day</b>23 variables, physics and biogeochemistry. Here the Gulf Stream.</figcaption></figure>
-      <figure><img src="crop-floats.jpg"><figcaption><b>Floats inside the model</b>click one: its dive against the model, with QC, data mode and file</figcaption></figure>
-      <figure><img src="crop-planet.jpg"><figcaption><b>One colour bar for the planet</b>the globe in the cube's colours, currents and winds flowing</figcaption></figure>
-      <figure><img src="crop-assistant.jpg"><figcaption><b>Ask it, and it acts</b>"make a cube of oxygen in the Arabian Sea": the assistant built it</figcaption></figure>
+  </div>
+  <div class="col" style="gap:14px">
+    <h2 style="margin:0">How it addresses the problem</h2>
+    <p class="muted" style="font-size:34px">The five gaps the problem statement lists, and our answer to each.</p>
+    <ul class="points gaps"><li><b>No browser-based 3D, depth-resolved view of model fields</b><span>a block of any box and day, cut open, in any browser; the INCOIS analysis as a true 3D volume</span></li><li><b>Argo and glider profiles not shown alongside model fields</b><span>floats stand inside the model as sticks; click one for its profile against the model</span></li><li><b>No controls for variable, depth slice, time step, colour bar</b><span>23 variables, cut planes, a day-by-day timeline, palette, range and log scale</span></li><li><b>New data streams need re-engineering</b><span>a new variable is one catalogue line; CSV casts drop onto the globe</span></li><li><b>No tools for rapid understanding and decisions</b><span>an assistant that builds the view you ask for; fishing advisories; cyclone heat</span></li></ul>
+    <div class="card grey" style="margin-top:auto"><h3>Also asked for by name, and built</h3><p>Isosurface
+      (the 20 °C isotherm, Bay volume) · layer opacity · vertical exaggeration · NetCDF and text
+      parsers · REST API · OGC WMS for the Bay layers</p></div>
+  </div>
+  <div class="col" style="gap:14px">
+    <h2 style="margin:0">Innovation and uniqueness</h2>
+    <ul class="points tight inno">
+      <li><b>Floats inside the model</b><span>where model and float disagree, the colours differ on the same wall</span></li>
+      <li><b>No archive to build</b><span>reads only the chunks a box needs from Copernicus's cloud stores</span></li>
+      <li><b>The model is checked too</b><span>impossible values masked and counted; INCOIS error drawn faint</span></li>
+      <li><b>An assistant that acts</b><span>builds cubes and sets controls; numbers it cannot trace are flagged</span></li>
+      <li><b>A course on live data</b><span>six lessons whose quiz answers are read from the cube on screen</span></li>
+    </ul>
+    <div class="pair2">
+      <figure><img src="crop-floats.jpg"><figcaption>a float's profile vs model</figcaption></figure>
+      <figure><img src="crop-assistant.jpg"><figcaption>asked, the assistant built it</figcaption></figure>
     </div>
   </div>
 </div>

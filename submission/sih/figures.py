@@ -134,7 +134,7 @@ def flowchart(v2: dict) -> str:
     branches are where most tools quietly drop a reading or paint over it.
     """
     cat = v2["catalog"]
-    W, H = 2260, 1440
+    W, H = 2260, 1560
     s = [f'<svg width="{W}" height="{H}" viewBox="0 0 {W} {H}">',
          '<defs><marker id="a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">'
          '<path d="M0 0L10 5L0 10z" fill="#4F5B69"/></marker></defs>']
@@ -160,7 +160,7 @@ def flowchart(v2: dict) -> str:
             lx, ly = at
             s.append(f'<text x="{lx}" y="{ly}" font-size="34" font-weight="600" fill="{colour}">{label}</text>')
 
-    # ---- the cube lane
+    # ---- the cube lane (server)
     L, BW = 0, 900
     cx = L + BW / 2
     box(L, 0, BW, 170, "1  You ask: box · day · variable",
@@ -171,33 +171,36 @@ def flowchart(v2: dict) -> str:
     arrow([(cx + 280, 306), (BW + 50, 306)], "no", (cx + 300, 292), "#B9770E")
     box(BW + 50, 238, 560, 136, "Analysis & forecast", ["labelled forecast on screen"],
         fill="#FEF5E7", edge="#B9770E")
-    arrow([(cx, 398), (cx, 446)], "yes", (cx + 16, 432))
+    # the forecast branch rejoins: the same chunk reader serves both stores
+    arrow([(BW + 330, 374), (BW + 330, 420), (cx + 60, 420), (cx + 60, 446)])
+    arrow([(cx, 398), (cx, 446)], "yes", (cx - 80, 432))
     box(L, 446, BW, 210, "2  Read only the chunks the box touches",
         ["Copernicus ARCO zarr stores on S3,", "cached on disk: no copy of the ocean,",
          "a day seen once opens from the cache"])
     # the chunk idea, drawn: the store's grid, the box, the chunks actually read
-    gx, gy, cs = BW + 70, 452, 44
+    gx, gy, cs = BW + 70, 470, 40
     for i in range(10):
         for j in range(5):
             hit = 3 <= i <= 6 and 1 <= j <= 3
             s.append(f'<rect x="{gx + i * cs}" y="{gy + j * cs}" width="{cs - 4}" height="{cs - 4}" '
                      f'fill="{"#2E86C1" if hit else "#E6ECF3"}"/>')
-    s.append(f'<rect x="{gx + 3 * cs + 18}" y="{gy + cs + 12}" width="{3 * cs + 6}" height="{2 * cs + 12}" '
+    s.append(f'<rect x="{gx + 3 * cs + 16}" y="{gy + cs + 10}" width="{3 * cs + 6}" height="{2 * cs + 12}" '
              f'fill="none" stroke="#C0392B" stroke-width="5"/>')
     s.append(f'<text x="{gx}" y="{gy + 5 * cs + 34}" font-size="32" fill="#4F5B69">'
              f'<tspan fill="#C0392B" font-weight="600">box</tspan> · '
              f'<tspan fill="#2E86C1" font-weight="600">chunks read</tspan></text>')
     arrow([(cx, 656), (cx, 700)])
-    box(L, 700, BW, 170, "3  Native levels only, then derived fields",
-        ["never more depth levels than the model has", "TEOS-10 density and speed of sound"])
-    arrow([(cx, 870), (cx, 914)])
-    diamond(cx, 1006, 560, 184, ["Value inside the", "published range?"])
-    arrow([(cx + 280, 1006), (BW + 50, 1006)], "no", (cx + 300, 992), "#C0392B")
-    box(BW + 50, 938, 560, 136, "Masked and counted", ["in the provenance panel"],
+    diamond(cx, 792, 560, 184, ["Published range", "for this variable?"])
+    arrow([(cx + 280, 792), (BW + 50, 792)], "fails", (cx + 296, 778), "#C0392B")
+    box(BW + 50, 724, 560, 136, "Masked and counted", ["in the provenance panel"],
         fill="#FDEDEC", edge="#C0392B")
-    arrow([(cx, 1098), (cx, 1142)], "yes", (cx + 16, 1128))
-    box(L, 1142, BW, 124, "4  float32 cube → six painted faces", [])
-    s.append(f'<text x="{L + 30}" y="{1142 + 96}" font-size="34" fill="#4F5B69">each face a section through the data</text>')
+    arrow([(cx, 884), (cx, 928)], "passes, or none published", (cx + 16, 914))
+    box(L, 928, BW, 210, "3  Native depth levels, never more",
+        [f"block-averaged across to ≤160 cells a side;", "TEOS-10 density and speed of sound;",
+         "sent as raw float32"])
+    arrow([(cx, 1138), (cx, 1182)])
+    box(L, 1182, BW, 124, "4  Browser: CesiumJS paints six faces", [])
+    s.append(f'<text x="{L + 30}" y="{1182 + 96}" font-size="34" fill="#4F5B69">each face a section; cut any side inwards</text>')
 
     # ---- the float lane
     R, RW = 1620, W - 1620
@@ -210,17 +213,69 @@ def flowchart(v2: dict) -> str:
     box(R, 446, RW, 136, "Drawn red", ["kept, never dropped"], fill="#FDEDEC", edge="#C0392B")
     arrow([(rcx, 582), (rcx, 700)], "kept", (rcx + 16, 650), "#C0392B")
     arrow([(rcx - 280, 306), (R - 20, 306), (R - 20, 700), (R, 700)], "yes", (R - 90, 290))
-    box(R, 700, RW, 210, "Stick in the cube", ["coloured on the cube's bar;",
-                                                "click: co-located with the", "model on its own day"],
+    box(R, 700, RW, 210, "Stick in the cube", ["on the cube's colour bar;",
+                                                "click: compared with the", "model on its own day"],
         fill="#EAF2FB", edge="#2E86C1")
-    arrow([(rcx, 910), (rcx, 1330)])
+    arrow([(rcx, 910), (rcx, 1182), (L + BW + 8, 1244)])
 
-    # ---- everything lands in the API and the browser
-    y = 1330
+    # ---- what the browser then offers
+    y = 1440
     box(0, y, W, 110, "", [], fill="#1F4E79", edge="#1F4E79")
-    s.append(f'<text x="30" y="{y + 70}" font-size="38" font-weight="600" fill="#FFFFFF">5  FastAPI → CesiumJS in any browser'
-             f'<tspan font-weight="400" fill="#CFE3F5">   ·  Region 3D · Map 2D · Globe · Fly · Immersive · Learn · Assistant</tspan></text>')
-    arrow([(cx, 1266), (cx, y)])
+    s.append(f'<text x="30" y="{y + 70}" font-size="40" font-weight="600" fill="#FFFFFF">5  On screen'
+             f'<tspan font-weight="400" fill="#CFE3F5">   Region 3D · Map 2D · Globe · Fly · Immersive · Learn · Assistant</tspan></text>')
+    arrow([(cx, 1306), (cx, y)])
+    s.append("</svg>")
+    return "".join(s)
+
+
+def architecture(host: dict) -> str:
+    """The build, three tiers: what runs in the browser, on our one server, and at the
+    data's owners. Versions are the pinned ones (viewer/package.json,
+    server/requirements.txt)."""
+    W, H = 1430, 1560
+    s = [f'<svg width="{W}" height="{H}" viewBox="0 0 {W} {H}">',
+         '<defs><marker id="b" viewBox="0 0 10 10" refX="5" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">'
+         '<path d="M0 0L10 5L0 10z" fill="#4F5B69"/></marker></defs>']
+
+    def tier(y, h, title, sub, items, fill, edge):
+        s.append(f'<rect x="0" y="{y}" width="{W}" height="{h}" fill="{fill}" stroke="{edge}" stroke-width="3"/>')
+        s.append(f'<rect x="0" y="{y}" width="12" height="{h}" fill="{edge}"/>')
+        s.append(f'<text x="36" y="{y + 54}" font-size="42" font-weight="600" fill="#16202B">{title}'
+                 f'<tspan font-size="33" font-weight="400" fill="#4F5B69">  {sub}</tspan></text>')
+        for i, (name, what) in enumerate(items):
+            yy = y + 116 + i * 60
+            s.append(f'<text x="36" y="{yy}" font-size="37" fill="#4F5B69"><tspan font-weight="600" fill="#1F4E79">{name}</tspan>  {what}</text>')
+
+    def link(y, label):
+        s.append(f'<line x1="120" x2="120" y1="{y}" y2="{y + 86}" stroke="#4F5B69" stroke-width="4" '
+                 f'marker-start="url(#b)" marker-end="url(#b)"/>')
+        s.append(f'<text x="160" y="{y + 54}" font-size="33" font-weight="600" fill="#4F5B69">{label}</text>')
+
+    tier(0, 400, "Browser", "any modern browser, nothing installed", [
+        ("CesiumJS 26", "3D globe, voxel volume, the cube's faces"),
+        ("TypeScript 5.9 + Vite 7", "the viewer, no UI framework"),
+        ("Canvas 2D overlay", "currents and winds as moving particles"),
+        ("Cesium ion (optional)", "world terrain and imagery for Fly"),
+        ("Static files", "served from any web host (Vercel today)"),
+    ], "#EAF2FB", "#2E86C1")
+    link(406, "REST: JSON, raw float32 volumes, OGC WMS (Bay layers)")
+    tier(498, 560, "API server", "one Python 3.14 process", [
+        ("FastAPI + Uvicorn", "cubes, floats, surface, wind, fishing, chat"),
+        ("xarray · netCDF4 · dask", "NetCDF and zarr, read lazily"),
+        ("numpy · scipy · gsw", "regrid, streamlines, TEOS-10 seawater"),
+        ("Copernicus toolbox + S3", "only the chunks a request needs"),
+        ("Disk chunk cache", f"measured {host['peak_mb']} MB peak RAM; ask for 1 GB"),
+        ("LLM via AIRouter", "tools call our own API, nothing else"),
+        ("truststore", "TLS always verified, against the OS store"),
+    ], "#F1F4F8", "#1F4E79")
+    link(1064, "HTTPS only, no credentials for the defaults")
+    tier(1156, 404, "Data, fetched on demand", "nothing copied in advance", [
+        ("Copernicus Marine", "ARCO zarr on S3: physics, biogeochemistry, waves"),
+        ("ERDDAP", "INCOIS analysis · Ifremer Argo · IOOS gliders"),
+        ("INCOIS PFZ", "fishing advisories, as published"),
+        ("UCAR THREDDS · NASA GIBS", "GFS wind forecast · land relief"),
+        ("Open-Meteo", "place names for the course"),
+    ], "#FEF5E7", "#B9770E")
     s.append("</svg>")
     return "".join(s)
 
@@ -243,69 +298,80 @@ def main() -> None:
     empty_pct = f"{100 - float(res['coverage_percent']):.0f}"
 
     # ============================================================ 2 solution
+    # The template's pointers for this slide are the headings: proposed solution,
+    # detailed explanation, how it addresses the problem, innovation and uniqueness.
+    gaps = [
+        ("No browser-based 3D, depth-resolved view of model fields",
+         "a block of any box and day, cut open, in any browser; the INCOIS analysis as a true 3D volume"),
+        ("Argo and glider profiles not shown alongside model fields",
+         "floats stand inside the model as sticks; click one for its profile against the model"),
+        ("No controls for variable, depth slice, time step, colour bar",
+         f"{cat['variables']} variables, cut planes, a day-by-day timeline, palette, range and log scale"),
+        ("New data streams need re-engineering",
+         "a new variable is one catalogue line; CSV casts drop onto the globe"),
+        ("No tools for rapid understanding and decisions",
+         "an assistant that builds the view you ask for; fishing advisories; cyclone heat"),
+    ]
+    rows = "".join(f'<li><b>{g}</b><span>{a}</span></li>' for g, a in gaps)
     page("body-solution", f"""
-<p class="lead" style="font-size:56px">Cut a block out of the ocean <b>anywhere on Earth, on any day
-from {cat["first_day"][:4]} to the forecast</b>, and look at it from the side, with the real Argo floats
-standing inside it. In any browser.</p>
-<div class="cols grow" style="grid-template-columns: 2280px 1fr; gap: 80px">
-  <figure class="shot hero">
-    <img src="crop-hero.jpg">
-    <figcaption><b>The Bay of Bengal on {before["day"]}, two days before Cyclone Amphan formed</b>,
-    cut open to 1,000 m. The warm lid, the thermocline under it and the cold water below are
-    drawn on the model's own {v2["hero"]["levels"]} depth levels. Each dashed stick is an Argo float
-    standing in the water where it dived, within two days ({casts["found"]} floats); click one for its
-    measurements against the model, with QC flags (a failed level is drawn red, never dropped).
-    Model: Copernicus GLORYS12, 1/12°.</figcaption>
-  </figure>
-  <div class="col" style="gap:16px">
-    <h2 style="margin:0">The gap the brief names</h2>
+<div class="cols grow" style="grid-template-columns: 1560px 1180px 1fr; gap: 70px">
+  <div class="col" style="gap:14px">
+    <h2 style="margin:0">Proposed solution</h2>
+    <p class="pitch">A browser platform that cuts a <b>3D block out of the ocean model, anywhere,
+    on any day from {cat["first_day"][:4]} to the forecast</b>, and stands the real Argo floats inside it.</p>
+    <figure class="shot"><img src="crop-hero.jpg" style="height:820px; object-fit:cover">
+      <figcaption><b>Working prototype, captured.</b> The Bay of Bengal on {before["day"]}, before
+      Cyclone Amphan, cut open to 1,000 m on the model's {v2["hero"]["levels"]} native depth levels; each
+      dashed stick is one of {casts["found"]} Argo floats within two days.</figcaption></figure>
+    <h3 class="sub">In detail</h3>
     <ul class="points tight">
-      <li><b>Tools are flat 2D or desktop-bound</b><span>a cyclone feeds on a warm layer tens of metres thick; a map cannot show it</span></li>
-      <li><b>Model and instruments live apart</b><span>forecasters toggle between packages to compare them</span></li>
+      <li><b>Model:</b> Copernicus GLORYS12 and PISCES, read from the cloud; the INCOIS Argo analysis for the Bay</li>
+      <li><b>Instruments:</b> Argo core and BGC floats, gliders, your own CSV casts, each with its QC state and source file</li>
+      <li><b>Views:</b> Region 3D, Map 2D, Globe, Fly, immersive; winds, waves, currents, fishing zones</li>
     </ul>
-    <h2 style="margin:10px 0 0">What is new</h2>
-    <div class="tiles">
-      <figure><img src="crop-anywhere.jpg"><figcaption><b>Any ocean, any day</b>{cat["variables"]} variables, physics and biogeochemistry. Here the Gulf Stream.</figcaption></figure>
-      <figure><img src="crop-floats.jpg"><figcaption><b>Floats inside the model</b>click one: its dive against the model, with QC, data mode and file</figcaption></figure>
-      <figure><img src="crop-planet.jpg"><figcaption><b>One colour bar for the planet</b>the globe in the cube's colours, currents and winds flowing</figcaption></figure>
-      <figure><img src="crop-assistant.jpg"><figcaption><b>Ask it, and it acts</b>"make a cube of oxygen in the Arabian Sea": the assistant built it</figcaption></figure>
+  </div>
+  <div class="col" style="gap:14px">
+    <h2 style="margin:0">How it addresses the problem</h2>
+    <p class="muted" style="font-size:34px">The five gaps the problem statement lists, and our answer to each.</p>
+    <ul class="points gaps">{rows}</ul>
+    <div class="card grey" style="margin-top:auto"><h3>Also asked for by name, and built</h3><p>Isosurface
+      (the 20 °C isotherm, Bay volume) · layer opacity · vertical exaggeration · NetCDF and text
+      parsers · REST API · OGC WMS for the Bay layers</p></div>
+  </div>
+  <div class="col" style="gap:14px">
+    <h2 style="margin:0">Innovation and uniqueness</h2>
+    <ul class="points tight inno">
+      <li><b>Floats inside the model</b><span>where model and float disagree, the colours differ on the same wall</span></li>
+      <li><b>No archive to build</b><span>reads only the chunks a box needs from Copernicus's cloud stores</span></li>
+      <li><b>The model is checked too</b><span>impossible values masked and counted; INCOIS error drawn faint</span></li>
+      <li><b>An assistant that acts</b><span>builds cubes and sets controls; numbers it cannot trace are flagged</span></li>
+      <li><b>A course on live data</b><span>six lessons whose quiz answers are read from the cube on screen</span></li>
+    </ul>
+    <div class="pair2">
+      <figure><img src="crop-floats.jpg"><figcaption>a float's profile vs model</figcaption></figure>
+      <figure><img src="crop-assistant.jpg"><figcaption>asked, the assistant built it</figcaption></figure>
     </div>
   </div>
 </div>
 """)
 
     # ============================================================ 3 technical
-    rows = [
-        ("3D volume, depth slices, time steps", "cube faces as sections, cut planes, a day-by-day timeline; the INCOIS voxel volume"),
-        ("Isosurface", "20 °C isotherm, one click (INCOIS Bay volume)"),
-        ("Argo, glider, CTD, BGC, click for a profile", "core and BGC floats, a glider; CTD as a CSV cast; profile against the model"),
-        ("NetCDF and delimited-text parsers", "xarray, and a text reader checked cast for cast against the NetCDF path"),
-        ("Colour bar editor", "palette, min/max, linear or log"),
-        ("Opacity, vertical exaggeration", "both sliders, the stretch printed on screen"),
-        ("REST API, no client install", "FastAPI; the browser is the whole client"),
-        ("Open standards", "OGC WMS; CF read defensively. WCS not built"),
-        ("New sensors, variables, ML products", "one parser function and one config line each"),
-        ("Outreach and e-learning", "a six-lesson course, immersive view, cinematic tour"),
-    ]
-    table = "".join(f'<tr><td>{a}</td><td class="why">{b}</td></tr>' for a, b in rows)
     page("body-technical", f"""
 <div class="cols grow" style="grid-template-columns: 2260px 1fr; gap: 90px">
   <div class="col" style="gap:14px">
-    <h2 style="margin:0">How a cube is made, and what happens to data that fails a test</h2>
+    <h2 style="margin:0">Methodology and process: how a cube is made</h2>
     {flowchart(v2)}
   </div>
   <div class="col" style="gap:14px">
-    <h2 style="margin:0">The brief, line by line</h2>
-    <table class="brief"><tr><th>The brief asks for</th><th>Built as</th></tr>{table}</table>
-    <p class="stack"><b>Stack</b> CesiumJS · TypeScript + Vite · Python FastAPI + xarray ·
-    Copernicus ARCO · INCOIS and Ifremer ERDDAP · OGC WMS · an LLM that can only reach the data
-    through our own API</p>
+    <h2 style="margin:0">Technologies to be used</h2>
+    {architecture(host)}
   </div>
 </div>
 """)
 
     # ============================================================ 4 feasibility
     page("body-feasibility", f"""
+<h2 style="margin:0">Analysis of feasibility: it is built, and measured</h2>
 <div class="stats" style="grid-template-columns: repeat(4, 1fr); gap: 60px">
   <div class="stat"><b>{cat["variables"]}</b><span>variables to {cat["last_day"]}, forecast days labelled; {cat["from_first_day"]} of them every day from {cat["first_day"][:4]}</span></div>
   <div class="stat"><b>{before["open_seconds_disk_cache"]} s</b><span>to open the Amphan cube from the disk cache ({before["payload_mb"]} MB to the browser)</span></div>
@@ -314,8 +380,8 @@ standing inside it. In any browser.</p>
 </div>
 <div class="cols grow feas" style="grid-template-columns: 1.05fr 1fr; gap: 100px">
   <div class="col" style="gap:12px">
-    <h2 style="margin:0">Measured finding: model error by depth</h2>
-    {band_chart(bands, width=1900, height=1110)}
+    <h3 class="sub" style="margin:0">What the platform found: INCOIS model error by depth</h3>
+    {band_chart(bands, width=1900, height=1010)}
     <div class="legend"><i style="background:#A9B2BE"></i>Argo (the model already used them)
       <i style="background:#1F4E79"></i>Glider (independent)</div>
     <p style="font-size:37px" class="muted">Below 300 m the INCOIS model and the instruments agree.
@@ -324,15 +390,16 @@ standing inside it. In any browser.</p>
     view shows it.</p>
   </div>
   <div class="col" style="gap:12px">
-    <h2 style="margin:0">Risks we hit, and what we did</h2>
+    <h2 style="margin:0">Challenges and risks, and our strategies</h2>
     <table class="risks">
-      <tr><td>The brief's data links are dead</td><td class="why">Both are <span class="mono">ftp://</span> and blocked; replaced with tested HTTPS sources.</td></tr>
+      <tr><th>Challenge or risk</th><th>Strategy, already in the build</th></tr>
+      <tr><td>The problem statement's data links are dead</td><td class="why">Both are <span class="mono">ftp://</span> and blocked; replaced with tested HTTPS sources.</td></tr>
       <tr><td>The model fails QC too</td><td class="why">{rng["failed"]} INCOIS cells read above 40 °C at depth; masked, counted in the provenance panel.</td></tr>
       <tr><td>Bad float readings</td><td class="why">{argo["levels_rejected"]} of {argo["levels"]:,} levels fail QC in the Bay; drawn red, never dropped.</td></tr>
-      <tr><td>An AI that invents numbers</td><td class="why">It reaches data only through our API; an untraceable number is flagged on screen.</td></tr>
+      <tr><td>An assistant could invent numbers</td><td class="why">It reaches data only through our API; an untraceable number is flagged on screen.</td></tr>
       <tr><td>A small host ran out of memory</td><td class="why">Shared S3 client and capped caches; we ask for 1 GB, measured {host["peak_mb"]} MB peak.</td></tr>
     </table>
-    <figure class="shot"><img src="crop-residual.jpg" style="height:660px; object-fit:cover">
+    <figure class="shot"><img src="crop-residual.jpg" style="height:410px; object-fit:cover">
       <figcaption><b>Where the INCOIS model is wrong.</b> Each block is a place someone measured,
       coloured by measured minus model. Unmeasured water stays empty: {empty_pct}% of it.</figcaption></figure>
   </div>
@@ -340,48 +407,52 @@ standing inside it. In any browser.</p>
 """)
 
     # ============================================================ 5 impact
+    # The template's pointers: impact on the target audience; benefits (social,
+    # economic, environmental).
     page("body-impact", f"""
-<div class="cols grow" style="grid-template-columns: 1.25fr 1fr 1fr 1fr; gap: 60px">
+<h2 style="margin:0">Potential impact on the target audience</h2>
+<div class="cols" style="grid-template-columns: 1.25fr 1fr 1fr 1fr; gap: 60px">
   <div class="col aud">
-    <h2>Cyclone forecasters</h2>
+    <h3 class="aud-h">INCOIS forecasters</h3>
     <div class="pair"><figure><img src="crop-before.jpg"><figcaption>{before["day"]}</figcaption></figure>
       <figure><img src="crop-after.jpg"><figcaption>{after["day"]}</figcaption></figure></div>
-    <p class="cap"><b>Amphan's cold wake.</b> The same Bay, before and after landfall, on one
-    28–31.5 °C bar: the surface mean fell {n2(v2["amphan_cooling_c"])} °C.</p>
-    <ul class="points">
-      <li><b>{signed(tg["mean_difference_kj_cm2"])} kJ/cm²</b><span>model minus measured cyclone heat potential on the independent glider track</span></li>
-      <li><b>Forecast days, labelled</b><span>the cube runs to {cat["last_day"]}</span></li>
-    </ul>
+    <p class="cap"><b>Before and after Cyclone Amphan</b>, one 28–31.5 °C bar: the cold wake shows;
+    the box's mean surface temperature is {n2(v2["amphan_cooling_c"])} °C lower after.</p>
   </div>
   <div class="col aud">
-    <h2>Fishermen</h2>
+    <h3 class="aud-h">Fishermen</h3>
     <figure class="shot"><img src="crop-fishing.jpg" style="object-position: 0% 50%"></figure>
-    <p class="cap"><b>INCOIS's own Potential Fishing Zone advisories</b>, read as published for all
-    fourteen sectors, next to an indicative zone layer with today's sea state.</p>
-    <ul class="points">
-      <li><b>Official first</b><span>the indicator is labelled "not an advisory" everywhere</span></li>
-    </ul>
+    <p class="cap"><b>INCOIS's own fishing-zone advisories</b>, all fourteen sectors as
+    published, beside today's waves and wind. Our indicator says "not an advisory".</p>
   </div>
   <div class="col aud">
-    <h2>Students</h2>
+    <h3 class="aud-h">Students</h3>
     <figure class="shot"><img src="crop-learn.jpg" style="object-position: 0% 100%"></figure>
-    <p class="cap"><b>Six lessons for class 8–12</b> on real data: your nearest sea, the ocean's
-    layers, the monsoon current, Amphan, Argo floats.</p>
-    <ul class="points">
-      <li><b>Answers from the cube on screen</b><span>quizzes are checked against the data, never by the language model</span></li>
-    </ul>
+    <p class="cap"><b>Six lessons for class 8–12</b> on real data; quiz answers are read from
+    the cube on screen, never from the language model.</p>
   </div>
   <div class="col aud">
-    <h2>Public and outreach</h2>
+    <h3 class="aud-h">Public and policymakers</h3>
     <figure class="shot"><img src="crop-immersive.jpg"></figure>
-    <p class="cap"><b>Immersive view and a cinematic tour</b>: the planet's currents and winds on
-    one day, for exhibitions and awareness campaigns.</p>
-    <ul class="points">
-      <li><b>One link, no install</b><span>a school's browser is enough</span></li>
-    </ul>
+    <p class="cap"><b>Immersive view and cinematic tour</b>: one day of the planet's currents
+    and winds, for exhibitions and awareness campaigns.</p>
   </div>
 </div>
-<div class="next"><b>Next</b><span>CTD, moorings, HF radar and ADCP as parsers</span><span>machine-learning fields as more variables</span><span>class results for teachers</span><span>a copy on INCOIS servers</span></div>
+<h2 style="margin:6px 0 0">Benefits</h2>
+<div class="benefits">
+  <div class="card"><h3>Social</h3><ul>
+    <li>Disaster preparedness: the warm layer a cyclone feeds on, seen in 3D, with cyclone heat potential per float</li>
+    <li>Safety at sea: the official advisory first, with the sea state beside it</li>
+    <li>Ocean literacy: a course in any school browser, on the same data forecasters use</li></ul></div>
+  <div class="card"><h3>Economic</h3><ul>
+    <li>Open source, no licences; a static site and one server (1 GB of memory measured enough)</li>
+    <li>No archive to buy or store: public data is read where it lives, a day at a time</li>
+    <li>Fishing advisories exist to cut search time at sea; here they sit where boats plan</li></ul></div>
+  <div class="card"><h3>Environmental</h3><ul>
+    <li>Climate monitoring: every day since {cat["first_day"][:4]} for {cat["from_first_day"]} variables, in one view</li>
+    <li>Oxygen-poor layers, chlorophyll and nutrients as 3D blocks, not flat maps</li>
+    <li>Where the model is uncertain or unmeasured is shown, so decisions know the limits</li></ul></div>
+</div>
 """)
 
     # ============================================================ 6 references
@@ -401,7 +472,7 @@ standing inside it. In any browser.</p>
       <li>INCOIS Potential Fishing Zone advisories. <span class="why">Read as published.</span><span class="url">incois.gov.in/MarineFisheries/TextDataHome?mfid=1</span></li>
       <li>NCEP GFS 10 m wind via UCAR THREDDS. <span class="why">Wind forecast.</span><span class="url">thredds.ucar.edu</span></li>
       <li>NASA GIBS Blue Marble relief. <span class="why">Land.</span><span class="url">gibs.earthdata.nasa.gov</span></li>
-      <li>The brief's two FTP links. <span class="why">Dead; replaced by 3, 4.</span></li>
+      <li>The problem statement's two FTP links. <span class="why">Dead; replaced by 3, 4.</span></li>
     </ol>
   </div>
   <div class="col" style="gap:8px">
@@ -416,6 +487,10 @@ standing inside it. In any browser.</p>
       <li>Thyng et al. (2016), Oceanography 29(3). <span class="why">cmocean palettes.</span><span class="url">doi.org/10.5670/oceanog.2016.66</span></li>
       <li>CesiumJS. <span class="why">The globe and renderer.</span><span class="url">cesium.com/platform/cesiumjs</span></li>
     </ol>
+    <div class="card grey" style="margin-top:auto"><h3>How the links were checked</h3><p>Every URL
+      here was opened on 2026-09-25 with a browser user agent and answered, except the two FTP
+      links (listed as dead). Every number in this deck is in the repository's
+      <span class="mono">docs/13-eval-results.md</span>, produced by its evaluation script.</p></div>
   </div>
   <div class="col" style="gap:8px">
     <h2 style="margin:0">What the course cites</h2>

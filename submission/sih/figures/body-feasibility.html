@@ -4,6 +4,7 @@
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;600&family=IBM+Plex+Mono&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="deck.css"></head>
 <body><div class="slide">
+<h2 style="margin:0">Analysis of feasibility: it is built, and measured</h2>
 <div class="stats" style="grid-template-columns: repeat(4, 1fr); gap: 60px">
   <div class="stat"><b>23</b><span>variables to 2026-10-04, forecast days labelled; 17 of them every day from 1993</span></div>
   <div class="stat"><b>0.08 s</b><span>to open the Amphan cube from the disk cache (1.15 MB to the browser)</span></div>
@@ -12,8 +13,8 @@
 </div>
 <div class="cols grow feas" style="grid-template-columns: 1.05fr 1fr; gap: 100px">
   <div class="col" style="gap:12px">
-    <h2 style="margin:0">Measured finding: model error by depth</h2>
-    <svg width="1900" height="1110" viewBox="0 0 1900 1110"><line x1="90" x2="1900" y1="1040.0" y2="1040.0" stroke="#D5DCE4" stroke-width="2"/><text x="74" y="1052.0" font-size="34" text-anchor="end" fill="#7A8594">0</text><line x1="90" x2="1900" y1="704.0692640692641" y2="704.0692640692641" stroke="#D5DCE4" stroke-width="2"/><text x="74" y="716.0692640692641" font-size="34" text-anchor="end" fill="#7A8594">1</text><line x1="90" x2="1900" y1="368.13852813852816" y2="368.13852813852816" stroke="#D5DCE4" stroke-width="2"/><text x="74" y="380.13852813852816" font-size="34" text-anchor="end" fill="#7A8594">2</text><rect x="174.0" y="618.0374025974027" width="192.0" height="421.96259740259734" fill="#A9B2BE"/><text x="270.0" y="606.0374025974027" font-size="38" font-weight="600" text-anchor="middle" fill="#16202B">1.26</text><rect x="378.0" y="70.0" width="192.0" height="970.0" fill="#1F4E79"/><text x="474.0" y="58.0" font-size="38" font-weight="600" text-anchor="middle" fill="#16202B">2.89</text><text x="372.0" y="1090" font-size="36" text-anchor="middle" fill="#4F5B69">0-300 m</text><rect x="774.0" y="921.282077922078" width="192.0" height="118.71792207792203" fill="#A9B2BE"/><text x="870.0" y="909.282077922078" font-size="38" font-weight="600" text-anchor="middle" fill="#16202B">0.35</text><rect x="978.0" y="936.6677056277056" width="192.0" height="103.33229437229443" fill="#1F4E79"/><text x="1074.0" y="924.6677056277056" font-size="38" font-weight="600" text-anchor="middle" fill="#16202B">0.31</text><text x="972.0" y="1090" font-size="36" text-anchor="middle" fill="#4F5B69">300-950 m</text><rect x="1374.0" y="976.2739393939394" width="192.0" height="63.72606060606063" fill="#A9B2BE"/><text x="1470.0" y="964.2739393939394" font-size="38" font-weight="600" text-anchor="middle" fill="#16202B">0.19</text><rect x="1578.0" y="962.0976623376623" width="192.0" height="77.90233766233769" fill="#1F4E79"/><text x="1674.0" y="950.0976623376623" font-size="38" font-weight="600" text-anchor="middle" fill="#16202B">0.23</text><text x="1572.0" y="1090" font-size="36" text-anchor="middle" fill="#4F5B69">950-2000 m</text><text x="74" y="30" font-size="34" text-anchor="end" fill="#7A8594">&#176;C</text></svg>
+    <h3 class="sub" style="margin:0">What the platform found: INCOIS model error by depth</h3>
+    <svg width="1900" height="1010" viewBox="0 0 1900 1010"><line x1="90" x2="1900" y1="940.0" y2="940.0" stroke="#D5DCE4" stroke-width="2"/><text x="74" y="952.0" font-size="34" text-anchor="end" fill="#7A8594">0</text><line x1="90" x2="1900" y1="638.7012987012987" y2="638.7012987012987" stroke="#D5DCE4" stroke-width="2"/><text x="74" y="650.7012987012987" font-size="34" text-anchor="end" fill="#7A8594">1</text><line x1="90" x2="1900" y1="337.4025974025974" y2="337.4025974025974" stroke="#D5DCE4" stroke-width="2"/><text x="74" y="349.4025974025974" font-size="34" text-anchor="end" fill="#7A8594">2</text><rect x="174.0" y="561.5387012987013" width="192.0" height="378.4612987012987" fill="#A9B2BE"/><text x="270.0" y="549.5387012987013" font-size="38" font-weight="600" text-anchor="middle" fill="#16202B">1.26</text><rect x="378.0" y="69.99999999999989" width="192.0" height="870.0000000000001" fill="#1F4E79"/><text x="474.0" y="57.999999999999886" font-size="38" font-weight="600" text-anchor="middle" fill="#16202B">2.89</text><text x="372.0" y="990" font-size="36" text-anchor="middle" fill="#4F5B69">0-300 m</text><rect x="774.0" y="833.5210389610389" width="192.0" height="106.47896103896107" fill="#A9B2BE"/><text x="870.0" y="821.5210389610389" font-size="38" font-weight="600" text-anchor="middle" fill="#16202B">0.35</text><rect x="978.0" y="847.3205194805195" width="192.0" height="92.67948051948053" fill="#1F4E79"/><text x="1074.0" y="835.3205194805195" font-size="38" font-weight="600" text-anchor="middle" fill="#16202B">0.31</text><text x="972.0" y="990" font-size="36" text-anchor="middle" fill="#4F5B69">300-950 m</text><rect x="1374.0" y="882.8436363636364" width="192.0" height="57.15636363636361" fill="#A9B2BE"/><text x="1470.0" y="870.8436363636364" font-size="38" font-weight="600" text-anchor="middle" fill="#16202B">0.19</text><rect x="1578.0" y="870.1288311688312" width="192.0" height="69.8711688311688" fill="#1F4E79"/><text x="1674.0" y="858.1288311688312" font-size="38" font-weight="600" text-anchor="middle" fill="#16202B">0.23</text><text x="1572.0" y="990" font-size="36" text-anchor="middle" fill="#4F5B69">950-2000 m</text><text x="74" y="30" font-size="34" text-anchor="end" fill="#7A8594">&#176;C</text></svg>
     <div class="legend"><i style="background:#A9B2BE"></i>Argo (the model already used them)
       <i style="background:#1F4E79"></i>Glider (independent)</div>
     <p style="font-size:37px" class="muted">Below 300 m the INCOIS model and the instruments agree.
@@ -22,15 +23,16 @@
     view shows it.</p>
   </div>
   <div class="col" style="gap:12px">
-    <h2 style="margin:0">Risks we hit, and what we did</h2>
+    <h2 style="margin:0">Challenges and risks, and our strategies</h2>
     <table class="risks">
-      <tr><td>The brief's data links are dead</td><td class="why">Both are <span class="mono">ftp://</span> and blocked; replaced with tested HTTPS sources.</td></tr>
+      <tr><th>Challenge or risk</th><th>Strategy, already in the build</th></tr>
+      <tr><td>The problem statement's data links are dead</td><td class="why">Both are <span class="mono">ftp://</span> and blocked; replaced with tested HTTPS sources.</td></tr>
       <tr><td>The model fails QC too</td><td class="why">6 INCOIS cells read above 40 °C at depth; masked, counted in the provenance panel.</td></tr>
       <tr><td>Bad float readings</td><td class="why">510 of 11,525 levels fail QC in the Bay; drawn red, never dropped.</td></tr>
-      <tr><td>An AI that invents numbers</td><td class="why">It reaches data only through our API; an untraceable number is flagged on screen.</td></tr>
+      <tr><td>An assistant could invent numbers</td><td class="why">It reaches data only through our API; an untraceable number is flagged on screen.</td></tr>
       <tr><td>A small host ran out of memory</td><td class="why">Shared S3 client and capped caches; we ask for 1 GB, measured 639 MB peak.</td></tr>
     </table>
-    <figure class="shot"><img src="crop-residual.jpg" style="height:660px; object-fit:cover">
+    <figure class="shot"><img src="crop-residual.jpg" style="height:410px; object-fit:cover">
       <figcaption><b>Where the INCOIS model is wrong.</b> Each block is a place someone measured,
       coloured by measured minus model. Unmeasured water stays empty: 95% of it.</figcaption></figure>
   </div>

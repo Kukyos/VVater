@@ -158,7 +158,38 @@ svg text { font-family: "IBM Plex Sans", sans-serif; }
 .next span::before { content: "·  "; color: var(--faint); }
 /* v2 per-slide fit, checked by figures.py --check and by eye */
 .feas .risks td { font-size: 37px; padding-top: 18px; padding-bottom: 18px; }
-.aud .shot img, .pair img { height: 900px; }
+.aud .shot img, .pair img { height: 560px; }
 .refcols .refs li { padding-top: 30px; padding-bottom: 30px; }
 .refcols .refs li::before { top: 30px; }
 .brief td { padding-top: 24px; padding-bottom: 24px; font-size: 37px; }
+
+/* ---------------------------------------------------------------- template pointers */
+.pitch { font-size: 44px; line-height: 1.25; }
+.pitch b { color: var(--navy); }
+h3.sub { font-size: 38px; color: var(--navy); margin: 4px 0 0; text-transform: uppercase; letter-spacing: .04em; }
+.points.gaps li { padding: 20px 0; font-size: 38px; }
+.points.gaps li span { font-size: 36px; }
+.points.inno li { padding: 16px 0; font-size: 38px; }
+.points.inno li span { font-size: 35px; }
+.pair2 { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; margin-top: auto; }
+.pair2 img { width: 100%; height: 330px; object-fit: cover; display: block; border: 2px solid #0c0d0f; }
+.pair2 figcaption { font-size: 33px; color: var(--muted); margin-top: 6px; }
+.aud-h { font-size: 40px; color: var(--ink); margin: 0; }
+.benefits { display: grid; grid-template-columns: repeat(3, 1fr); gap: 50px; }
+.benefits .card h3 { margin-bottom: 6px; }
+.benefits ul { margin: 0; padding-left: 36px; }
+.benefits li { font-size: 35px; color: var(--muted); line-height: 1.32; margin: 6px 0; }
+/* fit, second pass */
+.points.gaps li { padding: 30px 0; font-size: 40px; }
+.points.gaps li span { font-size: 37px; }
+.points.inno li { padding: 20px 0; font-size: 40px; }
+.pair2 img { height: 380px; }
+.aud .shot img, .pair img { height: 720px; }
+.benefits li { font-size: 37px; }
+.benefits .card { padding: 22px 30px 24px; }
+/* fit, third pass */
+.pair2 { margin-top: 10px; }
+.pair2 img { height: 520px; }
+.points.gaps li { padding: 34px 0; }
+.refcols .refs li { padding-top: 22px; padding-bottom: 22px; }
+.refcols .refs li::before { top: 22px; }
