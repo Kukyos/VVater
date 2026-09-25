@@ -1,0 +1,283 @@
+{
+  "_": "The film, scene by scene. `say` is what the presenter reads; `clips` are recorded by capture.cjs at the given length; a card is drawn by Remotion. Numbers are written as digits and check.mjs matches every one against data/eval-latest.json or the `sourced` list below. docs/21-film.md is the readable copy.",
+  "wordsPerSecond": 2.3,
+  "scenes": [
+    {
+      "id": "open",
+      "act": "",
+      "clips": [
+        {
+          "name": "cinema-open",
+          "seconds": 16
+        }
+      ],
+      "say": "This is one real day of the world's ocean: its currents, and its winds, as the models saw them. Every tool built for this data shows you the same thing. The top."
+    },
+    {
+      "id": "title",
+      "act": "",
+      "card": "title",
+      "seconds": 6,
+      "say": "This is VVater."
+    },
+    {
+      "id": "brief",
+      "act": "The brief",
+      "card": "quote",
+      "seconds": 13,
+      "quote": "Operational oceanographers and forecasters are therefore forced to toggle between disparate software packages, making it difficult to rapidly correlate model predictions with observational evidence.",
+      "cite": "Problem statement 26067 · INCOIS, Ministry of Earth Sciences",
+      "say": "INCOIS asked for one place where ocean models and real instruments can be seen together, in three dimensions, in a browser. With nothing to install."
+    },
+    {
+      "id": "tilt",
+      "act": "The block",
+      "clips": [
+        {
+          "name": "amphan-tilt",
+          "seconds": 21
+        }
+      ],
+      "lower": "Bay of Bengal · 14 May 2020 · two days before Cyclone Amphan formed",
+      "say": "The Bay of Bengal, two days before Cyclone Amphan formed. From above, it is a map, like every ocean viewer. Tilt it, and it is a block of ocean standing on the sea surface, coloured at every depth the model has."
+    },
+    {
+      "id": "cut",
+      "act": "The block",
+      "clips": [
+        {
+          "name": "amphan-cut",
+          "seconds": 22
+        }
+      ],
+      "lower": "35 native levels to 902.3 m · never more levels than the model has",
+      "say": "Any side can be cut inwards, and the faces become sections through the inside. This is the warm upper layer a cyclone feeds on, and you can see how thin it is. 35 levels, the model's own, and never one more than it has."
+    },
+    {
+      "id": "floats",
+      "act": "Floats inside the model",
+      "clips": [
+        {
+          "name": "floats",
+          "seconds": 19
+        }
+      ],
+      "say": "Real Argo floats stand inside the block, each one a line at the exact place it measured, from the surface to the depth it reached. These were in the water within 2 days of this model day."
+    },
+    {
+      "id": "float-click",
+      "act": "Floats inside the model",
+      "clips": [
+        {
+          "name": "float-click",
+          "seconds": 25
+        }
+      ],
+      "lower": "17 floats within ±2 days · 201 levels rejected by QC, drawn, not dropped",
+      "say": "Click one, and it is compared against the model on the float's own day. Every level carries its quality flag, its data mode and the file it came from. Around Amphan, 17 floats reported, and 201 of their levels failed quality control. They are drawn as rejected. Never dropped."
+    },
+    {
+      "id": "amphan",
+      "act": "Before and after",
+      "clips": [
+        {
+          "name": "amphan-before",
+          "seconds": 7
+        },
+        {
+          "name": "amphan-after",
+          "seconds": 10
+        }
+      ],
+      "lowers": [
+        "14 May 2020 · before",
+        "22 May 2020 · after landfall · same box, same 28–31.5 °C colour bar"
+      ],
+      "say": "Eight days later, two days after landfall. The same box, the same camera, the same colour bar. On average, the surface of this box is 0.77 degrees cooler."
+    },
+    {
+      "id": "anywhere",
+      "act": "Anywhere, any day",
+      "clips": [
+        {
+          "name": "arabian-sea",
+          "seconds": 7
+        },
+        {
+          "name": "gulf-stream",
+          "seconds": 6
+        },
+        {
+          "name": "el-nino",
+          "seconds": 6
+        },
+        {
+          "name": "agulhas",
+          "seconds": 6
+        },
+        {
+          "name": "drake",
+          "seconds": 6
+        }
+      ],
+      "lowers": [
+        "Arabian Sea · dissolved oxygen · 15 Oct 2019",
+        "Gulf Stream · temperature · 15 Feb 2020",
+        "Equatorial Pacific · El Niño · 1 Dec 2015",
+        "Agulhas retroflection · 15 Jul 2019",
+        "Drake Passage · to 4,000 m · 15 Feb 2019"
+      ],
+      "say": "And it is not only the Bay. Any box, anywhere on Earth, on any day from 1993 to 9 days ahead. 23 variables: temperature, salinity, currents, oxygen, chlorophyll, nutrients, carbon. Nothing is stored. Each block is read straight from Copernicus's own cloud stores, piece by piece."
+    },
+    {
+      "id": "globe",
+      "act": "The whole ocean",
+      "clips": [
+        {
+          "name": "globe",
+          "seconds": 19
+        }
+      ],
+      "say": "Around the block, the whole planet is painted in the same variable, on the same colour bar, with that day's currents and winds flowing over it. A colour means the same value inside the block and out."
+    },
+    {
+      "id": "water",
+      "act": "The whole ocean",
+      "clips": [
+        {
+          "name": "cinema-water",
+          "seconds": 10
+        }
+      ],
+      "say": "Or skim low over the water, with that day's currents running underneath."
+    },
+    {
+      "id": "fishing",
+      "act": "For fishermen",
+      "clips": [
+        {
+          "name": "fishing",
+          "seconds": 21
+        }
+      ],
+      "say": "For fishermen: INCOIS's own potential fishing zone advisories, all 14 sectors, read exactly as published. Anywhere else, an indicative layer from sea surface fronts and chlorophyll, with the sea state. And it says, everywhere, that it is not an advisory.",
+      "lowerAt": "right"
+    },
+    {
+      "id": "volume",
+      "act": "Where the model is unsure",
+      "clips": [
+        {
+          "name": "bay-volume",
+          "seconds": 21
+        }
+      ],
+      "lower": "INCOIS Argo 10-day analysis · Bay of Bengal · August 2018",
+      "say": "In the Bay of Bengal, INCOIS publishes its own analysis, with an error estimate for every cell. We draw it as a true volume, and water the model is unsure of is drawn faint, instead of as if it had been measured."
+    },
+    {
+      "id": "residual",
+      "act": "Where the model is wrong",
+      "clips": [
+        {
+          "name": "residual",
+          "seconds": 17
+        }
+      ],
+      "lower": "Observed minus model · 510 of 10,488 cells · 4.86 %",
+      "say": "This is observed minus model, wherever an instrument actually measured. Only 4.86 percent of cells have any observation at all. The rest are left empty, not smoothed over."
+    },
+    {
+      "id": "bands",
+      "act": "Where the model is wrong",
+      "card": "bands",
+      "seconds": 23,
+      "say": "Below 300 metres, the model and an independent glider agree to about a third of a degree. In the top 300 metres, the layer a cyclone forecaster cares about, the error is 2.89 degrees. One averaged number hides that. Drawing the column shows it.",
+      "lines": [
+        "INCOIS Argo 10-day analysis · Bay of Bengal · 25 Aug 2018 ±5 days"
+      ]
+    },
+    {
+      "id": "qc",
+      "act": "The model needs checking too",
+      "card": "qc",
+      "seconds": 25,
+      "say": "The model needs quality control too. The analysis has water at 44.42 degrees, 75 to 100 metres down. Argo's own published range test catches 6 of those cells, and we mask them. 18 more are impossible at that depth and still pass. We say so, instead of inventing a limit.",
+      "lines": [
+        "in the INCOIS analysis, 75–100 m down in the Bay of Bengal",
+        "18 more, 35–40 °C, pass it: impossible at that depth, logged, no limit invented"
+      ]
+    },
+    {
+      "id": "learn",
+      "act": "For students",
+      "clips": [
+        {
+          "name": "learn",
+          "seconds": 19
+        }
+      ],
+      "say": "For students, a 6-lesson course on the real data: their own city's sea, the ocean's layers, the monsoon, Amphan, and how Argo floats are checked. Quiz answers are worked out from the block on the screen.",
+      "lowerAt": "right"
+    },
+    {
+      "id": "assistant",
+      "act": "Ask it",
+      "clips": [
+        {
+          "name": "assistant",
+          "seconds": 20
+        }
+      ],
+      "say": "And an assistant that can drive the viewer. Ask for oxygen in the Arabian Sea, and it builds the block and shows you the control it used. Every number it says is checked against the data it read.",
+      "lowerAt": "center"
+    },
+    {
+      "id": "evidence",
+      "act": "Measured",
+      "card": "evidence",
+      "seconds": 14,
+      "say": "Every number in this film comes from one test harness in the repository, which anyone can run with one command."
+    },
+    {
+      "id": "notyet",
+      "act": "Not yet",
+      "card": "notyet",
+      "seconds": 24,
+      "say": "What is not done yet. Gliders are nearly absent here: of 2,562 datasets in the US glider archive, 1 flies inside the Bay. Europe's archive of 184 gliders is not connected yet. And a depth-aware range test needs a published limit, which is something INCOIS could give us.",
+      "lines": [
+        "Gliders are nearly absent|2,562 datasets in the IOOS Glider DAC; 1 flies inside the Bay of Bengal box",
+        "Europe’s glider archive|EGO / Coriolis, 184 gliders over THREDDS, not yet connected",
+        "A depth-aware range test|needs a published limit for the Bay; we will not invent one"
+      ]
+    },
+    {
+      "id": "end",
+      "act": "",
+      "card": "end",
+      "seconds": 10,
+      "say": "VVater. Try it at v-vater dot vercel dot app."
+    }
+  ],
+  "sourced": {
+    "_": "Numbers said or shown that are not in data/eval-latest.json, each with where it comes from.",
+    "14": "INCOIS PFZ sectors · server/ocean/pfz.py, docs/00-start-here.md",
+    "18": "cells 35-40 C that pass the range test · docs/13-eval-results.md (24 - 6)",
+    "75": "depth of the impossible cells · docs/13-eval-results.md",
+    "100": "depth of the impossible cells · docs/13-eval-results.md",
+    "2,562": "IOOS Glider DAC datasets · docs/13-eval-results.md, glider section",
+    "184": "EGO/Coriolis gliders · docs/11-deferred.md D-02b",
+    "1": "gliders inside the box · docs/13-eval-results.md",
+    "2": "float pairing ±2 days · docs/11-deferred.md D-35",
+    "4,000": "Drake Passage scenario depth · server/ocean/config.py SCENARIOS",
+    "28": "Amphan colour bar minimum, chosen for the film and the deck · submission/sih/capture.cjs",
+    "31.5": "Amphan colour bar maximum, chosen for the film and the deck · submission/sih/capture.cjs",
+    "8": "days between the two Amphan scenarios · server/ocean/config.py SCENARIOS",
+    "6": "lessons · viewer/src/learn/lessons.ts",
+    "26067": "problem statement id · docs/01-problem-statement.md",
+    "2026": "SIH 2026",
+    "K26125": "team id",
+    "35": "lower bound of the cells that pass the range test · docs/13-eval-results.md",
+    "40": "upper bound, the Argo range test limit · data/eval-latest.json field_range_test.limits"
+  }
+}
