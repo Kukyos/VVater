@@ -73,7 +73,7 @@ export class Tour {
         <button class="btn learn-back">‹ Back</button>
         <button class="btn learn-menu">Lessons</button>
         <button class="btn learn-next">Next ›</button></div>
-      <details class="learn-ask"><summary>Ask a question</summary></details>`;
+      <details class="learn-ask" id="learn-ask"><summary>Ask a question</summary></details>`;
     this.body = this.card.querySelector(".learn-body")!;
     this.card.querySelector(".learn-x")!.addEventListener("click", () => this.exit());
     this.card.querySelector(".learn-back")!.addEventListener("click", () => this.go(-1));

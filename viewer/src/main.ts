@@ -1064,7 +1064,7 @@ async function main(): Promise<void> {
       view !== "map" && showBay && scene.globe.translucency.frontFaceAlpha < 1;
     // Fly is the planet with its ocean surface, as immersive is: the cube stands up to
     // 600 km tall at its stretched depth, and a flight capped at 250 km was spent inside it.
-    cube.setVisible(!showBay && view !== "map" && !fly && !lessonHidesCube);
+    cube.setVisible(!showBay && view !== "map" && !fly && !cubeHidden);
     ocean.setVisible(!showBay);
     if (!immersive.active) ocean.flow.ignoreHoles = fly;
     if (fly) ocean.dropCubeWind();
@@ -1092,8 +1092,21 @@ async function main(): Promise<void> {
 
   /** The colour-map controls edit whichever layer is on screen: the cube, or the Bay. */
   const cubeActive = () => !showBay && !!cube.data;
-  /** Set by a lesson that is about the surface alone (learn/lessons.ts, "Your ocean"). */
-  let lessonHidesCube = false;
+  /** The cube put away ("Show the cube" off, or a lesson about the surface alone). */
+  let cubeHidden = false;
+  function showCube(on: boolean): void {
+    cubeHidden = !on;
+    el<HTMLInputElement>("cube-show").checked = on;
+    cube.setVisible(!showBay && state.view !== "map" && state.view !== "fly" && on);
+    graphics.kick();
+  }
+  el<HTMLInputElement>("cube-show").addEventListener("change", (e) =>
+    showCube((e.target as HTMLInputElement).checked));
+  // Asking for a cube is asking to see it; in a lesson the lesson decides.
+  const wantCube = () => { if (cubeHidden && !el("app").classList.contains("learn")) showCube(true); };
+  el("cube-load").addEventListener("click", wantCube);
+  el("cube-draw").addEventListener("click", wantCube);
+  el("cube-scenario").addEventListener("change", wantCube);
   function activeColour(): { paletteId: string; reversed: boolean; log: boolean;
                              range: [number, number] } {
     return cubeActive() ? cube.colour
@@ -2103,10 +2116,8 @@ async function main(): Promise<void> {
       } else if (a.action === "fly_to") {
         await flyTo(clamp(a.lon, -180, 180), clamp(a.lat, -80, 80), 900_000);
       } else if (a.action === "show_cube") {
-        // Lessons only: the first lesson is about the sea surface, with no block on it.
-        lessonHidesCube = a.on === false;
-        cube.setVisible(!showBay && state.view !== "map" && state.view !== "fly" && !lessonHidesCube);
-        graphics.kick();
+        // The "Show the cube" switch; lessons use it too (a surface lesson has no block).
+        showCube(a.on !== false);
       } else if (a.action === "look_down") {
         // Lessons only (not in either whitelist): a place seen from straight above on the
         // globe, whatever cube is standing nearby.

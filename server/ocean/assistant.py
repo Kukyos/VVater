@@ -77,6 +77,7 @@ CONTROLS: dict[str, str] = {
     "cube-s": "number: south edge, degrees", "cube-n": "number: north edge, degrees",
     "cube-draw": "button: draw a box on the globe with the mouse",
     "cube-load": "button: load the cube for the box, day and variable",
+    "cube-show": "checkbox: show the cube (off puts it away, leaving the globe)",
     "cube-floats": "checkbox: Argo floats in the cube",
     "cut-top": "range 0-1000: cut the cube's top down", "cut-bottom": "range 0-1000: bottom",
     "cut-west": "range 0-1000: west side in", "cut-east": "range 0-1000: east side in",

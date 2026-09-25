@@ -423,8 +423,9 @@ export const LESSONS: Lesson[] = [
         do: () => [{ action: "highlight", target: "cube-variable" }],
       },
       {
-        say: "Press Draw a box, then drag on the globe to cut out any piece of ocean on Earth.",
-        do: () => [{ action: "highlight", target: "cube-draw" }],
+        say: "Press Draw a box, then drag on the globe to cut out any piece of ocean on Earth. " +
+          "The switch below it, Show the cube, puts a block away when you are done with it.",
+        do: () => [{ action: "set_view", view: "globe" }, { action: "highlight", target: "cube-draw" }],
       },
       {
         say: "Slide these to cut the block open from any side, like you did before.",
@@ -434,6 +435,7 @@ export const LESSONS: Lesson[] = [
         say: "Stuck? Ask the assistant in plain words, like “show me the Gulf Stream”: it " +
           "is under “Ask a question” below while you learn, and in the right-hand panel " +
           "afterwards. That's the course. The ocean is yours to explore.",
+        do: () => [{ action: "highlight", target: "learn-ask" }],
       },
     ],
   },

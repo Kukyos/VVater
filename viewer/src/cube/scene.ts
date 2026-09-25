@@ -122,7 +122,11 @@ export class CubeScene {
     return this.height / Math.max(s.cubeBottom - s.cubeTop, 1);
   }
 
+  /** Kept across redraws: a cube put away stays away when it is recut or reloaded. */
+  private visible = true;
+
   show(visible: boolean): void {
+    this.visible = visible;
     for (const p of this.primitives) p.show = visible;
     this.edges.show = visible;
     this.labels.show = visible;
@@ -189,7 +193,10 @@ export class CubeScene {
 
     // Swap in one go: the new primitives are built synchronously on their first update.
     for (const p of this.primitives) this.scene.primitives.remove(p);
-    for (const p of next) this.scene.primitives.add(p);
+    for (const p of next) {
+      p.show = this.visible;
+      this.scene.primitives.add(p);
+    }
     this.primitives = next;
     this.frame(cut);
   }
