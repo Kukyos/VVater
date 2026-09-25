@@ -137,8 +137,8 @@ keep 600 m above the terrain), so nobody climbs into space or into a hill. Its p
 in Cesium's own tick, and the currents are drawn from the render, as in the cinematic: in
 Fly the camera never rests, so pausing them on movement would hide them for the whole
 flight. A third of the particles are drawn there, because a moving camera redraws every
-trail every frame and that, not the globe, was the frame's cost. Markers sit on the sea
-surface with depth testing off.
+trail every frame; the frame rate in Fly is not yet measured in a visible window (D-42).
+Markers sit on the sea surface with depth testing off.
 
 **Quality:** motion renders at the tuned tier; 350 ms after the scene stops, one frame is
 drawn at full device resolution (up to 2x) and stays until the next change.

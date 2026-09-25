@@ -28,7 +28,7 @@ type Status = (message: string, kind?: "info" | "busy" | "warn" | "error") => vo
 
 export class OceanLayer {
   private imagery?: ImageryLayer;
-  private surface?: { meta: api.SurfaceMeta; values: Float32Array; key: string };
+  surface?: { meta: api.SurfaceMeta; values: Float32Array; key: string };
   readonly flow: FlowOverlay;
   private surfaceTicket = 0;
   private windTicket = 0;

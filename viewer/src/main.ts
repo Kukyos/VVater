@@ -956,6 +956,20 @@ async function main(): Promise<void> {
   }
 
   function renderHud(): void {
+    if (cubeActive() && state.view === "fly") {
+      // Fly hides the cube: what is on screen is the whole-ocean layer at the cube's top
+      // depth, so that is what is labelled, from that layer's own provenance.
+      const s = ocean.surfaceOn ? ocean.surface?.meta : undefined;
+      const p = s?.provenance;
+      el("hud").innerHTML = p ? [
+        `<b>${VIEW_TITLES.fly}</b> · ${p.title}, the colour on the sea` +
+          (p.forecast ? ' · <span style="color:var(--warn)">FORECAST</span>' : ""),
+        `${p.day} · ${s!.levelM === null ? "surface" : `${Math.round(s!.levelM)} m`} · no vertical stretch`,
+        `${p.sources.map((x) => `${x.source}, ${x.era}`).filter((v, i, a) => a.indexOf(v) === i).join(" · ")}` +
+          (p.horizontal.block > 1 ? ` · ${p.horizontal.block}:1 block mean for display` : ""),
+      ].join("<br>") : `<b>${VIEW_TITLES.fly}</b> · the cube is hidden in Fly; no ocean colour layer is on`;
+      return;
+    }
     if (cubeActive()) {
       const p = cube.data!.meta.provenance;
       const cut = cube.currentCut()!;
