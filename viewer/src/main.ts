@@ -2170,10 +2170,11 @@ async function main(): Promise<void> {
 
 
   const app = el("app");
-  function setDock(side: "left" | "right", open?: boolean): void {
+  function setDock(side: "left" | "right", open?: boolean, remember = true): void {
     const cls = `${side}-closed`;
     const closed = open === undefined ? !app.classList.contains(cls) : !open;
     app.classList.toggle(cls, closed);
+    if (!remember) return;
     try {
       localStorage.setItem(`vvater.dock.${side}`, closed ? "closed" : "open");
     } catch {
@@ -2206,12 +2207,14 @@ async function main(): Promise<void> {
     docks: (open) => {
       const was = { left: !app.classList.contains("left-closed"),
                     right: !app.classList.contains("right-closed") };
+      // Not remembered: a tab closed mid-course must not reopen with the docks retracted.
       if (open) {
-        setDock("left", open.left);
-        setDock("right", open.right);
+        setDock("left", open.left, false);
+        setDock("right", open.right, false);
       }
       return was;
     },
+    view: () => state.view,
     pick: (then) => {
       pickOnce = then;
       return () => { if (pickOnce === then) pickOnce = undefined; };

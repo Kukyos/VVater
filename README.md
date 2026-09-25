@@ -79,12 +79,12 @@ One click: `start.bat` on Windows, `./start.sh` on macOS and Linux. Each runs th
 
 Credentials go in `.env` (see `.env.example`). The INCOIS data needs none. Copernicus
 (currents and the global layers) needs a free Copernicus Marine account; the assistant needs
-a Groq API key. Without either, the rest of the viewer works and the missing parts say why.
+an AIRouter API key (`AI_ROUTER_KEY`). Without either, the rest of the viewer works and the missing parts say why.
 
 ## Stack
 
 CesiumJS · TypeScript · Vite · Python · FastAPI · xarray · NumPy · TEOS-10 (`gsw`) ·
-Copernicus Marine toolbox · Groq (OpenAI-compatible chat completions with tool calls).
+Copernicus Marine toolbox · AIRouter (OpenAI-compatible chat completions with tool calls).
 
 ## Data
 

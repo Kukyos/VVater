@@ -25,6 +25,8 @@ export interface TourHooks {
   pick: (then: (lat: number, lon: number) => void) => () => void;
   /** The assistant's panel, borrowed into the card and handed back on exit. */
   chat: HTMLElement;
+  /** The view on screen, to go back to when the course ends. */
+  view: () => string;
 }
 
 interface Saved { seen?: boolean; done?: string[]; place?: Place; sea?: api.SeaState }
@@ -49,6 +51,7 @@ export class Tour {
   private lesson = 0;
   private step = 0;
   private docksBefore?: { left: boolean; right: boolean };
+  private viewBefore = "region";
   private chatHome?: ParentNode | null;
   private cancelPick?: () => void;
   private waitTimer = 0;
@@ -108,6 +111,7 @@ export class Tour {
     if (this.active) return;
     this.markSeen();
     const app = document.getElementById("app")!;
+    this.viewBefore = this.hooks.view();
     this.docksBefore = this.hooks.docks({ left: false, right: false });
     app.classList.add("learn");
     this.chatHome = this.hooks.chat.parentNode;
@@ -119,7 +123,8 @@ export class Tour {
     this.stop();
     this.run += 1;
     document.getElementById("app")!.classList.remove("learn");
-    void this.hooks.run({ action: "show_cube", on: true });
+    void this.hooks.run({ action: "show_cube", on: true })
+      .then(() => this.hooks.run({ action: "set_view", view: this.viewBefore }));
     if (this.docksBefore) this.hooks.docks(this.docksBefore);
     this.chatHome?.append(this.hooks.chat);
   }
@@ -156,6 +161,7 @@ export class Tour {
     this.lesson = lesson;
     this.step = step;
     this.ctx.memo = {};
+    this.ctx.today = this.hooks.today();  // the catalogue's today, known only after it loads
     // Every lesson starts with the cube on screen; one that is about the surface alone
     // hides it in its own first step.
     void this.hooks.run({ action: "show_cube", on: true }).then(() => this.show());

@@ -134,7 +134,8 @@ Limits:
 - ngrok's free plan caps bandwidth and requests per month; check the current figures on
   ngrok's pricing page before a heavy demo.
 - The domain is public. CORS stops other websites, not `curl`: anyone who finds it can
-  call `/api/chat` and spend the Groq key's quota, as with Render.
+  call `/api/chat` and spend the prepaid AIRouter balance, as with Render. Questions are
+  capped per visitor and per day (`api.py`, D-26); spend itself is not.
 - In return: the disk cache stays warm between runs and there is no 512 MB ceiling, so
   no cold start and no out-of-memory restarts.
 
