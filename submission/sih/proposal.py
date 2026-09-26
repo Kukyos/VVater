@@ -36,6 +36,7 @@ FIGURES = HERE / "figures"
 TEMPLATE = ROOT / "SIH Project Proposal Template.docx"
 OUT = HERE / "final" / "VVater-SIH2026-proposal.docx"
 EVAL = ROOT / "data" / "eval-latest.json"
+HOSTING = ROOT / "data" / "hosting-latest.json"   # the request list, for the denominator
 
 sys.path.insert(0, str(HERE))
 import figures  # noqa: E402  the deck's diagrams, reused
@@ -215,6 +216,7 @@ def build(e: dict) -> Document:
     before, after, hero, casts = v2["amphan_before"], v2["amphan_after"], v2["hero"], v2["amphan_before_casts"]
     shallow, mid = bands["0-300 m"], bands["300-950 m"]
     empty_pct = f"{100 - res['coverage_percent']:.0f}"
+    requests_total = len(json.loads(HOSTING.read_text(encoding="utf-8"))["requests"])
 
     doc = Document(TEMPLATE)
     cp = doc.core_properties
@@ -237,14 +239,15 @@ def build(e: dict) -> Document:
     set_text(exec_head, "1. Executive Summary")
     Writer(exec_head).p(
         "VVater is a browser-native 3D ocean platform for INCOIS. A user picks a box anywhere "
-        f"on Earth, a day from {cat['first_day'][:4]} to the forecast horizon and one of "
-        f"{cat['variables']} model variables, and the model's own depth levels are lifted out "
+        f"on Earth, a day and one of {cat['variables']} model variables ({cat['from_first_day']} "
+        f"of them daily since {cat['first_day'][:4]}, all to the forecast horizon), and the "
+        "model's own depth levels are lifted out "
         "as a block that can be cut open and seen from the side. Argo floats stand inside "
         "it, each with its QC flag, data mode and source file, and one click compares a "
         "float with the model on its own day. Data is read where Copernicus and INCOIS publish "
-        "it, so there is no archive to build. It is built and measured: against an independent "
-        f"glider, the INCOIS analysis is within {n(mid['glider']['rmse'])} °C below 300 m but "
-        f"off by {n(shallow['glider']['rmse'])} °C in the upper 300 m, the layer cyclones feed "
+        "it: no archive to build. It is built and measured: against an independent "
+        f"glider, the INCOIS analysis has {n(mid['glider']['rmse'])} °C RMSE below 300 m but "
+        f"{n(shallow['glider']['rmse'])} °C in the upper 300 m, the layer cyclones feed "
         "on: hidden in a pooled number, plain in 3D. It serves forecasters, fishermen, "
         "students and the public.")
 
@@ -264,7 +267,8 @@ def build(e: dict) -> Document:
         "lists what this delays: “timely hazard assessment, search-and-rescue support, "
         "fishery advisories, climate monitoring”."
     ).p(
-        "What we found building it, each measured by our evaluation harness:"
+        "What we found building it (the first three are evaluation-harness results, the last "
+        "a probe of the links):"
     ).bullets([
         ("The model needs checking too.", f"{rng['failed']} of {rng['checked_cells']:,} cells "
          f"of the INCOIS Bay of Bengal analysis read {n(rng['failed_range'][0])}–"
@@ -276,7 +280,10 @@ def build(e: dict) -> Document:
         ("A pooled error hides where the model is wrong.", "Against the assimilated Argo "
          f"floats the analysis looks close ({n(coloc['mean_rmse_degC'])} °C RMSE); against an "
          f"independent glider it is {n(coloc['glider_mean_rmse_degC'])} °C, and banding by "
-         f"depth puts almost all of that in the upper 300 m ({n(shallow['glider']['rmse'])} °C)."),
+         f"depth puts almost all of that in the upper 300 m ({n(shallow['glider']['rmse'])} °C "
+         f"RMSE, bias {n(shallow['glider']['bias'])} °C). One glider deployment "
+         f"({glider['deployments'][0].split('-')[0]}), one fortnight off Sri Lanka in 2018: a "
+         "finding about that water, not about the analysis everywhere."),
         ("The brief's own data links are dead.", "Both the Argo and glider links are ftp:// "
          "and port 21 is blocked; every source we use is an HTTPS path we found and tested."),
     ]).p(
@@ -298,23 +305,26 @@ def build(e: dict) -> Document:
          "closest national incumbent.",
          "The address given at launch (do.incois.gov.in) did not resolve from our network on "
          "2026-09-26, so we could not assess it first-hand. The announcement does not describe "
-         "model–float co-location, QC-flag display, or cutting a volume open."],
+         "model–float co-location or QC-flag display, and the 2026 problem statement still "
+         "finds that no integrated 3D platform for model fields and in-situ observations "
+         "exists."],
         ["INCOIS Live Access Server (las.incois.gov.in)",
          "NOAA PMEL's Live Access Server: on-the-fly plots and custom subsets of gridded model "
          "output, drawn server-side with Ferret; OPeNDAP access.",
          "Mature and reliable; serves INCOIS model output; subsetting and download.",
-         "Static 2D plots one request at a time; no interactive 3D volume; instrument profiles "
-         "are not drawn in the same view as the model."],
+         "Static 2D plots one request at a time; no interactive 3D volume; drawing instrument "
+         "profiles in the same view as the model is not found in its documentation."],
         ["INCOIS ERDDAP (erddap.incois.gov.in)",
          "Data server: 15 gridded and 2 tabular datasets with subsetting, graphs and WMS.",
          "Open, no credentials; the Argo analysis ships a per-cell error field.",
-         "A data service, not a viewer: graphs are 2D, and the error field is never drawn."],
+         "A data service, not a viewer: graphs are 2D, one variable at a time, so the error "
+         "field is a separate plot, never combined with the field it qualifies; no 3D view."],
         ["MOSDAC (ISRO Space Applications Centre)",
          "Satellite ocean products (surface currents, sea-surface salinity, ocean subsurface, "
          "eddies) with downloads and image galleries.",
          "National satellite products, openly listed.",
-         "Product downloads and galleries; no interactive 3D view and no Argo or glider overlay "
-         "on the portal."],
+         "Product downloads and galleries; an interactive 3D view or an Argo or glider overlay "
+         "was not found on the portal."],
     ])
     glob = find(doc, "Global:")
     set_text(glob, "Global:", bold=True)
@@ -366,8 +376,9 @@ def build(e: dict) -> Document:
         p = find(doc, starts)
         p._p.getparent().remove(p._p)
     Writer(find(doc, "3.2. Core Objectives")).p(
-        "Build a cube generator that serves any box, any day and any of the catalogue's "
-        f"{cat['variables']} variables on the model's native depth levels only, and opens a "
+        "Build a cube generator that serves any box, any day in each variable's coverage and "
+        f"any of the catalogue's {cat['variables']} variables ({cat['from_first_day']} of them "
+        f"from {cat['first_day'][:4]}) on the model's native depth levels only, and opens a "
         f"prepared cube in under a second. Done: {before['open_seconds_disk_cache']} s for the "
         f"Amphan cube from the disk cache, {before['payload_mb']} MB to the browser.",
         "Objective 1:"
@@ -386,7 +397,7 @@ def build(e: dict) -> Document:
         f"of {text['casts_netcdf']} casts identical.",
         "Objective 3:"
     ).p(
-        "By the end of the grand finale, close the four known gaps in section 5.1 and put the "
+        "By the end of the grand finale, close the known gaps scheduled in section 5.1 and put the "
         "platform in front of INCOIS forecasters, recording what they could and could not do "
         "unassisted. In progress.",
         "Objective 4:")
@@ -437,7 +448,7 @@ def build(e: dict) -> Document:
         f"Amphan cube ({before['cells'][0]}×{before['cells'][1]} cells × {before['levels']} "
         f"levels) opens in {before['open_seconds_disk_cache']} s from the disk cache, "
         f"{before['payload_mb']} MB to the browser. Over a cold, full session touching every "
-        f"feature, {host['requests_ok']} of {host['requests_ok']} requests answered, peak memory "
+        f"feature, {host['requests_ok']} of {requests_total} requests answered, peak memory "
         f"{host['peak_mb']} MB. A cold open waits on Copernicus and is not claimed.",
         "Performance:"
     ).p(
@@ -451,8 +462,8 @@ def build(e: dict) -> Document:
     ).p(
         f"{argo['levels_rejected']} of {argo['levels']:,} Argo levels fail QC and all are shown "
         f"as rejected; {rng['failed']} impossible model cells are masked and counted; the text "
-        f"and NetCDF parsers agree on {text['levels_identical']:,} of {text['levels_identical']:,} "
-        "levels.",
+        f"and NetCDF parsers give identical casts, {text['casts_identical']} of "
+        f"{text['casts_netcdf']} ({text['levels_identical']:,} levels).",
         "Data integrity:"
     ).p(
         "Not yet measured. Target for the finale: INCOIS forecasters complete three tasks "
@@ -495,7 +506,7 @@ def build(e: dict) -> Document:
     ).figure(FIGURES / "doc-bands.png",
              "Figure 3. RMSE of the INCOIS analysis by depth band: Argo (grey, assimilated) and "
              "the independent glider (blue). Below 300 m they agree; the error is in the upper "
-             "300 m.", width_cm=13)
+             "300 m. One glider deployment, so a finding about that water.", width_cm=13)
 
     # ---------------------------------------------------------------- 4.2
     tech = find(doc, "4.2. Tech Stack")
@@ -519,7 +530,8 @@ def build(e: dict) -> Document:
          "ERDDAP; UCAR THREDDS (GFS wind); NASA GIBS (land relief); static hosting (Vercel) and "
          "one API server"],
         ["Standards", "CF Conventions (read defensively, every assumption recorded), OGC WMS "
-         "1.3.0, REST/JSON, Argo QC flags, IOOS QARTOD"],
+         "1.3.0, REST/JSON, Argo QC flags; IOOS QARTOD flags read where present (else "
+         "carried as unevaluated)"],
     ])
 
     # ---------------------------------------------------------------- 4.3
@@ -564,7 +576,7 @@ def build(e: dict) -> Document:
     # ---------------------------------------------------------------- 5.1
     fill_table(doc.tables[6], [
         ["Before the finale: built and measured",
-         "Cube generator over 23 variables; floats inside the model with QC; co-location and "
+         f"Cube generator over {cat['variables']} variables; floats inside the model with QC; co-location and "
          "the evaluation harness; four views, immersive and cinematic; winds, waves and fishing "
          "advisories; the assistant; the six-lesson course; INCOIS Bay volume with uncertainty "
          "and residual; OGC WMS. Every number in this proposal comes from the harness.",
@@ -682,6 +694,8 @@ def build(e: dict) -> Document:
         "Thyng K. et al. (2016), True colors of oceanography, Oceanography 29(3) — "
         "doi.org/10.5670/oceanog.2016.66",
         "CesiumJS — cesium.com/platform/cesiumjs",
+        "India Meteorological Department, report on Super Cyclonic Storm Amphan (2020). "
+        "The Amphan dates.",
         "Repository: source, documents and every measured number — " + REPO,
     ]
     w = Writer(find(doc, "Research References:"))
