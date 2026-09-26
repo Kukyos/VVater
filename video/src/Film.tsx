@@ -193,7 +193,7 @@ const CARDS: Record<string, React.FC<{ s: Scene }>> = {
 
 // ------------------------------------------------------------------ the film
 
-// A recorded line, public/voice/<scene>.<ext>, plays from the start of its scene.
+// A recorded line, public/voice/<scene>.<ext>, plays from half a second into its scene.
 // check.mjs finds them and writes voice.json; it fails if a line runs past its scene.
 const VOICE = voice as Record<string, string>;
 
@@ -208,7 +208,9 @@ export const Film: React.FC = () => {
           return (
             <Series.Sequence key={s.id} durationInFrames={d}>
               {Body ? <Fade dur={d}><Body s={s} /></Fade> : <Footage s={s} />}
-              {VOICE[s.id] && <Audio src={staticFile(`voice/${VOICE[s.id]}`)} />}
+              {VOICE[s.id] && (
+                <Sequence from={Math.round(0.5 * FPS)} layout="none"><Audio src={staticFile(`voice/${VOICE[s.id]}`)} /></Sequence>
+              )}
             </Series.Sequence>
           );
         })}

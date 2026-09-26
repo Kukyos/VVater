@@ -69,22 +69,20 @@ console.log('\nscenes');
 for (const s of script.scenes) {
   const secs = s.clips ? s.clips.reduce((n, c) => n + c.seconds, 0) : s.seconds;
   const words = s.say.split(/\s+/).filter(Boolean).length;
-  const need = words / wps + 1;
+  // A recorded line is measured; an unrecorded one is estimated at the reading pace.
+  const v = recorded.find((f) => f.replace(/\.(wav|mp3|m4a)$/i, '') === s.id);
+  const said = v ? probe(join(voiceDir, v)) : NaN;
+  const need = v ? said + 0.5 + 0.5 : words / wps + 1;
   const mm = `${Math.floor(total / 60)}:${String(Math.floor(total % 60)).padStart(2, '0')}`;
-  console.log(`  ${mm}  ${s.id.padEnd(12)} ${String(secs).padStart(3)} s  ${String(words).padStart(3)} words  ~${need.toFixed(1)} s to say`);
-  if (need > secs) fail(`${s.id}: ${words} words need ~${need.toFixed(1)} s at ${wps} words/s; the scene is ${secs} s`);
+  console.log(`  ${mm}  ${s.id.padEnd(12)} ${String(secs).padStart(4)} s  ${String(words).padStart(3)} words  ${v ? `${said.toFixed(1)} s recorded` : `~${need.toFixed(1)} s to say`}`);
+  if (need > secs) fail(`${s.id}: the line needs ~${need.toFixed(1)} s${v ? ` (recorded, ${said.toFixed(1)} s from 0.5 s in)` : ` at ${wps} words/s`}; the scene is ${secs} s`);
   for (const c of s.clips || []) {
     const f = join(here, 'public', 'clips', `${c.name}.mp4`);
     if (!existsSync(f)) { fail(`${s.id}: clip ${c.name}.mp4 not recorded (node capture.cjs ${c.name})`); continue; }
     const d = probe(f);
     if (!(Math.abs(d - c.seconds) <= 0.05)) fail(`${s.id}: ${c.name}.mp4 is ${d.toFixed(2)} s, script.json says ${c.seconds} (re-run node capture.cjs ${c.name})`);
   }
-  const v = recorded.find((f) => f.replace(/\.(wav|mp3|m4a)$/i, '') === s.id);
-  if (v) {
-    const d = probe(join(voiceDir, v));
-    voice[s.id] = v;
-    if (d > secs) fail(`${s.id}: recorded line ${v} is ${d.toFixed(1)} s, the scene is ${secs} s`);
-  }
+  if (v) voice[s.id] = v;
   total += secs;
 }
 writeFileSync(join(here, 'src', 'voice.json'), JSON.stringify(voice, null, 2) + '\n');

@@ -27,10 +27,9 @@ dist/
 # Build output
 submission/sih/final/*.bak
 video/out/
-# The film: clips regenerate from capture.cjs (about 1 GB), recorded voice stays local,
-# and check.mjs writes the two JSON files the film reads
+# The film: clips regenerate from capture.cjs (about 1 GB); the narration is kept, since
+# re-rendering it costs ElevenLabs credits; check.mjs writes the two JSON files the film reads
 video/public/clips/
-video/public/voice/
 video/src/eval.json
 video/src/voice.json
 

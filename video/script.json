@@ -18,16 +18,18 @@
       "act": "",
       "card": "title",
       "seconds": 6,
-      "say": "This is VVater."
+      "say": "This is VVater.",
+      "minSeconds": 6
     },
     {
       "id": "brief",
       "act": "The brief",
       "card": "quote",
-      "seconds": 13,
+      "seconds": 12,
       "quote": "Operational oceanographers and forecasters are therefore forced to toggle between disparate software packages, making it difficult to rapidly correlate model predictions with observational evidence.",
       "cite": "Problem statement 26067 · INCOIS, Ministry of Earth Sciences",
-      "say": "INCOIS asked for one place where ocean models and real instruments can be seen together, in three dimensions, in a browser. With nothing to install."
+      "say": "INCOIS asked for one place where ocean models and real instruments can be seen together, in three dimensions, in a browser. With nothing to install.",
+      "minSeconds": 12
     },
     {
       "id": "tilt",
@@ -52,6 +54,17 @@
       ],
       "lower": "35 native levels to 902.3 m · never more levels than the model has",
       "say": "Any side can be cut inwards, and the faces become sections through the inside. This is the warm upper layer a cyclone feeds on, and you can see how thin it is. 35 levels, the model's own, and never one more than it has."
+    },
+    {
+      "id": "draw",
+      "act": "Cut your own",
+      "clips": [
+        {
+          "name": "draw-box",
+          "seconds": 16
+        }
+      ],
+      "say": "And the block can be anywhere. Draw a box on the globe with the mouse, and that piece of ocean is lifted out, on its own day, at every depth the model has."
     },
     {
       "id": "floats",
@@ -149,7 +162,18 @@
           "seconds": 10
         }
       ],
-      "say": "Or skim low over the water, with that day's currents running underneath."
+      "say": "Skim low over the water, with that day's currents running underneath."
+    },
+    {
+      "id": "fly",
+      "act": "The whole ocean",
+      "clips": [
+        {
+          "name": "fly",
+          "seconds": 12
+        }
+      ],
+      "say": "Or fly over it yourself, a few kilometres up, the way a pilot would see the sea."
     },
     {
       "id": "fishing",
@@ -164,49 +188,27 @@
       "lowerAt": "right"
     },
     {
-      "id": "volume",
-      "act": "Where the model is unsure",
-      "clips": [
-        {
-          "name": "bay-volume",
-          "seconds": 21
-        }
-      ],
-      "lower": "INCOIS Argo 10-day analysis · Bay of Bengal · August 2018",
-      "say": "In the Bay of Bengal, INCOIS publishes its own analysis, with an error estimate for every cell. We draw it as a true volume, and water the model is unsure of is drawn faint, instead of as if it had been measured."
-    },
-    {
-      "id": "residual",
-      "act": "Where the model is wrong",
-      "clips": [
-        {
-          "name": "residual",
-          "seconds": 17
-        }
-      ],
-      "lower": "Observed minus model · 510 of 10,488 cells · 4.86 %",
-      "say": "This is observed minus model, wherever an instrument actually measured. Only 4.86 percent of cells have any observation at all. The rest are left empty, not smoothed over."
-    },
-    {
       "id": "bands",
       "act": "Where the model is wrong",
       "card": "bands",
-      "seconds": 23,
-      "say": "Below 300 metres, the model and an independent glider agree to about a third of a degree. In the top 300 metres, the layer a cyclone forecaster cares about, the error is 2.89 degrees. One averaged number hides that. Drawing the column shows it.",
+      "seconds": 20.5,
+      "say": "Against an independent glider in the Bay of Bengal, INCOIS's own analysis is good below 300 metres, to about a third of a degree. In the top 300 metres, the layer a cyclone forecaster cares about, the error is 2.89 degrees. One averaged number hides that. Drawing the column shows it.",
       "lines": [
         "INCOIS Argo 10-day analysis · Bay of Bengal · 25 Aug 2018 ±5 days"
-      ]
+      ],
+      "minSeconds": 16
     },
     {
       "id": "qc",
       "act": "The model needs checking too",
       "card": "qc",
-      "seconds": 25,
+      "seconds": 21.5,
       "say": "The model needs quality control too. The analysis has water at 44.42 degrees, 75 to 100 metres down. Argo's own published range test catches 6 of those cells, and we mask them. 18 more are impossible at that depth and still pass. We say so, instead of inventing a limit.",
       "lines": [
         "in the INCOIS analysis, 75–100 m down in the Bay of Bengal",
         "18 more, 35–40 °C, pass it: impossible at that depth, logged, no limit invented"
-      ]
+      ],
+      "minSeconds": 16
     },
     {
       "id": "learn",
@@ -226,58 +228,65 @@
       "clips": [
         {
           "name": "assistant",
-          "seconds": 20
+          "seconds": 26
         }
       ],
-      "say": "And an assistant that can drive the viewer. Ask for oxygen in the Arabian Sea, and it builds the block and shows you the control it used. Every number it says is checked against the data it read.",
+      "say": "And you can simply ask. Type a question, and the assistant answers from the data, then builds the block for you, live. Every number it says is checked against what it read.",
       "lowerAt": "center"
     },
     {
       "id": "evidence",
       "act": "Measured",
       "card": "evidence",
-      "seconds": 14,
-      "say": "Every number in this film comes from one test harness in the repository, which anyone can run with one command."
+      "seconds": 12,
+      "say": "Every number in this film comes from one test harness in the repository, which anyone can run with one command.",
+      "minSeconds": 12
     },
     {
       "id": "notyet",
       "act": "Not yet",
       "card": "notyet",
-      "seconds": 24,
+      "seconds": 21,
       "say": "What is not done yet. Gliders are nearly absent here: of 2,562 datasets in the US glider archive, 1 flies inside the Bay. Europe's archive of 184 gliders is not connected yet. And a depth-aware range test needs a published limit, which is something INCOIS could give us.",
       "lines": [
         "Gliders are nearly absent|2,562 datasets in the IOOS Glider DAC; 1 flies inside the Bay of Bengal box",
         "Europe’s glider archive|EGO / Coriolis, 184 gliders over THREDDS, not yet connected",
         "A depth-aware range test|needs a published limit for the Bay; we will not invent one"
-      ]
+      ],
+      "minSeconds": 16
     },
     {
       "id": "end",
       "act": "",
       "card": "end",
-      "seconds": 10,
-      "say": "VVater. Try it at v-vater dot vercel dot app."
+      "seconds": 9,
+      "say": "VVater. The link is on the screen.",
+      "minSeconds": 9
     }
   ],
   "sourced": {
-    "_": "Numbers said or shown that are not in data/eval-latest.json, each with where it comes from.",
-    "14": "INCOIS PFZ sectors · server/ocean/pfz.py, docs/00-start-here.md",
-    "18": "cells 35-40 C that pass the range test · docs/13-eval-results.md (24 - 6)",
-    "75": "depth of the impossible cells · docs/13-eval-results.md",
-    "100": "depth of the impossible cells · docs/13-eval-results.md",
-    "2,562": "IOOS Glider DAC datasets · docs/13-eval-results.md, glider section",
-    "184": "EGO/Coriolis gliders · docs/11-deferred.md D-02b",
     "1": "gliders inside the box · docs/13-eval-results.md",
     "2": "float pairing ±2 days · docs/11-deferred.md D-35",
-    "4,000": "Drake Passage scenario depth · server/ocean/config.py SCENARIOS",
-    "28": "Amphan colour bar minimum, chosen for the film and the deck · submission/sih/capture.cjs",
-    "31.5": "Amphan colour bar maximum, chosen for the film and the deck · submission/sih/capture.cjs",
-    "8": "days between the two Amphan scenarios · server/ocean/config.py SCENARIOS",
     "6": "lessons · viewer/src/learn/lessons.ts",
-    "26067": "problem statement id · docs/01-problem-statement.md",
-    "2026": "SIH 2026",
-    "K26125": "team id",
+    "8": "days between the two Amphan scenarios · server/ocean/config.py SCENARIOS",
+    "14": "INCOIS PFZ sectors · server/ocean/pfz.py, docs/00-start-here.md",
+    "18": "cells 35-40 C that pass the range test · docs/13-eval-results.md (24 - 6)",
+    "28": "Amphan colour bar minimum, chosen for the film and the deck · submission/sih/capture.cjs",
     "35": "lower bound of the cells that pass the range test · docs/13-eval-results.md",
-    "40": "upper bound, the Argo range test limit · data/eval-latest.json field_range_test.limits"
+    "40": "upper bound, the Argo range test limit · data/eval-latest.json field_range_test.limits",
+    "75": "depth of the impossible cells · docs/13-eval-results.md",
+    "100": "depth of the impossible cells · docs/13-eval-results.md",
+    "184": "EGO/Coriolis gliders · docs/11-deferred.md D-02b",
+    "2026": "SIH 2026",
+    "26067": "problem statement id · docs/01-problem-statement.md",
+    "_": "Numbers said or shown that are not in data/eval-latest.json, each with where it comes from.",
+    "2,562": "IOOS Glider DAC datasets · docs/13-eval-results.md, glider section",
+    "4,000": "Drake Passage scenario depth · server/ocean/config.py SCENARIOS",
+    "31.5": "Amphan colour bar maximum, chosen for the film and the deck · submission/sih/capture.cjs",
+    "K26125": "team id"
+  },
+  "speak": {
+    "_": "How narrate.mjs says a word it would otherwise misread. The screen keeps the spelling.",
+    "VVater": "Water"
   }
 }

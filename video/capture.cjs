@@ -109,10 +109,14 @@ const getPose = (page) => js(page, () => ({ ...window.vvater.orbit.pose }));
 // clock advances one frame and the page is photographed.
 // `rebuild`: renders to give each frame, with the clock held, before it is photographed. A cut
 // rebuilds the cube's faces, and new primitives and textures take a few renders to appear;
-// moved every frame, they would never be drawn at all (the block renders white).
+// moved every frame, they would never be drawn at all (the block renders white). A number,
+// or a function of the frame for a clip where only some frames move something.
 // `skip`: seconds to run the clock forward, rendering but not photographing, before the clip
 // starts (to begin partway through something that moves by itself, like the cinematic).
-async function record(page, name, seconds, frame, { easing = "inOut", arg, rebuild = 0, skip = 0 } = {}) {
+// `drive(i)`: runs in Node before frame i, for the mouse and keyboard. Anything it starts that
+// waits on the network (a cube loading, the assistant answering) runs on the real clock
+// between frames, so a wait is shorter in the film than it was.
+async function record(page, name, seconds, frame, { easing = "inOut", arg, rebuild = 0, skip = 0, drive } = {}) {
   fs.mkdirSync(OUT, { recursive: true });
   const file = path.join(OUT, `${name}.mp4`);
   const ff = spawn("ffmpeg", ["-y", "-loglevel", "error", "-f", "image2pipe", "-framerate", String(FPS),
@@ -126,8 +130,10 @@ async function record(page, name, seconds, frame, { easing = "inOut", arg, rebui
   const t0 = Date.now();
   for (let i = 0; i < n; i++) {
     const t = ease[easing](n === 1 ? 1 : i / (n - 1));
+    if (drive) await drive(i);
     await page.evaluate(`(${fnSrc})(${t}, ${JSON.stringify(arg ?? null)}); window.__film.step(${1000 / FPS});`);
-    for (let k = 0; k < rebuild; k++) { await sleep(20); await js(page, () => window.__film.step(0)); }
+    const passes = typeof rebuild === "function" ? rebuild(i) : rebuild;
+    for (let k = 0; k < passes; k++) { await sleep(20); await js(page, () => window.__film.step(0)); }
     const png = await page.screenshot({ type: "png", optimizeForSpeed: true });
     if (!ff.stdin.write(png)) await new Promise((r) => ff.stdin.once("drain", r));
   }
@@ -149,6 +155,46 @@ function orbitMove(t, { a, b }) {
   o.apply();
 }
 const hold = () => {};
+
+// Headless Chrome draws no pointer, so the film's is a DOM arrow that follows the real mouse
+// events the page receives; a press shows as a ring.
+const showCursor = (page) => js(page, () => {
+  const c = document.createElement("div");
+  c.innerHTML = '<svg width="26" height="26" viewBox="0 0 24 24"><path d="M4 2l15 11-6.5 1.2 3.8 7.3-2.7 1.4-3.8-7.3L4 20z" fill="#fff" stroke="#000" stroke-width="1.3" stroke-linejoin="round"/></svg>';
+  Object.assign(c.style, { position: "fixed", left: "-50px", top: "-50px", zIndex: 99999, pointerEvents: "none",
+    filter: "drop-shadow(0 1px 2px rgba(0,0,0,.5))", transform: "translate(-4px,-2px)" });
+  const ring = document.createElement("div");
+  Object.assign(ring.style, { position: "fixed", width: "34px", height: "34px", marginLeft: "-17px", marginTop: "-17px",
+    border: "2px solid #38bdf8", borderRadius: "50%", zIndex: 99998, pointerEvents: "none", opacity: 0 });
+  document.body.append(ring, c);
+  const at = (e) => {
+    c.style.left = `${e.clientX}px`; c.style.top = `${e.clientY}px`;
+    ring.style.left = c.style.left; ring.style.top = c.style.top;
+  };
+  addEventListener("pointermove", at, true);
+  addEventListener("pointerdown", (e) => { at(e); ring.style.opacity = 1; }, true);
+  addEventListener("pointerup", () => { ring.style.opacity = 0; }, true);
+});
+
+// Where a longitude and latitude are on screen: the nearest picked pixel on an 8 px grid.
+const screenOf = (page, lon, lat) => js(page, (lon, lat) => {
+  const v = window.vvater.viewer, r = v.canvas.getBoundingClientRect(), e = v.scene.globe.ellipsoid;
+  let best = null, bd = Infinity;
+  for (let y = 0; y < r.height; y += 8) for (let x = 0; x < r.width; x += 8) {
+    const w = v.camera.pickEllipsoid({ x, y });
+    if (!w) continue;
+    const g = e.cartesianToCartographic(w);
+    const d = (g.longitude * 180 / Math.PI - lon) ** 2 + (g.latitude * 180 / Math.PI - lat) ** 2;
+    if (d < bd) { bd = d; best = { x: r.left + x, y: r.top + y }; }
+  }
+  return best;
+}, lon, lat);
+
+// The mouse along a straight line from a to b over frames [i0, i1], eased.
+const glide = (a, b, i, i0, i1) => {
+  const k = Math.min(1, Math.max(0, (i - i0) / (i1 - i0))), e = k * k * (3 - 2 * k);
+  return { x: a.x + (b.x - a.x) * e, y: a.y + (b.y - a.y) * e };
+};
 
 // ------------------------------------------------------------------ the clips
 
@@ -212,6 +258,44 @@ CLIPS["amphan-cut"] = async (b) => {
     o.pose.range = a.r * 0.8 * Math.pow(0.85, t);
     o.apply();
   }, { easing: "linear", arg: { r }, rebuild: 8 });
+  return p;
+};
+
+// A box drawn on the globe with the mouse, and the block it cuts out appearing. Over the Gulf
+// Stream scenario's own box and day, so the chunks are already on disk.
+CLIPS["draw-box"] = async (b) => {
+  const p = await open(b, "scenario=gulf_stream");
+  await set(p, "cube-show", false);
+  await settle(p, 1500);
+  await js(p, () => {
+    const o = window.vvater.orbit, D = Math.PI / 180;
+    o.pose.lon = -66; o.pose.lat = 36; o.pose.heading = 0; o.pose.pitch = -70 * D; o.pose.range = 5200e3;
+    o.apply();
+  });
+  await settle(p, 2500);
+  await showCursor(p);
+  const A = await screenOf(p, -75, 43), B = await screenOf(p, -57, 33);
+  const home = { x: A.x - 260, y: A.y + 220 };
+  await p.mouse.move(home.x, home.y);
+  // Pressing Draw shows the old cube again, and it covers the box being dragged (D-48), so
+  // it is put away after the press and the new block shown the moment its data arrives.
+  let shown = false;
+  // The drag rectangle's geometry is rebuilt on every move, so the drag frames get renders too.
+  await record(p, "draw-box", secs("draw-box"), hold, { easing: "linear", rebuild: (i) => (i > 45 && i <= 132 ? 6 : 0), drive: async (i) => {
+    if (i === 0) {
+      await js(p, () => { document.getElementById("cube-draw").click(); window.__old = window.vvater.cube.data; });
+      await set(p, "cube-show", false);
+    }
+    if (i > 130 && !shown && await js(p, () => window.vvater.cube.data !== window.__old)) {
+      await set(p, "cube-show", true);
+      shown = true;
+    }
+    if (i <= 40) { const m = glide(home, A, i, 0, 40); await p.mouse.move(m.x, m.y); }
+    if (i === 45) await p.mouse.down();
+    if (i > 45 && i <= 125) { const m = glide(A, B, i, 45, 125); await p.mouse.move(m.x, m.y); }
+    if (i === 130) await p.mouse.up();
+    if (i > 150 && i <= 200) { const m = glide(B, { x: 1880, y: 1000 }, i, 150, 200); await p.mouse.move(m.x, m.y); }
+  } });
   return p;
 };
 
@@ -302,6 +386,21 @@ CLIPS["cinema-water"] = async (b) => {
   return p;
 };
 
+// Fly: up Sri Lanka's east coast, the sea on the right and the hills on the left. Paused
+// while the tiles for that place load, then flown on the virtual clock.
+CLIPS.fly = async (b) => {
+  const p = await open(b, "scenario=amphan_before&view=fly");
+  await js(p, () => {
+    const f = window.vvater.flight;
+    f.paused = true;
+    Object.assign(f.state, { lat: 6.6, lon: 82.4, heading: 335, height: 9000, speed: 3000, look: -18 });
+  });
+  await settle(p, 6000);
+  await js(p, () => { window.vvater.flight.paused = false; });
+  await record(p, "fly", secs("fly"), hold, { easing: "linear" });
+  return p;
+};
+
 // For fishermen: INCOIS PFZ advisories and the indicative zones, left dock open on them.
 CLIPS.fishing = async (b) => {
   const p = await open(b, `box=78,100,5,23&day=${new Date().toISOString().slice(0, 10)}&v=temperature`,
@@ -367,19 +466,30 @@ CLIPS.learn = async (b) => {
   return p;
 };
 
-// The assistant asked for a cube; it builds it and answers.
+// The assistant, live: the question typed, Ask pressed, the answer arriving and the block it
+// asked for being built. Typing runs at one character a frame. 2,000 m is one of the depth
+// options, so the reply and the block agree (D-47).
+const QUESTION = "Show me dissolved oxygen in the Arabian Sea, 50 to 78 E and 5 to 25 N, down to 2,000 m, on 15 October 2019";
 CLIPS.assistant = async (b) => {
-  const p = await open(b, "scenario=bay_of_bengal", { docks: { left: true, right: true } });
-  await js(p, (q) => {
-    const f = document.querySelector(".chat-form");
-    f.querySelector("textarea, input").value = q;
-    f.requestSubmit();
-  }, "Make a cube of dissolved oxygen in the Arabian Sea, 50 to 78 E and 5 to 25 N, down to 2,000 m, on 15 October 2019");
-  await p.waitForFunction(() => document.querySelectorAll(".chat-log > *").length >= 3, { timeout: 120000 });
-  await settle(p, 3000, 240000);
-  const s = await getPose(p);
-  await record(p, "assistant", secs("assistant"), orbitMove, { easing: "linear", arg: {
-    a: { heading: s.heading * DEG - 10, range: s.range }, b: { heading: s.heading * DEG + 10, range: s.range * 0.9 } } });
+  const p = await open(b, "scenario=amphan_before", { docks: { left: false, right: true } });
+  await showCursor(p);
+  const centre = (sel) => js(p, (sel) => {
+    const r = document.querySelector(sel).getBoundingClientRect();
+    return { x: r.left + r.width / 2, y: r.top + r.height / 2 };
+  }, sel);
+  const field = await centre(".chat-form textarea, .chat-form input");
+  const ask = await centre(".chat-form button");
+  const home = { x: field.x - 700, y: field.y + 300 };
+  await p.mouse.move(home.x, home.y);
+  const typeFrom = 40, typeTo = typeFrom + QUESTION.length;
+  await record(p, "assistant", secs("assistant"), hold, { easing: "linear", drive: async (i) => {
+    if (i <= 30) { const m = glide(home, field, i, 0, 30); await p.mouse.move(m.x, m.y); }
+    if (i === 33) await p.mouse.click(field.x, field.y);
+    if (i >= typeFrom && i < typeTo) await p.keyboard.type(QUESTION[i - typeFrom]);
+    if (i > typeTo + 5 && i <= typeTo + 25) { const m = glide(field, ask, i, typeTo + 5, typeTo + 25); await p.mouse.move(m.x, m.y); }
+    if (i === typeTo + 28) await p.mouse.click(ask.x, ask.y);
+    if (i > typeTo + 40 && i <= typeTo + 70) { const m = glide(ask, { x: ask.x + 30, y: 1060 }, i, typeTo + 40, typeTo + 70); await p.mouse.move(m.x, m.y); }
+  } });
   return p;
 };
 

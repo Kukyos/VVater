@@ -7,7 +7,9 @@
     "clips": "node capture.cjs",
     "check": "node check.mjs",
     "studio": "node check.mjs --soft && remotion studio",
-    "render": "node check.mjs && remotion render Film out/vvater-film.mp4 --codec=h264 --crf=16"
+    "render": "node check.mjs && remotion render Film out/vvater-film-raw.mp4 && npm run copies",
+    "narrate": "node narrate.mjs --fit",
+    "copies": "ffmpeg -y -loglevel error -i out/vvater-film-raw.mp4 -c:v copy -af loudnorm=I=-16:TP=-1.5:LRA=11 -c:a aac -b:a 192k out/vvater-film.mp4 && ffmpeg -y -loglevel error -i out/vvater-film-raw.mp4 -c:v copy -an out/vvater-film-no-voice.mp4"
   },
   "dependencies": {
     "@remotion/cli": "4.0.409",
