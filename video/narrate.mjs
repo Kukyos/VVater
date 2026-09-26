@@ -8,11 +8,10 @@
 // A line re-renders only when its spoken text or the voice changes: the hash of both is kept
 // in public/voice/narration.json beside the file. The key is ELEVENLABS_API_KEY in ../.env.
 //
-// --fit: a scene must hold its line, from half a second in, with a second and a half after.
+// --fit: a scene holds its line from half a second in, with 1.2 s after.
 // A card is set to exactly that, never under its `minSeconds` (reading time for what
-// it shows) or 5 s. A clip scene only ever grows, onto its last
-// clip, because a shorter clip would have to be recorded again anyway; the clips that grew
-// are listed, to be re-recorded with capture.cjs.
+// it shows) or 5 s. Clips are scaled to the line, never under their own `minSeconds`; the
+// clips that changed are listed, to be re-recorded with capture.cjs.
 import { readFileSync, writeFileSync, existsSync, mkdirSync } from 'node:fs';
 import { execFileSync } from 'node:child_process';
 import { createHash } from 'node:crypto';
@@ -23,7 +22,7 @@ const VOICE = { id: '6fZce9LFNG3iEITDfqZZ', name: 'Charlotte' };
 const MODEL = 'eleven_multilingual_v2';
 // A product film, not a kiosk: normal speed, a little less stability for some life.
 const SETTINGS = { stability: 0.45, similarity_boost: 0.75, speed: 1.0 };
-export const LEAD = 0.5, TAIL = 1.5;
+export const LEAD = 0.5, TAIL = 1.2;
 
 const here = dirname(fileURLToPath(import.meta.url));
 const scriptPath = join(here, 'script.json');
@@ -69,17 +68,19 @@ if (todo.length) {
 }
 
 if (args.includes('--fit')) {
-  const grew = [];
+  const changed = [];
+  const half = (x) => Math.ceil(x * 2) / 2;
   for (const s of script.scenes) {
-    const need = Math.ceil((cache[s.id].seconds + LEAD + TAIL) * 2) / 2;
+    const need = half(cache[s.id].seconds + LEAD + TAIL);
     if (s.card) { s.seconds = Math.max(s.minSeconds ?? 5, need); continue; }
+    // Clips are sized to the line both ways, so nothing sits silent for long, but never under
+    // the time their own action takes (a drag, a load, a click through the views).
     const have = s.clips.reduce((n, c) => n + c.seconds, 0);
-    if (need > have) {
-      const last = s.clips.at(-1);
-      last.seconds += need - have;
-      grew.push(last.name);
+    for (const c of s.clips) {
+      const next = Math.max(c.minSeconds ?? 3, half(c.seconds * need / have));
+      if (next !== c.seconds) { c.seconds = next; changed.push(c.name); }
     }
   }
   writeFileSync(scriptPath, JSON.stringify(script, null, 2) + '\n');
-  console.log(grew.length ? `re-record: node capture.cjs ${grew.join(' ')}` : 'every clip already holds its line');
+  console.log(changed.length ? `re-record: node capture.cjs ${changed.join(' ')}` : 'every clip already fits its line');
 }

@@ -1,6 +1,6 @@
 import React from 'react';
 import {
-  AbsoluteFill, Audio, OffthreadVideo, Sequence, Series, interpolate, staticFile,
+  AbsoluteFill, Audio, Loop, OffthreadVideo, Sequence, Series, interpolate, staticFile,
   useCurrentFrame, useVideoConfig,
 } from 'remotion';
 import script from '../script.json';
@@ -16,6 +16,7 @@ type Clip = { name: string; seconds: number };
 type Scene = {
   id: string; act: string; say: string; card?: string; seconds?: number; clips?: Clip[];
   lower?: string; lowers?: string[]; quote?: string; cite?: string; lines?: string[]; lowerAt?: 'left' | 'right' | 'center';
+  tiles?: { title: string; clip?: string; from?: number; card?: string }[];
 };
 const scenes = script.scenes as Scene[];
 
@@ -187,8 +188,78 @@ const End: React.FC = () => (
   </Card>
 );
 
+// What is under it: browser, server, data. Names only; no figures.
+const STACK: [string, string[]][] = [
+  ['In the browser', ['CesiumJS, its voxel ray-marcher running our own shader', 'Faces painted from the model’s native levels',
+    'Currents and winds as particles over the globe', 'Vite + TypeScript, nothing to install']],
+  ['The server', ['FastAPI, in Python', 'xarray and dask, chunk by chunk', 'TEOS-10: density and sound speed',
+    'Every float paired with the model', 'OGC WMS for GIS tools']],
+  ['The data, read live', ['Copernicus Marine cloud stores (Zarr)', 'INCOIS ERDDAP and PFZ advisories',
+    'Argo, through Ifremer', 'IOOS Glider DAC', 'NASA GIBS, NCEP GFS winds']],
+];
+const Stack: React.FC<{ s: Scene }> = ({ s }) => (
+  <Card act={s.act}>
+    <div style={{ display: 'flex', gap: 28, alignItems: 'stretch' }}>
+      {STACK.map(([h, items], i) => (
+        <React.Fragment key={h}>
+          {i > 0 && <Rise at={20 + i * 70}><div style={{ fontSize: 60, color: C.faint, fontWeight: 200, marginTop: 120 }}>⟷</div></Rise>}
+          <Rise at={10 + i * 70} style={{ flex: 1 }}>
+            <div style={{ border: `1px solid ${C.faint}`, borderTop: `3px solid ${C.accent}`, padding: '28px 30px', height: '100%' }}>
+              <div style={{ fontSize: 38, fontWeight: 400, marginBottom: 22 }}>{h}</div>
+              {items.map((t) => <div key={t} style={{ fontSize: 25, color: C.dim, lineHeight: 1.35, marginBottom: 14 }}>{t}</div>)}
+            </div>
+          </Rise>
+        </React.Fragment>
+      ))}
+    </div>
+    <Rise at={260}><div style={{ fontSize: 24, color: C.dim, marginTop: 40 }}>
+      The assistant: a language model through AIRouter, reaching the data only through the API's own functions.</div></Rise>
+  </Card>
+);
+
+const sceneById = (id: string) => scenes.find((x) => x.id === id)!;
+
+// One screen, every section: each tile loops two seconds of its section, its title under it.
+// The tile being named lights up, in the order the line names them.
+const Index: React.FC<{ s: Scene }> = ({ s }) => {
+  const f = useCurrentFrame();
+  const tiles = s.tiles!;
+  const W = 500, H = Math.round(W * 9 / 16);
+  const each = (frames(s) - 30) / tiles.length;
+  return (
+    <AbsoluteFill style={{ background: C.ground, fontFamily: FONT, alignItems: 'center', justifyContent: 'center' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: `repeat(3, ${W}px)`, gap: '22px 40px' }}>
+        {tiles.map((t, i) => {
+          const lit = f >= 15 + i * each && f < 15 + (i + 1) * each;
+          const tIn = interpolate(f, [i * 4, i * 4 + 14], [0, 1], { extrapolateLeft: 'clamp', extrapolateRight: 'clamp' });
+          return (
+            <div key={t.title} style={{ opacity: tIn * (lit ? 1 : 0.55), transform: `scale(${lit ? 1.03 : 1})`, transition: 'none' }}>
+              <div style={{ width: W, height: H, overflow: 'hidden', position: 'relative', background: '#0B1017',
+                outline: `2px solid ${lit ? C.accent : 'transparent'}` }}>
+                {t.clip ? (
+                  <Loop durationInFrames={60}>
+                    <OffthreadVideo src={staticFile(`clips/${t.clip}.mp4`)} startFrom={Math.round((t.from ?? 0) * FPS)} muted
+                      style={{ width: W, height: H, objectFit: 'cover' }} />
+                  </Loop>
+                ) : (
+                  <div style={{ width: 1920, height: 1080, transform: `scale(${W / 1920})`, transformOrigin: 'top left' }}>
+                    {React.createElement(CARDS[t.card!], { s: sceneById(t.card!) })}
+                  </div>
+                )}
+              </div>
+              <div style={{ color: lit ? C.ink : C.dim, fontSize: 24, marginTop: 10, fontWeight: lit ? 500 : 400 }}>
+                <span style={{ color: C.accent, marginRight: 10 }}>{i + 1}</span>{t.title}</div>
+            </div>
+          );
+        })}
+      </div>
+    </AbsoluteFill>
+  );
+};
+
 const CARDS: Record<string, React.FC<{ s: Scene }>> = {
   title: Title, quote: Quote, bands: Bands, qc: QC, evidence: Evidence, notyet: NotYet, end: End,
+  stack: Stack, index: Index,
 };
 
 // ------------------------------------------------------------------ the film

@@ -1,6 +1,6 @@
 # The film
 
-A film of the running build, about **6¼ minutes**, cut in code with Remotion. Most of it is
+A film of the running build, about **6⅓ minutes**, cut in code with Remotion. Most of it is
 the viewer itself, recorded from the local build. Cards carry the brief's own words and the
 measured numbers. One narrator, ElevenLabs' **Charlotte**, reads every line.
 
@@ -116,17 +116,20 @@ There are **no subtitles**. The on-screen text is titles, labels and numbers onl
 
 | Act | Scenes | What is on screen |
 |---|---|---|
-| Opening | `open`, `title`, `brief` | The immersive cinematic: the planet, then down to the Bay. The title. The brief's own sentence, verbatim. |
-| The block | `tilt`, `cut`, `draw` | Amphan's Bay from above (a map), tilted to the side (a block), the south side cut inwards; then a box dragged on the globe with the mouse, and its block appearing. |
+| Opening | `open`, `title`, `index`, `brief` | The immersive cinematic; the title; **the index**: nine tiles on one screen, each looping two seconds of its section with its title under it, lit in the order the line names them; the brief's own sentence. |
+| The block | `tilt`, `cut`, `draw`, `controls` | Amphan's Bay from above, tilted to the side, the south side cut in; a box dragged on the globe with the mouse and its block appearing; the properties panel scrolled top to bottom. |
 | Floats inside the model | `floats`, `float-click` | Argo sticks in the open section; one clicked, its panel with QC flag, data mode and file. |
 | Before and after | `amphan` | Same box, camera and 28–31.5 °C bar, 14 and 22 May 2020. |
-| Anywhere, any day | `anywhere` | Five scenarios: Arabian Sea oxygen, Gulf Stream, El Niño, Agulhas, Drake Passage. |
-| The whole ocean | `globe`, `water`, `fly` | The globe in the cube's colours with currents and winds; the cinematic's low skim over the Bay; Fly up India's east coast. |
+| Anywhere, any day | `anywhere` | Arabian Sea oxygen, Gulf Stream, El Niño, Agulhas, Drake Passage. |
+| The whole ocean | `globe`, `dawn`, `fly`, `views` | The globe with currents and winds; the cinematic's sunrise; Fly up Sri Lanka's east coast with the sea as imagery; the four views clicked in turn. |
+| How it is built | `stack` | Browser, server, data: the card, about 30 s. |
 | For fishermen | `fishing` | INCOIS PFZ advisories and the indicative layer, labelled not-an-advisory. |
-| Where the model is wrong | `bands` | The RMSE-by-depth card: INCOIS's analysis against the assimilated floats and an independent glider. |
-| The model needs checking too | `qc` | 44.42 °C, the range test, and the 18 cells it cannot catch. |
-| For students / Ask it | `learn`, `assistant` | Lesson 4 on Amphan; a question typed to the assistant, its answer, and the block it builds. |
+| Where the model is wrong | `bands`, `qc` | RMSE by depth against floats and an independent glider; 44.42 °C and the range test. |
+| For students / Ask it | `learn`, `assistant` | Lesson 4 on Amphan; a question typed, answered, and its block built live. |
 | Measured / Not yet / End | `evidence`, `notyet`, `end` | The harness numbers and the command; what is not done; the live link and repository. |
+
+**Fly has the ocean colour layer off.** From a plane, the 1/4° temperature cells read as
+blocks along the coast; the sea is shown as imagery, with the currents over it.
 
 ## Checks before it ships
 

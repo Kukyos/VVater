@@ -48,8 +48,8 @@
     "seconds": 3.72
   },
   "fly": {
-    "hash": "767381816f6bf53e",
-    "seconds": 4.55
+    "hash": "54aebc24429fae7d",
+    "seconds": 5.06
   },
   "fishing": {
     "hash": "5c80823f141d9585",
@@ -68,12 +68,12 @@
     "seconds": 11.89
   },
   "assistant": {
-    "hash": "da352b559b3d87dc",
-    "seconds": 9.38
+    "hash": "c1524673c3265244",
+    "seconds": 15.51
   },
   "evidence": {
-    "hash": "6d95f13f7c0fddf5",
-    "seconds": 6.13
+    "hash": "6c7c4189b3b1d9b9",
+    "seconds": 12.31
   },
   "notyet": {
     "hash": "55db76003a3af4ab",
@@ -82,5 +82,25 @@
   "end": {
     "hash": "bbdb8e66525a47a6",
     "seconds": 2.23
+  },
+  "index": {
+    "hash": "d466395cb1384810",
+    "seconds": 12.07
+  },
+  "controls": {
+    "hash": "53594ca56824d176",
+    "seconds": 14.3
+  },
+  "dawn": {
+    "hash": "a41149191531fac8",
+    "seconds": 4.92
+  },
+  "views": {
+    "hash": "ae99db1068e936d5",
+    "seconds": 10.4
+  },
+  "stack": {
+    "hash": "027a91c3f6764bfc",
+    "seconds": 28.47
   }
 }

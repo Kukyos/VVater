@@ -8,7 +8,8 @@
       "clips": [
         {
           "name": "cinema-open",
-          "seconds": 16
+          "seconds": 12,
+          "minSeconds": 12
         }
       ],
       "say": "This is one real day of the world's ocean: its currents, and its winds, as the models saw them. Every tool built for this data shows you the same thing. The top."
@@ -20,6 +21,59 @@
       "seconds": 6,
       "say": "This is VVater.",
       "minSeconds": 6
+    },
+    {
+      "id": "index",
+      "act": "",
+      "card": "index",
+      "seconds": 14,
+      "minSeconds": 12,
+      "say": "In the next few minutes: the ocean as a block you can cut, floats inside the model, any sea on any day, the whole planet, fishing zones, how it is built, where the model goes wrong, and an assistant that drives it all.",
+      "tiles": [
+        {
+          "title": "The block you can cut",
+          "clip": "amphan-cut",
+          "from": 12
+        },
+        {
+          "title": "Draw your own",
+          "clip": "draw-box",
+          "from": 9
+        },
+        {
+          "title": "Floats inside the model",
+          "clip": "float-click",
+          "from": 4
+        },
+        {
+          "title": "Any sea, any day",
+          "clip": "arabian-sea",
+          "from": 1
+        },
+        {
+          "title": "The whole planet",
+          "clip": "globe",
+          "from": 4
+        },
+        {
+          "title": "For fishermen",
+          "clip": "fishing",
+          "from": 3
+        },
+        {
+          "title": "How it is built",
+          "card": "stack"
+        },
+        {
+          "title": "Where the model is wrong",
+          "card": "bands"
+        },
+        {
+          "title": "Ask it",
+          "clip": "assistant",
+          "from": 10
+        }
+      ]
     },
     {
       "id": "brief",
@@ -37,7 +91,7 @@
       "clips": [
         {
           "name": "amphan-tilt",
-          "seconds": 21
+          "seconds": 14.5
         }
       ],
       "lower": "Bay of Bengal · 14 May 2020 · two days before Cyclone Amphan formed",
@@ -49,7 +103,7 @@
       "clips": [
         {
           "name": "amphan-cut",
-          "seconds": 22
+          "seconds": 16
         }
       ],
       "lower": "35 native levels to 902.3 m · never more levels than the model has",
@@ -61,10 +115,23 @@
       "clips": [
         {
           "name": "draw-box",
-          "seconds": 16
+          "seconds": 12,
+          "minSeconds": 12
         }
       ],
       "say": "And the block can be anywhere. Draw a box on the globe with the mouse, and that piece of ocean is lifted out, on its own day, at every depth the model has."
+    },
+    {
+      "id": "controls",
+      "act": "Every control",
+      "clips": [
+        {
+          "name": "controls",
+          "seconds": 16,
+          "minSeconds": 12
+        }
+      ],
+      "say": "Every control the brief asks for sits in one panel: the variable, the day, the depth, a cut for every side, vertical exaggeration, opacity, contours, the model's native levels only, and a colour bar you can edit."
     },
     {
       "id": "floats",
@@ -72,7 +139,7 @@
       "clips": [
         {
           "name": "floats",
-          "seconds": 19
+          "seconds": 12.5
         }
       ],
       "say": "Real Argo floats stand inside the block, each one a line at the exact place it measured, from the surface to the depth it reached. These were in the water within 2 days of this model day."
@@ -83,7 +150,7 @@
       "clips": [
         {
           "name": "float-click",
-          "seconds": 25
+          "seconds": 20
         }
       ],
       "lower": "17 floats within ±2 days · 201 levels rejected by QC, drawn, not dropped",
@@ -95,11 +162,13 @@
       "clips": [
         {
           "name": "amphan-before",
-          "seconds": 7
+          "seconds": 5.5,
+          "minSeconds": 5
         },
         {
           "name": "amphan-after",
-          "seconds": 10
+          "seconds": 7.5,
+          "minSeconds": 6
         }
       ],
       "lowers": [
@@ -114,23 +183,28 @@
       "clips": [
         {
           "name": "arabian-sea",
-          "seconds": 7
+          "seconds": 5,
+          "minSeconds": 4.5
         },
         {
           "name": "gulf-stream",
-          "seconds": 6
+          "seconds": 4.5,
+          "minSeconds": 4.5
         },
         {
           "name": "el-nino",
-          "seconds": 6
+          "seconds": 4.5,
+          "minSeconds": 4.5
         },
         {
           "name": "agulhas",
-          "seconds": 6
+          "seconds": 4.5,
+          "minSeconds": 4.5
         },
         {
           "name": "drake",
-          "seconds": 6
+          "seconds": 4.5,
+          "minSeconds": 4.5
         }
       ],
       "lowers": [
@@ -148,21 +222,22 @@
       "clips": [
         {
           "name": "globe",
-          "seconds": 19
+          "seconds": 13
         }
       ],
       "say": "Around the block, the whole planet is painted in the same variable, on the same colour bar, with that day's currents and winds flowing over it. A colour means the same value inside the block and out."
     },
     {
-      "id": "water",
+      "id": "dawn",
       "act": "The whole ocean",
       "clips": [
         {
-          "name": "cinema-water",
-          "seconds": 10
+          "name": "cinema-dawn",
+          "seconds": 8,
+          "minSeconds": 8
         }
       ],
-      "say": "Skim low over the water, with that day's currents running underneath."
+      "say": "Lit by the real sun as it rises over the Bay, with that day's currents running underneath."
     },
     {
       "id": "fly",
@@ -170,10 +245,31 @@
       "clips": [
         {
           "name": "fly",
-          "seconds": 12
+          "seconds": 8,
+          "minSeconds": 8
         }
       ],
-      "say": "Or fly over it yourself, a few kilometres up, the way a pilot would see the sea."
+      "say": "Or fly over it yourself, a few kilometres up, the way a pilot would see the sea and the coast."
+    },
+    {
+      "id": "views",
+      "act": "Four views",
+      "clips": [
+        {
+          "name": "views",
+          "seconds": 13,
+          "minSeconds": 13
+        }
+      ],
+      "say": "Four views, one click or one key each. Region 3D orbits the block. Map 2D lays its top flat, as a section. Globe shows the whole planet. And Fly."
+    },
+    {
+      "id": "stack",
+      "act": "How it is built",
+      "card": "stack",
+      "seconds": 30.5,
+      "minSeconds": 24,
+      "say": "Under the hood. In the browser, CesiumJS: its voxel ray-marcher runs our own shader, and the faces are painted from the model's native levels. Behind it, a Python FastAPI server reads Copernicus's cloud stores chunk by chunk with xarray, derives density and sound speed with TEOS-10, and pairs every float with the model. INCOIS, Argo, gliders and fishing advisories arrive the same way. Nothing to install. It is a web page."
     },
     {
       "id": "fishing",
@@ -181,7 +277,7 @@
       "clips": [
         {
           "name": "fishing",
-          "seconds": 21
+          "seconds": 18.5
         }
       ],
       "say": "For fishermen: INCOIS's own potential fishing zone advisories, all 14 sectors, read exactly as published. Anywhere else, an indicative layer from sea surface fronts and chlorophyll, with the sea state. And it says, everywhere, that it is not an advisory.",
@@ -191,7 +287,7 @@
       "id": "bands",
       "act": "Where the model is wrong",
       "card": "bands",
-      "seconds": 20.5,
+      "seconds": 20,
       "say": "Against an independent glider in the Bay of Bengal, INCOIS's own analysis is good below 300 metres, to about a third of a degree. In the top 300 metres, the layer a cyclone forecaster cares about, the error is 2.89 degrees. One averaged number hides that. Drawing the column shows it.",
       "lines": [
         "INCOIS Argo 10-day analysis · Bay of Bengal · 25 Aug 2018 ±5 days"
@@ -216,7 +312,7 @@
       "clips": [
         {
           "name": "learn",
-          "seconds": 19
+          "seconds": 14
         }
       ],
       "say": "For students, a 6-lesson course on the real data: their own city's sea, the ocean's layers, the monsoon, Amphan, and how Argo floats are checked. Quiz answers are worked out from the block on the screen.",
@@ -228,25 +324,26 @@
       "clips": [
         {
           "name": "assistant",
-          "seconds": 26
+          "seconds": 17.5,
+          "minSeconds": 16
         }
       ],
-      "say": "And you can simply ask. Type a question, and the assistant answers from the data, then builds the block for you, live. Every number it says is checked against what it read.",
+      "say": "And you can simply ask. Type a question in plain words. The assistant reads the data through the same functions the viewer uses, answers, and builds the block for you, live. It can only touch a fixed list of controls, and every number it says is checked against what it read.",
       "lowerAt": "center"
     },
     {
       "id": "evidence",
       "act": "Measured",
       "card": "evidence",
-      "seconds": 12,
-      "say": "Every number in this film comes from one test harness in the repository, which anyone can run with one command.",
+      "seconds": 14.5,
+      "say": "Every number in this film comes from one test harness in the repository: the variables, the days, the levels, the error by depth, and the server's own measured run. Anyone can run it with one command.",
       "minSeconds": 12
     },
     {
       "id": "notyet",
       "act": "Not yet",
       "card": "notyet",
-      "seconds": 21,
+      "seconds": 20.5,
       "say": "What is not done yet. Gliders are nearly absent here: of 2,562 datasets in the US glider archive, 1 flies inside the Bay. Europe's archive of 184 gliders is not connected yet. And a depth-aware range test needs a published limit, which is something INCOIS could give us.",
       "lines": [
         "Gliders are nearly absent|2,562 datasets in the IOOS Glider DAC; 1 flies inside the Bay of Bengal box",

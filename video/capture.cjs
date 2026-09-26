@@ -250,14 +250,26 @@ CLIPS["amphan-cut"] = async (b) => {
   await record(p, "amphan-cut", secs("amphan-cut"), function (t, a) {
     const e = document.getElementById("cut-south");
     const k = Math.min(1, t / 0.55), s = k * k * (3 - 2 * k);
-    e.value = String(Math.round(450 * s));
-    e.dispatchEvent(new Event("input", { bubbles: true }));
+    // Only when it moves: each input rebuilds the faces, and a rebuild with no renders to
+    // finish in draws the block white.
+    const v = String(Math.round(450 * s));
+    if (e.value !== v) { e.value = v; e.dispatchEvent(new Event("input", { bubbles: true })); }
+    // A drag ends in a change event. Fired every tenth frame as the side moves, the currents
+    // follow the cut; every frame, their trails never grew back.
+    window.__cutFrame = (window.__cutFrame || 0) + 1;
+    if ((k < 1 && window.__cutFrame % 10 === 0) || (k >= 1 && !window.__cutDone)) {
+      e.dispatchEvent(new Event("change", { bubbles: true }));
+      window.__cutDone = k >= 1;
+    }
     const o = window.vvater.orbit, D = Math.PI / 180;
     o.pose.heading = (-25 + 20 * t) * D;
     o.pose.pitch = (-32 + 4 * t) * D;
     o.pose.range = a.r * 0.8 * Math.pow(0.85, t);
     o.apply();
-  }, { easing: "linear", arg: { r }, rebuild: 8 });
+  }, { easing: "linear", arg: { r },
+    // Renders only while the side moves: each one also ages the particles, and eight a frame
+    // left the top almost bare.
+    rebuild: (i) => (i < secs("amphan-cut") * FPS * 0.55 + 4 ? 8 : 0) });
   return p;
 };
 
@@ -375,14 +387,14 @@ CLIPS.globe = async (b) => {
   return p;
 };
 
-// The cinematic's third shot, "Over the water": low over the Bay with the day's currents.
-// Its first two shots run 14 + 11 s.
-CLIPS["cinema-water"] = async (b) => {
+// The cinematic's fourth shot, "First light": the sun on the horizon over the Bay. Its first
+// three shots run 14 + 11 + 12 s; the cut into it passes through black, so it starts after.
+CLIPS["cinema-dawn"] = async (b) => {
   const p = await open(b, "scenario=amphan_before&immersive=1");
   await settle(p, 3000);
   await js(p, () => { document.getElementById("immersive-bar").style.visibility = "hidden"; window.__film.start(); });
   await click(p, "#imm-cinema");
-  await record(p, "cinema-water", secs("cinema-water"), hold, { easing: "linear", skip: 25.5 });
+  await record(p, "cinema-dawn", secs("cinema-dawn"), hold, { easing: "linear", skip: 38.2 });
   return p;
 };
 
@@ -390,6 +402,9 @@ CLIPS["cinema-water"] = async (b) => {
 // while the tiles for that place load, then flown on the virtual clock.
 CLIPS.fly = async (b) => {
   const p = await open(b, "scenario=amphan_before&view=fly");
+  // The sea as imagery, not painted with temperature: from a plane the 1/4-degree colour
+  // cells read as blocks along the coast.
+  await set(p, "ocean-surface", false);
   await js(p, () => {
     const f = window.vvater.flight;
     f.paused = true;
@@ -398,6 +413,47 @@ CLIPS.fly = async (b) => {
   await settle(p, 6000);
   await js(p, () => { window.vvater.flight.paused = false; });
   await record(p, "fly", secs("fly"), hold, { easing: "linear" });
+  return p;
+};
+
+// The properties panel, scrolled top to bottom: every control, on the Amphan block.
+CLIPS.controls = async (b) => {
+  const p = await amphan(b, { docks: { left: true, right: false } });
+  await js(p, () => { for (const d of document.querySelectorAll("#left details")) d.open = true; });
+  await settle(p, 1500);
+  const s0 = await getPose(p);
+  await record(p, "controls", secs("controls"), function (t, a) {
+    const l = document.querySelector("#left .dock-body"), k = Math.min(1, Math.max(0, (t - 0.08) / 0.84));
+    const e = k * k * (3 - 2 * k);
+    l.scrollTop = e * (l.scrollHeight - l.clientHeight);
+    const o = window.vvater.orbit, D = Math.PI / 180;
+    o.pose.heading = a.h + (-18 + 26 * t) * D; o.pose.pitch = -34 * D; o.pose.range = a.r * 0.85; o.apply();
+  }, { easing: "linear", arg: { h: s0.heading, r: s0.range } });
+  return p;
+};
+
+// The four views, clicked in turn: Region 3D, Map 2D, Globe, Fly, and back.
+CLIPS.views = async (b) => {
+  const p = await open(b, "scenario=amphan_before");
+  await showCursor(p);
+  const centre = (sel) => js(p, (sel) => {
+    const r = document.querySelector(sel).getBoundingClientRect();
+    return { x: r.left + r.width / 2, y: r.top + r.height / 2 };
+  }, sel);
+  const btn = { map: await centre("#view-map"), globe: await centre("#view-globe"), fly: await centre("#view-fly") };
+  const start = { x: 900, y: 500 };
+  await p.mouse.move(start.x, start.y);
+  const n = Math.round(secs("views") * FPS), step = Math.floor(n / 4);
+  // Each button: glide there over 20 frames, click, then leave the pointer at rest.
+  const plan = [["map", 10], ["globe", 10 + step], ["fly", 10 + 2 * step]];
+  let from = start;
+  await record(p, "views", secs("views"), hold, { easing: "linear", drive: async (i) => {
+    for (const [name, at] of plan) {
+      if (i >= at && i <= at + 20) { const m = glide(from, btn[name], i, at, at + 20); await p.mouse.move(m.x, m.y); }
+      if (i === at + 22) { await p.mouse.click(btn[name].x, btn[name].y); from = btn[name]; }
+      if (i >= at + 30 && i <= at + 45) { const m = glide(btn[name], { x: btn[name].x, y: btn[name].y + 120 }, i, at + 30, at + 45); await p.mouse.move(m.x, m.y); if (i === at + 45) from = m; }
+    }
+  } });
   return p;
 };
 

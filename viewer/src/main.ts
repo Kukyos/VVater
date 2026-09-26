@@ -424,6 +424,12 @@ async function main(): Promise<void> {
     }
   }
 
+  /** The part of the cube's box still standing after its sides are cut in. */
+  function cutBox(): { west: number; east: number; south: number; north: number } {
+    const c = cube.currentCut()!;
+    return { west: c.lon0, east: c.lon1, south: c.lat0, north: c.lat1 };
+  }
+
   /** The whole ocean follows the cube: its variable, its day, its top face's depth. */
   function refreshOcean(): void {
     if (!cubeActive() || !cube.request || !cube.variable) return;
@@ -433,13 +439,12 @@ async function main(): Promise<void> {
       cube.setVisible(false);
       return;
     }
-    const top = cube.currentCut()!.top;
+    const cut = cube.currentCut()!, top = cut.top;
     void ocean.showSurface(cube.variable.key, cube.request.day, top, cube.style());
-    const d = cube.data!;
-    void ocean.showCurrents(cube.request.day, top,
-      { west: d.west, east: d.east, south: d.south, north: d.north });
+    const box = cutBox();
+    void ocean.showCurrents(cube.request.day, top, box);
     // Fly hides the cube, and its currents drawn on nothing halved the frame rate.
-    if (state.view !== "fly") void ocean.showCubeCurrents(cube.request, top, cube.scene.heightOf(top) + 400);
+    if (state.view !== "fly") void ocean.showCubeCurrents(cube.request, top, cube.scene.heightOf(top) + 400, box);
     void ocean.showAir(cube.request.day).then(() => {
       el("air-note").textContent = ocean.airOn ? ocean.airNote : "";
     });
@@ -1435,10 +1440,14 @@ async function main(): Promise<void> {
   // The ocean layers refetch when a drag is let go, not on every pixel of it: a new top
   // depth is a new level, and a new height moves the cube-top particles.
   el("cut-top").addEventListener("change", () => refreshOcean());
+  // A side moved in: no refetch, the particles only change where they may be drawn.
+  for (const side of ["west", "east", "south", "north"]) {
+    el(`cut-${side}`).addEventListener("change", () => { if (cube.data) ocean.cutTo(cutBox()); });
+  }
   el("cube-height").addEventListener("change", () => {
     if (cube.request) {
       const top = cube.currentCut()!.top;
-      void ocean.showCubeCurrents(cube.request, top, cube.scene.heightOf(top) + 400);
+      void ocean.showCubeCurrents(cube.request, top, cube.scene.heightOf(top) + 400, cutBox());
     }
   });
   bind("ocean-surface", "change", (node) => {

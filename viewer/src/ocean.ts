@@ -160,7 +160,8 @@ export class OceanLayer {
   }
 
   /** Particles on the cube's top face: its box, its top depth, at its top's height. */
-  async showCubeCurrents(request: CubeRequest, depth: number, height: number): Promise<void> {
+  async showCubeCurrents(request: CubeRequest, depth: number, height: number,
+                         keep?: Field["keep"]): Promise<void> {
     const ticket = ++this.cubeWindTicket;
     if (!this.cubeWindOn) {
       this.dropCubeWind();
@@ -177,7 +178,18 @@ export class OceanLayer {
     // About the density the whole-ocean particles have when the cube fills the screen: a
     // fixed 4,000 on a small box turned its top face into white noise.
     const area = Math.abs((request.lon1 - request.lon0) * (request.lat1 - request.lat0));
-    this.flow.set("cube", field(got, height), Math.round(Math.min(Math.max(area * 20, 300), 3000)));
+    this.flow.set("cube", { ...field(got, height), keep },
+      Math.round(Math.min(Math.max(area * 20, 300), 3000)));
+  }
+
+  /**
+   * A side of the cube moved in: the cube's particles stay on what is left of its top, and
+   * the ocean's come back over the water the cut uncovered. Particles drawn over the whole
+   * original box hung in the air in front of the cut face.
+   */
+  cutTo(box: NonNullable<Field["keep"]>): void {
+    this.flow.bounds("cube", { keep: box });
+    this.flow.bounds("ocean", { hole: box });
   }
 
   /** 10 m wind worldwide, as warm trails over the ocean's white ones (marine.py). */

@@ -41,6 +41,8 @@ export interface Field {
   height: number;           // metres above the ellipsoid the particles are drawn at
   /** Skip particles inside this box (a cube stands there and hides the water). */
   hole?: { west: number; east: number; south: number; north: number };
+  /** Draw particles only inside this box (the cube's top, once a side is cut in). */
+  keep?: { west: number; east: number; south: number; north: number };
   /** Look and pace; the default is the ocean currents' white. */
   style?: FlowStyle;
 }
@@ -173,6 +175,17 @@ export class FlowOverlay {
     this.start();
   }
 
+  /** Move a swarm's hole or keep box without refetching its field; strays are reborn. */
+  bounds(name: string, b: Pick<Field, "hole" | "keep">): void {
+    const s = this.swarms.get(name);
+    if (!s) return;
+    Object.assign(s.field, b);
+    for (let i = 0; i < s.count; i += 1) {
+      if (this.inHole(s.field, s.lon[i], s.lat[i])) this.seed(s, i, true);
+    }
+    this.clear();
+  }
+
   remove(name: string): void {
     this.swarms.delete(name);
     this.clear();
@@ -229,11 +242,14 @@ export class FlowOverlay {
     s.lastOk[i] = 0;
   }
 
+  /** In the field's hole, or outside its keep box: not drawn there. */
   private inHole(f: Field, lon: number, lat: number): boolean {
-    const h = f.hole;
-    if (!h || this.ignoreHoles) return false;
-    const l = lon < h.west ? lon + 360 : lon;
-    return l >= h.west && l <= h.east && lat >= h.south && lat <= h.north;
+    const inside = (h: NonNullable<Field["hole"]>) => {
+      const l = lon < h.west ? lon + 360 : lon;
+      return l >= h.west && l <= h.east && lat >= h.south && lat <= h.north;
+    };
+    if (f.keep && !inside(f.keep)) return true;
+    return !!f.hole && !this.ignoreHoles && inside(f.hole);
   }
 
   /**
