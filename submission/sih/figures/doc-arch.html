@@ -1,0 +1,198 @@
+<!doctype html><html><head><meta charset="utf-8"><link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;600&family=IBM+Plex+Mono&display=swap" rel="stylesheet"><style>/* Shared system for the slide bodies.
+   Each body is 4000 x 1710 px = 13.33" x 5.70" at 300 dpi: the area between the SIH
+   2026 template's masthead and its footer bar. White, so it is continuous with the
+   template rather than sitting on top of it.
+
+   Readability floor: nothing below 34 px here, which is 8 pt on the printed slide and
+   the smallest size on the PS 26047 deck this one is held to. figures.py checks the
+   rendered bodies for empty bands, so a slide that leaves white space fails the build. */
+
+:root {
+  --ink:    #16202B;
+  --muted:  #4F5B69;
+  --faint:  #7A8594;
+  --rule:   #D5DCE4;
+  --panel:  #F1F4F8;
+  --panel2: #E6ECF3;
+  --navy:   #1F4E79;  /* the template's own blue */
+  --sky:    #2E86C1;
+  --grey:   #A9B2BE;
+  --red:    #C0392B;
+  --green:  #1E8449;
+  --amber:  #B9770E;
+}
+
+html, body { margin: 0; }
+body {
+  width: 4000px; height: 1710px; background: #fff; color: var(--ink);
+  font-family: "IBM Plex Sans", "Segoe UI", sans-serif; font-size: 40px; line-height: 1.38;
+  overflow: hidden;
+}
+.slide { width: 100%; height: 100%; padding: 34px 110px 30px; box-sizing: border-box;
+  display: flex; flex-direction: column; gap: 30px; }
+.grow { flex: 1; min-height: 0; }
+b { font-weight: 600; }
+.mono { font-family: "IBM Plex Mono", Consolas, monospace; font-size: .9em; color: var(--navy); }
+.muted { color: var(--muted); }
+.red { color: var(--red); }
+
+h2 { font-size: 44px; font-weight: 600; color: var(--navy); margin: 0 0 16px;
+  text-transform: uppercase; letter-spacing: .04em; }
+h3 { font-size: 44px; font-weight: 600; margin: 0 0 8px; }
+p { margin: 0; }
+.lead { font-size: 62px; line-height: 1.2; margin: 0; }
+.lead b { color: var(--navy); }
+
+/* ---------------------------------------------------------------- layout */
+.cols { display: grid; gap: 64px; min-height: 0; }
+.col { display: flex; flex-direction: column; gap: 26px; min-height: 0; }
+
+/* ---------------------------------------------------------------- cards */
+.cards { display: grid; gap: 24px; }
+.card { background: var(--panel); padding: 26px 30px; border-top: 8px solid var(--navy); }
+.card h3 { font-size: 42px; color: var(--navy); }
+.card p { font-size: 36px; color: var(--muted); line-height: 1.36; }
+.card.grey { border-top-color: var(--grey); }
+.card.red { border-top-color: var(--red); }
+.card.green { border-top-color: var(--green); }
+.card .num { font-size: 96px; font-weight: 600; color: var(--navy); line-height: 1; display: block; margin-bottom: 8px; }
+
+/* ---------------------------------------------------------------- stats */
+.stats { display: grid; gap: 22px; }
+.stat { border-top: 6px solid var(--navy); padding-top: 12px; }
+.stat b { display: block; font-size: 88px; line-height: 1; color: var(--navy); }
+.stat span { display: block; font-size: 35px; color: var(--muted); line-height: 1.3; margin-top: 8px; }
+
+/* ---------------------------------------------------------------- shots */
+figure { margin: 0; }
+.shot img { display: block; width: 100%; border: 2px solid #0c0d0f; }
+.shot figcaption { font-size: 34px; color: var(--muted); line-height: 1.35; margin-top: 10px; }
+.shot figcaption b { color: var(--ink); }
+.thumbs { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; }
+.thumbs img { width: 100%; aspect-ratio: 16 / 10; object-fit: cover; display: block; border: 2px solid #0c0d0f; }
+.thumbs figcaption { font-size: 34px; margin-top: 8px; color: var(--muted); line-height: 1.3; }
+.thumbs figcaption b { color: var(--navy); display: block; font-size: 38px; }
+
+/* ---------------------------------------------------------------- before / after strip */
+.journey { display: grid; grid-template-columns: 200px 1fr 1fr 1fr; gap: 14px 16px; align-items: stretch; }
+.journey .who { font-weight: 600; font-size: 38px; display: flex; align-items: center; }
+.journey .step { padding: 18px 22px; font-size: 35px; line-height: 1.3; background: var(--panel2); position: relative; }
+.journey .step.now { background: #EDEFF2; color: var(--muted); }
+.journey .step.vv { background: var(--navy); color: #fff; }
+.journey .step.vv b { color: #9ED8FF; }
+
+/* ---------------------------------------------------------------- tables */
+table { border-collapse: collapse; width: 100%; }
+th { text-align: left; font-size: 35px; color: var(--navy); font-weight: 600; padding: 0 16px 10px 0;
+  border-bottom: 3px solid var(--navy); text-transform: uppercase; letter-spacing: .03em;
+  white-space: nowrap; }
+td { font-size: 36px; padding: 13px 16px 13px 0; border-bottom: 2px solid var(--rule); vertical-align: top; line-height: 1.3; }
+td:first-child { font-weight: 600; white-space: nowrap; }
+td.alt { color: var(--faint); }
+td.why { color: var(--muted); }
+
+/* ---------------------------------------------------------------- lists */
+.points { margin: 0; padding: 0; list-style: none; }
+.points li { padding: 14px 0; border-top: 2px solid var(--rule); font-size: 38px; line-height: 1.3; }
+.points li span { display: block; font-size: 35px; color: var(--muted); margin-top: 2px; }
+
+.gloss { display: grid; grid-template-columns: repeat(4, 1fr); gap: 20px; }
+.gloss div { font-size: 34px; color: var(--muted); line-height: 1.3; border-left: 6px solid var(--sky); padding-left: 16px; }
+.gloss b { color: var(--ink); display: block; font-size: 37px; }
+
+.legend { font-size: 34px; color: var(--muted); display: flex; gap: 18px; align-items: center; flex-wrap: wrap; }
+.legend i { width: 36px; height: 22px; display: inline-block; }
+
+.refs { margin: 0; padding: 0; list-style: none; counter-reset: ref; }
+.refs li { counter-increment: ref; position: relative; padding: 14px 0 14px 64px;
+  border-top: 2px solid var(--rule); font-size: 37px; line-height: 1.32; }
+.refs li::before { content: counter(ref); position: absolute; left: 0; top: 14px; color: var(--navy); font-weight: 600; }
+.refs li .url { display: block; font-family: "IBM Plex Mono", Consolas, monospace; font-size: 32px; color: var(--sky); }
+.refs li .why { color: var(--muted); }
+.banner { background: var(--navy); color: #fff; padding: 22px 34px; display: flex; align-items: center; gap: 40px; font-size: 42px; }
+.banner .mono { color: #9ED8FF; font-size: 48px; }
+.banner .note { font-size: 34px; color: #C9DBEA; margin-left: auto; }
+
+svg text { font-family: "IBM Plex Sans", sans-serif; }
+
+/* Per-slide spacing, set so each body reaches the footer (figures.py --check). */
+.feas td { padding-top: 19px; padding-bottom: 19px; }
+.feas .points li { padding: 19px 0; }
+.refcols .refs li { padding-top: 20px; padding-bottom: 20px; }
+.refcols .refs li::before { top: 20px; }
+.novel { display: flex; flex-direction: column; }
+.novel h3 { color: var(--navy); font-size: 46px; margin: 0 0 14px; }
+.novel figcaption { font-size: 36px; }
+.points.big li { padding: 22px 0; font-size: 42px; }
+.points.big li span { font-size: 38px; }
+.risks td { font-size: 40px; padding-top: 30px; padding-bottom: 30px; }
+
+/* ---------------------------------------------------------------- v2 deck */
+.hero { display: flex; flex-direction: column; min-height: 0; }
+.hero img { flex: 1; min-height: 0; object-fit: cover; }
+.hero figcaption { font-size: 35px; }
+.points.tight li { padding: 10px 0; font-size: 37px; }
+.points.tight li span { font-size: 34px; }
+.tiles { display: grid; grid-template-columns: 1fr 1fr; gap: 26px 30px; flex: 1; min-height: 0; }
+.tiles figure { display: flex; flex-direction: column; min-height: 0; }
+.tiles img { width: 100%; flex: 1; min-height: 0; object-fit: cover; display: block; border: 2px solid #0c0d0f; }
+.tiles figcaption { font-size: 34px; color: var(--muted); line-height: 1.28; margin-top: 8px; }
+.tiles figcaption b { color: var(--navy); display: block; font-size: 38px; }
+.brief td { font-size: 35px; padding: 15px 16px 15px 0; }
+.brief td:first-child { white-space: normal; width: 42%; }
+.brief td:first-child::before { content: "\2713  "; color: var(--green); font-weight: 600; }
+.stack { font-size: 33px; color: var(--muted); line-height: 1.32; border-top: 6px solid var(--navy); padding-top: 14px; margin-top: auto; }
+.stack b { color: var(--navy); margin-right: 10px; }
+.aud { gap: 16px; }
+.aud h2 { margin: 0; }
+.aud .shot img { height: 560px; object-fit: cover; }
+.pair { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+.pair img { width: 100%; height: 560px; object-fit: cover; display: block; border: 2px solid #0c0d0f; }
+.pair figcaption { font-size: 34px; color: var(--muted); margin-top: 6px; text-align: center; }
+.cap { font-size: 35px; color: var(--muted); line-height: 1.32; }
+.cap b { color: var(--ink); }
+.aud .points li { padding: 10px 0; font-size: 37px; }
+.aud .points li span { font-size: 34px; }
+.next { display: flex; gap: 50px; align-items: baseline; background: var(--panel); padding: 20px 34px; font-size: 36px; color: var(--muted); }
+.next b { color: var(--navy); font-size: 38px; text-transform: uppercase; letter-spacing: .04em; }
+.next span::before { content: "·  "; color: var(--faint); }
+/* v2 per-slide fit, checked by figures.py --check and by eye */
+.feas .risks td { font-size: 37px; padding-top: 18px; padding-bottom: 18px; }
+.aud .shot img, .pair img { height: 560px; }
+.refcols .refs li { padding-top: 30px; padding-bottom: 30px; }
+.refcols .refs li::before { top: 30px; }
+.brief td { padding-top: 24px; padding-bottom: 24px; font-size: 37px; }
+
+/* ---------------------------------------------------------------- template pointers */
+.pitch { font-size: 44px; line-height: 1.25; }
+.pitch b { color: var(--navy); }
+h3.sub { font-size: 38px; color: var(--navy); margin: 4px 0 0; text-transform: uppercase; letter-spacing: .04em; }
+.points.gaps li { padding: 20px 0; font-size: 38px; }
+.points.gaps li span { font-size: 36px; }
+.points.inno li { padding: 16px 0; font-size: 38px; }
+.points.inno li span { font-size: 35px; }
+.pair2 { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; margin-top: auto; }
+.pair2 img { width: 100%; height: 330px; object-fit: cover; display: block; border: 2px solid #0c0d0f; }
+.pair2 figcaption { font-size: 33px; color: var(--muted); margin-top: 6px; }
+.aud-h { font-size: 40px; color: var(--ink); margin: 0; }
+.benefits { display: grid; grid-template-columns: repeat(3, 1fr); gap: 50px; }
+.benefits .card h3 { margin-bottom: 6px; }
+.benefits ul { margin: 0; padding-left: 36px; }
+.benefits li { font-size: 35px; color: var(--muted); line-height: 1.32; margin: 6px 0; }
+/* fit, second pass */
+.points.gaps li { padding: 30px 0; font-size: 40px; }
+.points.gaps li span { font-size: 37px; }
+.points.inno li { padding: 20px 0; font-size: 40px; }
+.pair2 img { height: 380px; }
+.aud .shot img, .pair img { height: 720px; }
+.benefits li { font-size: 37px; }
+.benefits .card { padding: 22px 30px 24px; }
+/* fit, third pass */
+.pair2 { margin-top: 10px; }
+.pair2 img { height: 520px; }
+.points.gaps li { padding: 34px 0; }
+.refcols .refs li { padding-top: 22px; padding-bottom: 22px; }
+.refcols .refs li::before { top: 22px; }
+
+html, body { width: auto; height: auto; overflow: visible; background: #fff; }
+</style></head><body><svg width="1430" height="1560" viewBox="0 0 1430 1560"><defs><marker id="b" viewBox="0 0 10 10" refX="5" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" fill="#4F5B69"/></marker></defs><rect x="0" y="0" width="1430" height="400" fill="#EAF2FB" stroke="#2E86C1" stroke-width="3"/><rect x="0" y="0" width="12" height="400" fill="#2E86C1"/><text x="36" y="54" font-size="42" font-weight="600" fill="#16202B">Browser<tspan font-size="33" font-weight="400" fill="#4F5B69">  any modern browser, nothing installed</tspan></text><text x="36" y="116" font-size="37" fill="#4F5B69"><tspan font-weight="600" fill="#1F4E79">CesiumJS 26</tspan>  3D globe, voxel volume, the cube's faces</text><text x="36" y="176" font-size="37" fill="#4F5B69"><tspan font-weight="600" fill="#1F4E79">TypeScript 5.9 + Vite 7</tspan>  the viewer, no UI framework</text><text x="36" y="236" font-size="37" fill="#4F5B69"><tspan font-weight="600" fill="#1F4E79">Canvas 2D overlay</tspan>  currents and winds as moving particles</text><text x="36" y="296" font-size="37" fill="#4F5B69"><tspan font-weight="600" fill="#1F4E79">Cesium ion (optional)</tspan>  world terrain and imagery for Fly</text><text x="36" y="356" font-size="37" fill="#4F5B69"><tspan font-weight="600" fill="#1F4E79">Static files</tspan>  served from any web host (Vercel today)</text><line x1="120" x2="120" y1="406" y2="492" stroke="#4F5B69" stroke-width="4" marker-start="url(#b)" marker-end="url(#b)"/><text x="160" y="460" font-size="33" font-weight="600" fill="#4F5B69">REST: JSON, raw float32 volumes, OGC WMS (Bay layers)</text><rect x="0" y="498" width="1430" height="560" fill="#F1F4F8" stroke="#1F4E79" stroke-width="3"/><rect x="0" y="498" width="12" height="560" fill="#1F4E79"/><text x="36" y="552" font-size="42" font-weight="600" fill="#16202B">API server<tspan font-size="33" font-weight="400" fill="#4F5B69">  one Python 3.14 process</tspan></text><text x="36" y="614" font-size="37" fill="#4F5B69"><tspan font-weight="600" fill="#1F4E79">FastAPI + Uvicorn</tspan>  cubes, floats, surface, wind, fishing, chat</text><text x="36" y="674" font-size="37" fill="#4F5B69"><tspan font-weight="600" fill="#1F4E79">xarray · netCDF4 · dask</tspan>  NetCDF and zarr, read lazily</text><text x="36" y="734" font-size="37" fill="#4F5B69"><tspan font-weight="600" fill="#1F4E79">numpy · scipy · gsw</tspan>  regrid, streamlines, TEOS-10 seawater</text><text x="36" y="794" font-size="37" fill="#4F5B69"><tspan font-weight="600" fill="#1F4E79">Copernicus toolbox + S3</tspan>  only the chunks a request needs</text><text x="36" y="854" font-size="37" fill="#4F5B69"><tspan font-weight="600" fill="#1F4E79">Disk chunk cache</tspan>  measured 639 MB peak RAM; ask for 1 GB</text><text x="36" y="914" font-size="37" fill="#4F5B69"><tspan font-weight="600" fill="#1F4E79">LLM via AIRouter</tspan>  tools call our own API, nothing else</text><text x="36" y="974" font-size="37" fill="#4F5B69"><tspan font-weight="600" fill="#1F4E79">truststore</tspan>  TLS always verified, against the OS store</text><line x1="120" x2="120" y1="1064" y2="1150" stroke="#4F5B69" stroke-width="4" marker-start="url(#b)" marker-end="url(#b)"/><text x="160" y="1118" font-size="33" font-weight="600" fill="#4F5B69">HTTPS only, no credentials for the defaults</text><rect x="0" y="1156" width="1430" height="404" fill="#FEF5E7" stroke="#B9770E" stroke-width="3"/><rect x="0" y="1156" width="12" height="404" fill="#B9770E"/><text x="36" y="1210" font-size="42" font-weight="600" fill="#16202B">Data, fetched on demand<tspan font-size="33" font-weight="400" fill="#4F5B69">  nothing copied in advance</tspan></text><text x="36" y="1272" font-size="37" fill="#4F5B69"><tspan font-weight="600" fill="#1F4E79">Copernicus Marine</tspan>  ARCO zarr on S3: physics, biogeochemistry, waves</text><text x="36" y="1332" font-size="37" fill="#4F5B69"><tspan font-weight="600" fill="#1F4E79">ERDDAP</tspan>  INCOIS analysis · Ifremer Argo · IOOS gliders</text><text x="36" y="1392" font-size="37" fill="#4F5B69"><tspan font-weight="600" fill="#1F4E79">INCOIS PFZ</tspan>  fishing advisories, as published</text><text x="36" y="1452" font-size="37" fill="#4F5B69"><tspan font-weight="600" fill="#1F4E79">UCAR THREDDS · NASA GIBS</tspan>  GFS wind forecast · land relief</text><text x="36" y="1512" font-size="37" fill="#4F5B69"><tspan font-weight="600" fill="#1F4E79">Open-Meteo</tspan>  place names for the course</text></svg></body></html>

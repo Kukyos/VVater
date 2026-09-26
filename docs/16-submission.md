@@ -139,3 +139,55 @@ without a URL (Gray 1968, Price 1981, Schott & McCreary 2001, the IMD Amphan rep
 - A float on screen carries its QC legend, its probe line (QC count, data mode, source
   file) or a caption stating the QC rule (hard rule 2). The fishing panel's "not an INCOIS advisory" line is in the shot.
 - Anything probed but not ingested is labelled that way on the references slide.
+
+## The proposal
+
+The portal's Word template, `SIH Project Proposal Template.docx`, sits in the repo root
+beside the deck's template and is not committed. `submission/sih/proposal.py` fills it:
+
+```
+python -m server.eval.run_eval --json           # numbers first
+python submission/sih/proposal.py               # figures/doc-*.png + final/VVater-SIH2026-proposal.docx
+python submission/sih/proposal.py --check       # leftover template text, gray runs, word limits
+powershell -ExecutionPolicy Bypass -File submission/sih/topdf.ps1   # deck and proposal PDFs
+```
+
+- The template is filled in place: its header table, headings and tables are the portal's.
+  Gray instruction runs are removed by colour and the blank writing space goes with them.
+- ID, title, team ID and team name come from `build.py`'s `TITLE_FIELDS`, so the proposal
+  and the deck cannot disagree.
+- Every number is read from `data/eval-latest.json`. The three diagrams are the deck's
+  (`figures.flowchart`, `architecture`, `band_chart`) rendered on their own at portrait
+  width as `figures/doc-*.png`. Figure 1 is the full `shot-float.png`, not a crop, because
+  its probe line shows the float's data mode, QC count and source file (hard rule 2).
+- `--check` fails on any leftover placeholder (`SIHxxxx`, `[Name`, `e.g.,`, …), any gray
+  run, an executive summary of 150 words or more, or a solution overview over 120.
+- Team roles follow the team's PS 26047 proposal: the same six members, each moved to the
+  nearest role on this project.
+- Section 3.3 does not claim a float stick shows a misfit by colour (D-46); it says a click
+  compares the float with the model. The finale plan (5.1) is built from `11-deferred.md`:
+  D-46/D-47/D-48, D-35, D-02b, D-22, D-41/D-42.
+
+### Section 2.2, checked 2026-09-26
+
+The competitor rows were checked against each tool's own pages, not written from memory.
+Every link is in the proposal's references.
+
+| Row | Checked against |
+|---|---|
+| INCOIS Digital Ocean | The PIB launch release (2020-12-30), quoted. `do.incois.gov.in` and `www.do.incois.gov.in` **did not resolve** (getaddrinfo failed) from this network, so the proposal says we could not assess it first-hand. Re-check before the finale: it is the national incumbent and INCOIS is the evaluator. |
+| INCOIS LAS | `las.incois.gov.in/las/` answered 200; capabilities from NOAA PMEL's LAS documentation. |
+| INCOIS ERDDAP | Our own probe, `05-data-sources.md` §1.1. |
+| MOSDAC | mosdac.gov.in, its product and gallery listing. |
+| Copernicus MyOcean Pro | The Copernicus Marine help centre's feature overview. |
+| ODV / webODV | odv.awi.de and the ODV user's guide. |
+| Argovis | The 2025 JTECH paper and argovis.colorado.edu. |
+| earth.nullschool.net | Its about page ("no guarantee of accuracy" is quoted from it). |
+
+Panoply was a candidate and was left out: its NASA page refused the connection.
+
+Dataset licences in 4.3 are each publisher's own words: the `license` attribute of the
+INCOIS and IOOS ERDDAP datasets (read 2026-09-26), the Copernicus Marine service licence,
+and the Argo data policy. Ifremer's ERDDAP carries no usable licence attribute, so the
+Argo row cites the Argo programme's policy instead. The PFZ row states no licence, because
+INCOIS publishes none for it.
