@@ -3,6 +3,10 @@
 The portal wants the SIH 2026 template, six slides at most, "points / diagrams /
 infographics / pictures" rather than paragraphs. The deck is built, not drawn.
 
+**Submitted (Phase III, 27 Sept 2026 15:31): `final/VVater-SIH2026-final.pdf`, 72/90 on the
+portal's rubric, team approved for the finals.** It is the built deck hand-edited through 15
+graded versions (kept locally, not in the repo); the build below does not reproduce it.
+
 We assume the evaluator never opens the live site, so every slide shows the product in a
 real capture. Every picture is a capture of the running build, cropped, never a mock-up.
 
