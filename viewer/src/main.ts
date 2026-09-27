@@ -506,6 +506,7 @@ async function main(): Promise<void> {
     status,
     kick: (ms) => graphics.kick(ms),
     onLoaded: () => {
+      if (showOnLoad) { showOnLoad = false; showCube(true); }
       syncColourControls();
       renderCubeProvenance();
       syncCubeTimeline();
@@ -514,6 +515,7 @@ async function main(): Promise<void> {
       refreshOcean();
     },
     aim: () => { if (!immersive.active) void aimAtCube(); },
+    drawing: (on, built) => cubeDrawing(on, built),
     // Drawing a box needs the drag for itself. Turning the orbit camera off used to hand
     // the mouse back to Cesium's own controller, so the drag drew and moved the globe.
     navigation: (enabled) => {
@@ -1108,9 +1110,23 @@ async function main(): Promise<void> {
   el<HTMLInputElement>("cube-show").addEventListener("change", (e) =>
     showCube((e.target as HTMLInputElement).checked));
   // Asking for a cube is asking to see it; in a lesson the lesson decides.
+  // The box is drawn on a clear globe: the cube is put away for the drag and comes back
+  // with the new one, or as it was if the drawing is cancelled. ponytail: a failed load
+  // leaves it put away; "Show the cube" brings it back.
+  let showOnLoad = false;
+  let hiddenForDraw = false;
+  function cubeDrawing(on: boolean, built: boolean): void {
+    if (on) {
+      hiddenForDraw = !cubeHidden;
+      if (hiddenForDraw) showCube(false);
+    } else if (built) {
+      showOnLoad = !el("app").classList.contains("learn") || hiddenForDraw;
+    } else if (hiddenForDraw) {
+      showCube(true);
+    }
+  }
   const wantCube = () => { if (cubeHidden && !el("app").classList.contains("learn")) showCube(true); };
   el("cube-load").addEventListener("click", wantCube);
-  el("cube-draw").addEventListener("click", wantCube);
   el("cube-scenario").addEventListener("change", wantCube);
   function activeColour(): { paletteId: string; reversed: boolean; log: boolean;
                              range: [number, number] } {

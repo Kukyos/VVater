@@ -8,7 +8,7 @@ film that is not in that JSON.
 > That figure was typed by hand and was wrong; the harness says 11.67 m. It is the reason
 > `--json` now exists.
 
-Run: **2026-09-22** (v1 sections), **2026-09-25** (v2 section). INCOIS Argo 10-day Variational Analysis, Bay of Bengal
+Run: **2026-09-22** (v1 sections), **2026-09-25** (v2 section), **2026-09-27** (cubes anywhere). INCOIS Argo 10-day Variational Analysis, Bay of Bengal
 (78–100°E, 5–23°N), demo date **2018-08-25**, pairing ±5 days.
 
 ## Why 2018-08-25
@@ -265,6 +265,40 @@ v2 · hosting (python -m server.tools.measure_hosting)
   model's own grid; it is not a track-following wake measurement.
 - The hosting figures are read from `data/hosting-latest.json`, written by
   `measure_hosting`; `18-deploy.md` explains them.
+
+## v2: cubes anywhere, and the assistant
+
+Run 2026-09-27 with `python -m server.eval.run_eval --anywhere`, which writes
+`data/eval-anywhere.json`. Harness output, verbatim:
+
+```
+v2 · cubes anywhere (cold = empty cache, all from Copernicus)
+  arabian_sea    oxygen       2019-10-15  113x81x50  1.87 MB  cold 15.57 s, disk 0.21 s, memory 0 ms
+  gulf_stream    temperature  2020-02-15  121x61x40  1.21 MB  cold 9.56 s, disk 0.19 s, memory 0 ms
+  kuroshio       temperature  2020-02-15  121x69x40  1.37 MB  cold 2.67 s, disk 0.19 s, memory 0 ms
+  agulhas        temperature  2019-07-15  151x91x40  2.25 MB  cold 10.73 s, disk 0.26 s, memory 0 ms
+  el_nino        temperature  2015-12-01  151x31x31  0.6 MB  cold 10.29 s, disk 0.40 s, memory 0 ms
+  drake_passage  temperature  2019-02-15  151x79x46  2.24 MB  cold 6.74 s, disk 0.18 s, memory 0 ms
+v2 · assistant, the deck's prompt, 5 runs
+  prompt  'Make a cube of dissolved oxygen in the Arabian Sea, 50 to 78 E and 5 to 25 N, down to 1,500 m, on 15 October 2019'
+  run 1  4.95 s  cube action yes  tools ['ui_action']  unverified []
+  run 2  4.58 s  cube action yes  tools ['ui_action']  unverified []
+  run 3  3.98 s  cube action yes  tools ['ui_action']  unverified []
+  run 4  7.25 s  cube action yes  tools ['ui_action']  unverified []
+  run 5  4.14 s  cube action yes  tools ['ui_action']  unverified []
+  5/5 built the cube; median 4.58 s, max 7.25 s (the reply; the browser then opens the cube)
+```
+
+- **Cold** is an empty chunk cache made for the run, so every chunk comes from Copernicus
+  over the internet from this laptop; it varies with the network and with how much of a
+  dataset's metadata an earlier cube in the same run already opened (Kuroshio follows the
+  Gulf Stream on the same dataset). **Disk** is the same cube again after it is dropped from
+  memory, which is what a second visitor to the same view gets.
+- The assistant time is its reply, including the tool call that asks for the cube; the
+  browser then opens the cube, which is the cold or disk time above.
+- The run logs urllib3 `InsecureRequestWarning` lines for the Copernicus S3 host. They are
+  cosmetic: `truststore` verifies against the OS store, and an expired certificate still
+  fails (`expired.badssl.com` rejected in the same session). TLS is not disabled.
 
 ## Assumptions carried on every record
 

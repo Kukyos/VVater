@@ -1,0 +1,173 @@
+{
+  "measured": "2026-09-27",
+  "cubes": {
+    "arabian_sea": {
+      "variable": "oxygen",
+      "day": "2019-10-15",
+      "box": [
+        50,
+        78,
+        5,
+        25
+      ],
+      "depth_max": 1500,
+      "cells": [
+        113,
+        81
+      ],
+      "levels": 50,
+      "payload_mb": 1.87,
+      "cold_s": 15.57,
+      "disk_s": 0.21,
+      "memory_s": 0.0
+    },
+    "gulf_stream": {
+      "variable": "temperature",
+      "day": "2020-02-15",
+      "box": [
+        -80,
+        -50,
+        30,
+        45
+      ],
+      "depth_max": 2000,
+      "cells": [
+        121,
+        61
+      ],
+      "levels": 40,
+      "payload_mb": 1.21,
+      "cold_s": 9.56,
+      "disk_s": 0.19,
+      "memory_s": 0.0
+    },
+    "kuroshio": {
+      "variable": "temperature",
+      "day": "2020-02-15",
+      "box": [
+        125,
+        155,
+        25,
+        42
+      ],
+      "depth_max": 2000,
+      "cells": [
+        121,
+        69
+      ],
+      "levels": 40,
+      "payload_mb": 1.37,
+      "cold_s": 2.67,
+      "disk_s": 0.19,
+      "memory_s": 0.0
+    },
+    "agulhas": {
+      "variable": "temperature",
+      "day": "2019-07-15",
+      "box": [
+        10,
+        35,
+        -45,
+        -30
+      ],
+      "depth_max": 2000,
+      "cells": [
+        151,
+        91
+      ],
+      "levels": 40,
+      "payload_mb": 2.25,
+      "cold_s": 10.73,
+      "disk_s": 0.26,
+      "memory_s": 0.0
+    },
+    "el_nino": {
+      "variable": "temperature",
+      "day": "2015-12-01",
+      "box": [
+        170,
+        270,
+        -10,
+        10
+      ],
+      "depth_max": 500,
+      "cells": [
+        151,
+        31
+      ],
+      "levels": 31,
+      "payload_mb": 0.6,
+      "cold_s": 10.29,
+      "disk_s": 0.4,
+      "memory_s": 0.0
+    },
+    "drake_passage": {
+      "variable": "temperature",
+      "day": "2019-02-15",
+      "box": [
+        -75,
+        -50,
+        -65,
+        -52
+      ],
+      "depth_max": 4000,
+      "cells": [
+        151,
+        79
+      ],
+      "levels": 46,
+      "payload_mb": 2.24,
+      "cold_s": 6.74,
+      "disk_s": 0.18,
+      "memory_s": 0.0
+    }
+  },
+  "assistant": {
+    "runs": [
+      {
+        "seconds": 4.95,
+        "cube_action": true,
+        "tools": [
+          "ui_action"
+        ],
+        "unverified": []
+      },
+      {
+        "seconds": 4.58,
+        "cube_action": true,
+        "tools": [
+          "ui_action"
+        ],
+        "unverified": []
+      },
+      {
+        "seconds": 3.98,
+        "cube_action": true,
+        "tools": [
+          "ui_action"
+        ],
+        "unverified": []
+      },
+      {
+        "seconds": 7.25,
+        "cube_action": true,
+        "tools": [
+          "ui_action"
+        ],
+        "unverified": []
+      },
+      {
+        "seconds": 4.14,
+        "cube_action": true,
+        "tools": [
+          "ui_action"
+        ],
+        "unverified": []
+      }
+    ],
+    "ok": 5,
+    "cube_actions": 5,
+    "median_s": 4.58,
+    "max_s": 7.25
+  }
+}

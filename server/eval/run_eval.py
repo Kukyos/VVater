@@ -414,5 +414,94 @@ def v2_numbers() -> dict:
     return out
 
 
+ASSISTANT_PROMPT = ("Make a cube of dissolved oxygen in the Arabian Sea, 50 to 78 E and 5 to 25 N, "
+                    "down to 1,500 m, on 15 October 2019")
+ANYWHERE = ("arabian_sea", "gulf_stream", "kuroshio", "agulhas", "el_nino", "drake_passage")
+
+
+def anywhere_numbers(assistant_runs: int = 5) -> dict:
+    """Cubes outside the Bay, timed three ways, and the assistant timed on the prompt the
+    deck shows. Cold means an empty chunk cache made for this run, so every byte comes
+    from Copernicus; disk means the same cube again after dropping it from memory."""
+    import tempfile
+    from server.ocean import arco, assistant, cube
+
+    out: dict = {"measured": time.strftime("%Y-%m-%d")}
+    _rule("v2 · cubes anywhere (cold = empty cache, all from Copernicus)")
+    scen = {s.key: s for s in config.SCENARIOS}
+    real_cache = arco.CACHE
+    rows = {}
+    with tempfile.TemporaryDirectory() as tmp:
+        arco.CACHE = Path(tmp)
+        arco.open_store.cache_clear()
+        try:
+            for key in ANYWHERE:
+                sc = scen[key]
+                box = cube.Box.parse(*sc.box)
+                try:
+                    cube._build.cache_clear()
+                    t0 = time.perf_counter()
+                    c = cube.build(sc.variable, box, sc.day, float(sc.depth_max))
+                    cold = time.perf_counter() - t0
+                    cube._build.cache_clear()
+                    t0 = time.perf_counter()
+                    cube.build(sc.variable, box, sc.day, float(sc.depth_max))
+                    disk = time.perf_counter() - t0
+                    t0 = time.perf_counter()
+                    cube.build(sc.variable, box, sc.day, float(sc.depth_max))
+                    mem = time.perf_counter() - t0
+                    nz, ny, nx = c.values.shape
+                    rows[key] = {"variable": sc.variable, "day": sc.day, "box": list(sc.box),
+                                 "depth_max": sc.depth_max, "cells": [nx, ny], "levels": nz,
+                                 "payload_mb": round(len(c.payload()) / 1e6, 2),
+                                 "cold_s": round(cold, 2), "disk_s": round(disk, 2),
+                                 "memory_s": round(mem, 3)}
+                    print(f"  {key:14s} {sc.variable:12s} {sc.day}  {nx}x{ny}x{nz}  "
+                          f"{rows[key]['payload_mb']} MB  cold {cold:.2f} s, "
+                          f"disk {disk:.2f} s, memory {mem * 1000:.0f} ms")
+                except Exception as exc:
+                    print(f"  {key:14s} unavailable: {exc}")
+                    rows[key] = {"unavailable": str(exc)}
+        finally:
+            arco.CACHE = real_cache
+            arco.open_store.cache_clear()
+            cube._build.cache_clear()
+    out["cubes"] = rows
+
+    _rule(f"v2 · assistant, the deck's prompt, {assistant_runs} runs")
+    print(f"  prompt  {ASSISTANT_PROMPT!r}")
+    runs = []
+    for i in range(assistant_runs):
+        t0 = time.perf_counter()
+        try:
+            r = assistant.run([{"role": "user", "content": ASSISTANT_PROMPT}], {})
+            s = time.perf_counter() - t0
+            made = [a for a in r["actions"] if "cube" in json.dumps(a).lower()]
+            runs.append({"seconds": round(s, 2), "cube_action": bool(made),
+                         "tools": r["tools_used"], "unverified": r["unverified"]})
+            print(f"  run {i + 1}  {s:.2f} s  cube action {'yes' if made else 'NO'}  "
+                  f"tools {r['tools_used']}  unverified {r['unverified']}")
+        except Exception as exc:
+            runs.append({"error": f"{type(exc).__name__}: {str(exc)[:200]}"})
+            print(f"  run {i + 1}  failed: {type(exc).__name__}: {str(exc)[:120]}")
+    ok = [r for r in runs if "seconds" in r]
+    if ok:
+        secs = sorted(r["seconds"] for r in ok)
+        out["assistant"] = {"runs": runs, "ok": len(ok), "cube_actions": sum(r["cube_action"] for r in ok),
+                            "median_s": secs[len(secs) // 2], "max_s": secs[-1]}
+        print(f"  {out['assistant']['cube_actions']}/{len(runs)} built the cube; "
+              f"median {out['assistant']['median_s']:.2f} s, max {out['assistant']['max_s']:.2f} s "
+              "(the reply; the browser then opens the cube)")
+    else:
+        out["assistant"] = {"runs": runs}
+    return out
+
+
 if __name__ == "__main__":
-    main(write_json="--json" in sys.argv)
+    if "--anywhere" in sys.argv:  # just the cubes outside the Bay and the assistant
+        rec = anywhere_numbers()
+        path = Path(__file__).resolve().parents[2] / "data" / "eval-anywhere.json"
+        path.write_text(json.dumps(rec, indent=2, default=str), encoding="utf-8")
+        print(f"\nwrote {path.relative_to(path.parents[1])}")
+    else:
+        main(write_json="--json" in sys.argv)

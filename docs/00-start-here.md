@@ -32,6 +32,7 @@ ERDDAP** for floats anywhere.
 | `18-deploy.md` | Vercel and Render. v2 runs locally for now. | Before deploying. |
 | `19-course.md` | The course in learner mode: lessons, how answers are computed, sources. | Before editing a lesson. |
 | `21-film.md` | The film: how the footage is captured from the running build, the rules it keeps, how to record the voice. `21-film-script.md` is the script to read, with timecodes. | Before recording or re-cutting the film. |
+| `22-user-test.md` | The first user test: ten classmates, ratings and what they found. | Before quoting user feedback. |
 
 ## What is built, as of 2026-09-24 (branch `v2`)
 

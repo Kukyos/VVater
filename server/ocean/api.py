@@ -528,7 +528,7 @@ def cube_profile(variable: str, platform: str, cycle: int, lon0: float, lon1: fl
 
 # The assistant spends a prepaid balance and the endpoint is public, so questions are
 # capped per visitor and per day. ponytail: in memory, per process; resets on restart.
-CHAT_PER_VISITOR_HOUR = 40
+CHAT_PER_VISITOR_HOUR = 200  # a class shares one address (docs/22-user-test.md)
 CHAT_PER_DAY = 1_500
 _chat_log: dict[str, list[float]] = {}
 

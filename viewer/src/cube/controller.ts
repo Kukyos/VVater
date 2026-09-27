@@ -43,9 +43,10 @@ export interface CubeHooks {
   onLoaded: (cube: CubeController) => void;
   /** Point the orbit camera at the cube. */
   aim: (cube: CubeController) => void;
-  /** Hand mouse input to the box tool (false) and back to the camera (true). */
   /** Hand the mouse to the box tool (false) or back to the camera; false if it cannot. */
   navigation: (enabled: boolean) => boolean;
+  /** The box tool started (true) or ended (false); `built` when a box was drawn and is loading. */
+  drawing: (on: boolean, built: boolean) => void;
 }
 
 const MAX_BOX = { lon: 100, lat: 80 };  // server/ocean/cube.py MAX_BOX_DEG
@@ -596,6 +597,7 @@ export class CubeController {
     }
     this.drawing = {};
     el("cube-draw").classList.add("on");
+    this.hooks.drawing(true, false);
     this.hooks.status("drag a box on the globe; Esc cancels");
     const pick = (p: Cartesian2) => {
       const world = this.hooks.viewer.camera.pickEllipsoid(p);
@@ -645,7 +647,7 @@ export class CubeController {
       el("cube-why").textContent = "";
       this.cut = { top: 0, bottom: 1, west: 0, east: 1, south: 0, north: 1 };
       this.syncCutSliders();
-      this.endDrawing();
+      this.endDrawing(true);
       void this.load();
     }, ScreenSpaceEventType.LEFT_UP);
     window.addEventListener("keydown", this.escape);
@@ -655,7 +657,8 @@ export class CubeController {
     if (e.key === "Escape") this.endDrawing();
   };
 
-  private endDrawing(): void {
+  private endDrawing(built = false): void {
+    if (this.drawing) this.hooks.drawing(false, built);
     if (this.drawing?.entity) this.hooks.viewer.entities.remove(this.drawing.entity);
     this.drawing = undefined;
     el("cube-draw").classList.remove("on");

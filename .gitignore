@@ -43,3 +43,7 @@ dist/
 
 # derived from the shots by figures.py
 submission/sih/figures/crop-*.jpg
+
+# Deck iterations and superseded decks, kept local
+submission/sih/final/iter/
+submission/sih/final/archive/
