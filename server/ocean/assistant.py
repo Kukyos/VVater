@@ -111,6 +111,11 @@ CONTROLS: dict[str, str] = {
 }
 
 
+# The viewer's "Down to" list (index.html cube-depth); a cube is built to the shallowest
+# that reaches the asked depth, and the reply is told which (D-47).
+CUBE_DEPTHS = (200, 500, 1000, 2000, 4000, 6000)
+
+
 def check_action(action: str, args: dict) -> dict | None:
     """A proposed interface action, validated and clamped, or None if not allowed."""
     num = lambda k, lo, hi: min(max(float(args[k]), lo), hi)  # noqa: E731
@@ -135,7 +140,11 @@ def check_action(action: str, args: dict) -> dict | None:
             if isinstance(args.get("day"), str) and re.fullmatch(r"\d{4}-\d{2}-\d{2}", args["day"]):
                 out["day"] = args["day"]
             if args.get("depth_max") is not None:
-                out["depth_max"] = int(num("depth_max", 200, 6000))
+                asked = num("depth_max", 200, 6000)
+                out["depth_max"] = next(d for d in CUBE_DEPTHS if d >= asked)
+                if out["depth_max"] != asked:
+                    out["note"] = (f"built down to {out['depth_max']} m, the shallowest option "
+                                   f"reaching {asked:g} m; say {out['depth_max']} m, not {asked:g} m")
             return out
         if action in ("set_control", "click", "highlight") and args.get("target") in CONTROLS:
             out = {"action": action, "target": args["target"]}

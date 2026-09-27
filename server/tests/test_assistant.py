@@ -43,3 +43,12 @@ def test_chat_cap():
     assert allowed("b", 2000) is None          # another visitor is not
     assert allowed("a", 1000 + 3_700) is None  # an hour later the first one is back
     api._chat_log.clear()
+
+
+def test_cube_depth_is_the_one_built():
+    a = assistant.check_action("make_cube", {"west": 50, "east": 78, "south": 5, "north": 25,
+                                             "depth_max": 1500})
+    assert a["depth_max"] == 2000 and "2000 m" in a["note"]
+    b = assistant.check_action("make_cube", {"west": 0, "east": 1, "south": 0, "north": 1,
+                                             "depth_max": 1000})
+    assert b["depth_max"] == 1000 and "note" not in b
