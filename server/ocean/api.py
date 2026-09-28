@@ -621,7 +621,8 @@ def observations(on: str | None = None, variable: str = "temperature") -> dict:
     centre = date.fromisoformat(on) if on else config.DEMO_DATE
     variable = _instrument_variable(variable)
     out = []
-    for inst, p in instruments.observations(centre, variable):
+    casts, unavailable = instruments.observations(centre, variable)
+    for inst, p in casts:
         out.append({
             "kind": inst.kind,
             "platform": p.platform,
@@ -634,7 +635,7 @@ def observations(on: str | None = None, variable: str = "temperature") -> dict:
             "maxDepth": float(p.depth.max()),
         })
     return {"date": str(centre), "variable": variable, "count": len(out), "observations": out,
-            "instruments": instruments.legend()}
+            "instruments": instruments.legend(), "unavailable": unavailable}
 
 
 @app.get("/api/profile")
@@ -683,7 +684,7 @@ def profile(platform: str, on: str | None = None, variable: str = "temperature",
         "kind": inst.kind,
         "dataMode": found.data_mode,
         "sourceFile": found.source_file,
-        "assumptions": instruments.notes(inst, found),
+        "assumptions": inst.notes(found),
     }
 
 

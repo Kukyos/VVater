@@ -60,6 +60,8 @@ export interface VolumeMeta {
 export interface Instrument {
   kind: string;
   label: string;
+  /** Singular, for a count of one. */
+  one: string;
   colour: string;
   /** Marker colour for a cast whose QC was never run. */
   unevaluated: string;
@@ -155,7 +157,7 @@ export const getVolumeMeta = (variable: string, source: string, timeIndex: numbe
   json<VolumeMeta>(`/api/volume/meta?variable=${variable}&source=${source}&time_index=${timeIndex}`);
 
 export const getObservations = (on: string, variable: string) =>
-  json<{ observations: Observation[]; instruments: Instrument[] }>(
+  json<{ observations: Observation[]; instruments: Instrument[]; unavailable: Record<string, string> }>(
     `/api/observations?on=${on}&variable=${variable}`);
 
 export const getProfile = (platform: string, on: string, variable: string) =>

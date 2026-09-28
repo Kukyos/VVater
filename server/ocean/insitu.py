@@ -18,10 +18,12 @@ Found by filtering the TAC's own file index (`index_history.txt`, 2026-09-28) to
 `docs/05-data-sources.md` 2.5 has the probe. What this reader has to get right, all seen
 in real files:
 
-  * **Depth varies per record.** `DEPH` is (TIME, DEPTH), not a coordinate; a mooring's
-    sensors are re-deployed at slightly different depths between servicing cruises.
-  * **The DEPTH axis repeats.** RAMA 15N 90E declares 180/300/500 m twice (slots 15-17
-    and 18-20). A cast is de-duplicated and sorted, or interpolation onto it breaks.
+  * **Depth is per record in some files and per slot in others.** RAMA 15N 90E has `DEPH`
+    as (TIME, DEPTH); 12N and 8N as (DEPTH,). Both are broadcast to the values' shape.
+  * **The DEPTH axis repeats nominal depths.** RAMA 15N 90E declares 180/300/500 m in two
+    sets of slots (15-17 and 18-20), one per sensor generation. In these files no record
+    fills both, but a cast is still sorted and de-duplicated: two values at one depth
+    would break interpolation onto it silently.
   * **Several record streams share one TIME axis.** RAMA writes the full column once a
     day at 12:00 and surface-only records at :17; a cast is a record with >= 2 levels.
   * **Pressure, not depth, in some files** (the ADCP sample). Converted with TEOS-10 the
@@ -240,6 +242,16 @@ def demo() -> None:
     # The file declares EWCT, but its current meter has no column that week: empty, no error.
     assert read_profiles(rama, "u", config.DEMO_DATE) == []
 
+
+    # CTD: a real Bay of Bengal cruise (R/V Shinyo Maru, 1990), pressure coordinates, the
+    # same reader with no change.
+    ctd = fetch(config.INSITU_SAMPLES["ctd"])
+    t = read_profiles(ctd, "temperature")
+    assert t and all((np.diff(c.depth) > 0).all() for c in t)
+    assert all(5 < c.lat < 23 and 78 < c.lon < 100 for c in t), "inside the Bay"
+    assert 20 < float(t[0].value[0]) < 32 and t[0].data_mode in "RADM"
+    assert read_profiles(ctd, "salinity")
+
     # ADCP: a real velocity profile in pressure coordinates.
     adcp = fetch(config.INSITU_SAMPLES["adcp"])
     u = read_profiles(adcp, "u")
@@ -259,7 +271,7 @@ def demo() -> None:
     # Flag 0 alone is unevaluated, not passing.
     assert (_flag_chars(np.array([np.nan, 0.0, 1.0])) == np.array(["0", "0", "1"])).all()
     print(f"insitu ok: RAMA {len(casts)} casts, nearest {str(top.time)[:16]} "
-          f"{top.depth.size} levels; ADCP {len(u)} casts; HF-radar {hf.network} "
+          f"{top.depth.size} levels; CTD {len(t)} casts; ADCP {len(u)} casts; HF-radar {hf.network} "
           f"{hf.provenance()['vectors']} vectors")
 
 

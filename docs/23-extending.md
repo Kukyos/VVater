@@ -6,9 +6,11 @@ machine-learning derived products. This document is that module's manual: where 
 of addition goes, which files it touches, and what has actually been done with it.
 
 There is no plugin framework. There are **three dicts**, each the single place its kind of
-thing is registered, and every consumer (API, viewer, assistant, eval) reads from the dict
-rather than naming what is in it. `03-limitations.md` L11 explains why a dict and not a
-framework.
+thing is registered. The API, the viewer's markers and legend, and the assistant read the
+dict rather than naming what is in it; the deliberate exceptions are listed in
+`03-limitations.md` L11, which also explains why a dict and not a framework. An instrument
+whose source cannot be reached is reported as unavailable in the legend and the others
+still draw.
 
 | Extension point | What goes in it | File |
 |---|---|---|
@@ -24,7 +26,7 @@ display and the assistant's tools all take a `Profile`, so a new instrument inhe
 
 | Brief item | State | Where |
 |---|---|---|
-| CTDs | **Two paths live.** Any CTD table as CSV/TSV via *Add casts from a text file* (`textcast.py`). Any CTD in the Copernicus In Situ TAC format (`*_PR_CT_*`) is read by `insitu.py` with no new code. | `textcast.py`, `insitu.py` |
+| CTDs | **Two readers, checked on real files.** Any CTD table as CSV/TSV via *Add casts from a text file* (`textcast.py`, live in the viewer). CTDs in the Copernicus In Situ TAC format (`*_PR_CT_*`) through `insitu.py` with no new code: checked on a Bay of Bengal cruise (R/V Shinyo Maru, 1990). None in the TAC falls near the demo date, so no CTD instrument is registered yet. | `textcast.py`, `insitu.py` |
 | Moorings | **Live in the Bay.** RAMA moorings (15N, 12N, 8N 90°E) from the Copernicus In Situ TAC, drawn as markers, clicked for a profile co-located with the INCOIS analysis. | `insitu.py`, `config.INSITU_PLATFORMS`, `instruments.py` |
 | ADCP | **Reader built and checked on a real file; no Bay data.** `insitu.read_profiles(..., "u")` reads TAC ADCP files, pressure converted with TEOS-10. No public ADCP falls in the Bay near the demo date. | `insitu.py`; `11-deferred.md` D-50 |
 | HF-radar | **Reader built and checked on a real file; no public Indian coverage.** `insitu.read_surface_currents` reads a TAC total-vector map with its QC. Every network in the Copernicus archive is European or American. | `insitu.py`; `11-deferred.md` D-51 |
@@ -45,8 +47,10 @@ The TAC publishes every platform type in one NetCDF layout; the file name says w
 
 - **Another mooring:** one line in `config.INSITU_PLATFORMS["mooring"]`. Nothing else.
 - **A CTD set:** add `"ctd": [...]` to `config.INSITU_PLATFORMS` and one `Instrument` entry
-  in `instruments.py` (copy the mooring entry; drop `nearest_only`, since each CTD cast
-  is its own station). The viewer's markers, legend and counts come from the registry.
+  in `instruments.py` (copy the mooring entry, including its `notes`; drop `nearest_only`,
+  since each CTD cast is its own station). The viewer's markers, legend and counts come
+  from the registry, and `notes` carries the reader's assumptions (pressure to depth, the
+  QC scale) to the profile panel.
 - **An ADCP:** as the CTD, with `variables={"u", "v"}`. Drawing and clicking work. The
   comparison needs a model with currents in `config.SOURCES`; the INCOIS analyses have
   none, so `/api/profile` answers 422 with that reason rather than a wrong chart (D-50).

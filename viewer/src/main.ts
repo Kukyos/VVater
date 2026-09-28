@@ -1192,7 +1192,8 @@ async function main(): Promise<void> {
   async function loadObservations(): Promise<void> {
     viewer.entities.removeAll();
     if (!showBay) return;
-    const { observations, instruments } = await api.getObservations(state.meta.demoDate, state.variable);
+    const { observations, instruments, unavailable } =
+      await api.getObservations(state.meta.demoDate, state.variable);
     const byKind = new Map(instruments.map((i) => [i.kind, i]));
 
     // A float can surface more than once inside a +/-5 day window, and a glider emits
@@ -1230,7 +1231,8 @@ async function main(): Promise<void> {
     const counts = instruments
       .map((i) => [i, observations.filter((o) => o.kind === i.kind).length] as const)
       .filter(([, n]) => n > 0);
-    el("obs-count").textContent = counts.map(([i, n]) => `${n} ${i.label}`).join(" · ") || "none in this window";
+    el("obs-count").textContent =
+      counts.map(([i, n]) => `${n} ${n === 1 ? i.one : i.label}`).join(" · ") || "none in this window";
     const key = (colour: string, label: string, title = ""): HTMLElement => {
       const row = document.createElement("div");
       row.className = "key";
@@ -1242,7 +1244,10 @@ async function main(): Promise<void> {
       return row;
     };
     el("obs-keys").replaceChildren(
-      ...instruments.map((i) => key(i.colour, i.label, `QC: ${i.qc}`)),
+      // An instrument whose source could not be read says so, rather than vanishing.
+      ...instruments.map((i) => key(i.colour,
+        unavailable[i.kind] ? `${i.label}: unavailable` : i.label,
+        unavailable[i.kind] ?? `QC: ${i.qc}`)),
       key("#c9a227", "any cast whose QC was never run"));
     placeMarkers();
     graphics.kick(1000);
@@ -1368,6 +1373,9 @@ async function main(): Promise<void> {
     try {
       const profile = await api.getProfile(platform, state.meta.demoDate, state.variable);
       if (ticket !== profileTicket) return;
+      if (profile.kind) {
+        el("profile-title").textContent = `${profile.kind} ${platform}`;
+      }
       drawProfile(
         el<HTMLCanvasElement>("profile-chart"),
         profile,

@@ -63,9 +63,11 @@ INSITU_PLATFORMS: dict[str, list[str]] = {
                 "MO/GL_TS_MO_23007.nc"],  # RAMA 8N 90E
 }
 
-# Real files outside the Bay that the reader is checked against, for the instruments that
-# have no public data inside it (docs/11-deferred.md D-50, D-51).
+# Real files the reader is checked against: a Bay CTD cruise far from the demo date, and
+# for ADCP and HF-radar, files outside the Bay because none is public inside it
+# (docs/11-deferred.md D-50, D-51).
 INSITU_SAMPLES = {
+    "ctd": "CT/GL_PR_CT_JFCL.nc",           # R/V Shinyo Maru, Bay of Bengal, 1990-91
     "adcp": "AD/BS_PR_AD_Mangalia70.nc",   # vessel ADCP, Black Sea, pressure coordinates
     "hf_radar": ("https://s3.waw3-1.cloudferro.com/mdl-native-03/native/"
                  "INSITU_GLO_PHY_UV_DISCRETE_NRT_013_048/"

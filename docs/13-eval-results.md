@@ -319,14 +319,15 @@ RAMA moorings (Copernicus In Situ TAC) against the INCOIS analysis
   GL_TS_MO_23008.nc      no column within +/-5 days
   GL_TS_MO_23007.nc      no column within +/-5 days
 
-Readers checked on real files outside the Bay
----------------------------------------------
+Readers checked on real files (CTD in the Bay; ADCP, HF-radar outside it)
+-------------------------------------------------------------------------
+  CTD      GL_PR_CT_JFCL.nc: 15 casts, 1990-02-13 to 1991-02-19, 15 inside the region, depth from pressure
   ADCP     BS_PR_AD_Mangalia70.nc: 1 cast(s), 9 levels of u, depth from pressure
   HF-radar HFR-EUSKOOS-Total 2024-12-03: 116 vectors, 47 rejected by the network's QC
 
 Machine-learning derived product as a cube
 ------------------------------------------
-  chlorophyll_ml  [36, 72, 80] (levels, lat, lon), 0.8 s
+  chlorophyll_ml  [36, 72, 80] (levels, lat, lon), 0.7 s
   chlorophyll_ml: 7-day product: the step stamped 2018-08-22 (-3 d from 2018-08-25) stands for the day
   range 0.00244 - 0.784 mg/m3
 ```
@@ -334,9 +335,11 @@ Machine-learning derived product as a cube
 - One mooring on the demo date is D-49: the other two RAMA sites have no column that week.
 - The mooring comparison is one cast of 5 compared levels; it shows the path works end to
   end and is not a skill estimate. The skill numbers above remain Argo and glider (D-54).
-- The ADCP and HF-radar lines are the readers on real files outside the Bay, because no
-  public ADCP or HF-radar data falls inside it (D-50, D-51). The HF-radar line is the
-  network's own QC removing vectors, which is why the flag travels with each vector.
+- The CTD line is the same reader on a real Bay cruise, far from the demo date, so no CTD
+  instrument is registered. The ADCP and HF-radar lines are the readers on real files
+  outside the Bay, because no public ADCP or HF-radar data falls inside it (D-50, D-51).
+  The HF-radar line is the network's own QC removing vectors, which is why the flag
+  travels with each vector.
 - The ML cube's time is warm-cache (chunks already on disk from an earlier build); it is
   a cube like any other, and the cold times in the section above apply to it.
 

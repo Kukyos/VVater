@@ -497,6 +497,11 @@ def anywhere_numbers(assistant_runs: int = 5) -> dict:
     return out
 
 
+def _in_region(p) -> bool:
+    return (config.REGION["lat"][0] <= p.lat <= config.REGION["lat"][1]
+            and config.REGION["lon"][0] <= p.lon <= config.REGION["lon"][1])
+
+
 def extensible_numbers() -> dict:
     """The extensible-design pieces, measured: every registered instrument's casts in the
     demo window, the RAMA mooring against the INCOIS analysis, the ADCP and HF-radar
@@ -506,6 +511,9 @@ def extensible_numbers() -> dict:
     out: dict = {"measured": time.strftime("%Y-%m-%d"), "centre_date": str(CENTRE)}
     _rule("Extensible design · instruments in the registry")
     counts = {}
+    _, unavailable = instruments.observations(CENTRE, "temperature")
+    for kind, why in unavailable.items():
+        print(f"  {kind:8s} UNAVAILABLE: {why}")
     for inst in instruments.INSTRUMENTS.values():
         casts = inst.load(CENTRE, "temperature") if "temperature" in inst.variables else []
         counts[inst.kind] = len(casts)
@@ -530,14 +538,19 @@ def extensible_numbers() -> dict:
                      "rmse": round(s["rmse"], 3), "data_mode": s["data_mode"]})
     out["moorings"] = rows
 
-    _rule("Readers checked on real files outside the Bay")
+    _rule("Readers checked on real files (CTD in the Bay; ADCP, HF-radar outside it)")
+    ctd = insitu.read_profiles(insitu.fetch(config.INSITU_SAMPLES["ctd"]), "temperature")
     adcp = insitu.read_profiles(insitu.fetch(config.INSITU_SAMPLES["adcp"]), "u")
     hf = insitu.read_surface_currents(insitu.fetch(config.INSITU_SAMPLES["hf_radar"]))
     hp = hf.provenance()
+    print(f"  CTD      {config.INSITU_SAMPLES['ctd'].split('/')[-1]}: {len(ctd)} casts, "
+          f"{min(str(p.time)[:10] for p in ctd)} to {max(str(p.time)[:10] for p in ctd)}, "
+          f"{sum(_in_region(p) for p in ctd)} inside the region, depth from pressure")
     print(f"  ADCP     {config.INSITU_SAMPLES['adcp'].split('/')[-1]}: {len(adcp)} cast(s), "
           f"{sum(p.depth.size for p in adcp)} levels of u, depth from pressure")
     print(f"  HF-radar {hp['network']} {hp['time'][:10]}: {hp['vectors']} vectors, "
           f"{hp['rejected_by_qc']} rejected by the network's QC")
+    out["ctd"] = {"file": config.INSITU_SAMPLES["ctd"], "casts": len(ctd)}
     out["adcp"] = {"file": config.INSITU_SAMPLES["adcp"], "casts": len(adcp),
                    "levels": int(sum(p.depth.size for p in adcp))}
     out["hf_radar"] = hp

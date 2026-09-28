@@ -363,7 +363,9 @@ What the filter found inside 78-100°E, 5-23°N:
   `config.INSITU_PLATFORMS`. Around the demo date only 15N has columns (D-49). The many
   `GL_TS_MO_2300xxx` files nearby carry surface temperature and met only.
 - **CTD** (`PR_CT`), **XBT**, **bottle** and **glider** files whose bounding boxes touch the
-  Bay; several are multi-year cruise aggregates spanning oceans.
+  Bay; several are multi-year cruise aggregates spanning oceans. `GL_PR_CT_JFCL.nc`
+  (R/V Shinyo Maru, 1990-91, 72 kB) lies wholly inside it and is the CTD the reader is
+  checked on.
 - **ADCP:** one file, `GL_PR_AD_FNIN.nc`, 205 MB, bounding box across the Bay; not
   downloaded (D-50). The reader is checked on `BS_PR_AD_Mangalia70.nc` (Black Sea, 66 kB).
 - **HF-radar:** none. Every network in the total-vector index is European or American

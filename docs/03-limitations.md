@@ -161,9 +161,13 @@ Documented as a judgement call so it does not read as laziness.
 The same holds for the rest of the *Extensible Design* item, with three dicts instead of
 one (`23-extending.md`): `sources.PARSERS` for gridded providers, `catalog.VARIABLES` for
 model and machine-learning variables, and `instruments.INSTRUMENTS` for in-situ sensors.
-Nothing outside those dicts names an instrument, which is checked rather than asserted:
-the viewer draws and labels whatever kinds the API sends, and `instruments.demo()`
-registers two invented instruments and checks each is asked only for what it measures.
+The API's observation and profile endpoints, the viewer's markers, legend and counts, and
+the assistant's observation tool read the registry and name no instrument. That is checked
+rather than asserted: `instruments.demo()` registers invented instruments, one of them
+unreachable, and checks each is asked only for what it measures and a failure is reported
+without hiding the rest. Three places still name Argo or gliders on purpose: the residual
+volume and the depth-banded skill numbers (kept to the published set, D-54), and the cube
+view, which hides the Bay's Argo markers because it draws global Argo itself.
 
 > **Constraint:** an addition that needs an edit outside its dict (other than a reader
 > for a new file format) is a bug in the extension point, and is fixed there.

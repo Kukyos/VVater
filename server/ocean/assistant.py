@@ -207,7 +207,8 @@ def tool_value_at(lat: float, lon: float, depth_m: float, variable: str = "tempe
 def tool_list_observations(kind: str = "all", limit: int = 15, only_rejected: bool = False) -> dict:
     """Casts in the demo window: position, time, QC, data mode, source file."""
     out = []
-    for inst, p in instruments.observations(config.DEMO_DATE, "temperature"):
+    casts, unavailable = instruments.observations(config.DEMO_DATE, "temperature")
+    for inst, p in casts:
         if kind not in ("all", inst.kind):
             continue
         if only_rejected and not p.n_rejected:
@@ -220,6 +221,7 @@ def tool_list_observations(kind: str = "all", limit: int = 15, only_rejected: bo
     n = max(1, min(int(limit), 40))
     return {"window_centre": config.DEMO_DATE.isoformat(), "total": len(out),
             "shown": min(len(out), n), "sorted_by": "levels rejected by QC, most first",
+            "unavailable": unavailable,
             "casts": out[:n]}
 
 

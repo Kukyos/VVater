@@ -26,6 +26,10 @@
       "casts": 0
     }
   ],
+  "ctd": {
+    "file": "CT/GL_PR_CT_JFCL.nc",
+    "casts": 15
+  },
   "adcp": {
     "file": "AD/BS_PR_AD_Mangalia70.nc",
     "casts": 1,
@@ -47,7 +51,7 @@
       72,
       80
     ],
-    "seconds": 0.77,
+    "seconds": 0.73,
     "step": "chlorophyll_ml: 7-day product: the step stamped 2018-08-22 (-3 d from 2018-08-25) stands for the day",
     "range": [
       0.002438,

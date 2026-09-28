@@ -218,7 +218,7 @@ export function captionFor(profile: ProfileComparison): string {
     ? "unevaluated (no QC ever run on this source)"
     : mode === "Q"
       ? "QARTOD-flagged"
-      : { R: "real-time", A: "adjusted", D: "delayed-mode" }[mode] ?? mode;
+      : { R: "real-time", A: "adjusted", D: "delayed-mode", M: "mixed modes" }[mode] ?? mode;
 
   const bias = Number(summary.bias);
   const rmse = Number(summary.rmse);

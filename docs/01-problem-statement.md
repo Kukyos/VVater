@@ -125,5 +125,6 @@ Kept separate from the verbatim text above so the two are never confused.
   URL after it. Re-check the portal before submission in case it is patched.
 - The brief names "PyNIO" for NetCDF parsing. PyNIO is archived and unmaintained; xarray,
   which the same sentence also names, is the live path and is what we use.
-- "Plugin-style module" is satisfied by a dict of parsers, not a plugin framework — see
-  `03-limitations.md` L11 for why that is a judgement call rather than a shortcut.
+- "Plugin-style module" is satisfied by three registries (gridded providers, variables
+  including ML products, in-situ instruments), not a plugin framework — see
+  `23-extending.md` for each named sensor's state and `03-limitations.md` L11 for why.
