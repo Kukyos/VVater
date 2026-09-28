@@ -13,7 +13,7 @@ from pathlib import Path
 
 import requests
 
-from server.ocean import argo, config, glider, sources
+from server.ocean import argo, config, glider, insitu, sources
 
 CACHE = Path(__file__).resolve().parents[2] / "data" / "cache"
 
@@ -54,6 +54,13 @@ def main() -> None:
     # checked by requiring both to produce identical casts (textcast.demo).
     for fmt in ("nc", "csv"):
         path = glider.fetch_deployment(config.GLIDER_DEPLOYMENTS[0], CACHE, fmt)
+        print(f"have  {path.name}  {path.stat().st_size / 1e6:.2f} MB")
+
+    # Copernicus In Situ TAC: the Bay's moorings, and the real ADCP and HF-radar files the
+    # readers are checked against (insitu.demo).
+    for f in [*(f for files in config.INSITU_PLATFORMS.values() for f in files),
+              *config.INSITU_SAMPLES.values()]:
+        path = insitu.fetch(f)
         print(f"have  {path.name}  {path.stat().st_size / 1e6:.2f} MB")
 
 

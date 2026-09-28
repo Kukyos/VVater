@@ -157,12 +157,25 @@ def _open(key: str, box: Box, day: str, depth_max: float) -> Source:
     ds = store.ds
     when = np.datetime64(day)
     times = store.times
-    t_index = int(np.searchsorted(times, when))
-    if t_index >= times.size or times[t_index] != when:
-        raise LookupError(f"{resolved.era.dataset} has no step on {day}")
+    assumptions: list[str] = []
+    if resolved.era.step_days > 1:
+        # A weekly product has no step on most days. Nearest step within half a period,
+        # and the offset said out loud: the store does not state whether its stamp is the
+        # start or the middle of the week it averages.
+        t_index = int(np.argmin(np.abs(times - when)))
+        offset = float((times[t_index] - when) / np.timedelta64(1, "D"))
+        if abs(offset) > resolved.era.step_days / 2:
+            raise LookupError(f"{resolved.era.dataset} has no step within "
+                              f"{resolved.era.step_days / 2:g} days of {day}")
+        assumptions.append(
+            f"{resolved.era.step_days}-day product: the step stamped "
+            f"{str(times[t_index])[:10]} ({offset:+.0f} d from {day}) stands for the day")
+    else:
+        t_index = int(np.searchsorted(times, when))
+        if t_index >= times.size or times[t_index] != when:
+            raise LookupError(f"{resolved.era.dataset} has no step on {day}")
     var = ds[resolved.era.var].isel(time=t_index)
 
-    assumptions: list[str] = []
     zname = zindex = depths = None
     if "elevation" in var.dims or "depth" in var.dims:
         zname, all_depths, note = _vertical(ds)

@@ -104,7 +104,9 @@ export class CubeController {
     scenarioSelect.add(new Option("Your own box", ""));
 
     const variableSelect = el<HTMLSelectElement>("cube-variable");
-    const groups: Record<string, string> = { physics: "Physics", biogeochemistry: "Biogeochemistry" };
+    const groups: Record<string, string> = {
+      physics: "Physics", biogeochemistry: "Biogeochemistry", ml: "Machine-learning estimates",
+    };
     for (const [group, label] of Object.entries(groups)) {
       const og = document.createElement("optgroup");
       og.label = label;

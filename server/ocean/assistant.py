@@ -34,7 +34,9 @@ from typing import Callable
 
 import numpy as np
 
-from . import config, globalsurface
+from . import config, globalsurface, instruments
+
+INSTRUMENT_KINDS = list(instruments.INSTRUMENTS)
 
 ROOT = Path(__file__).resolve().parents[2]
 GUIDE = ROOT / "docs" / "17-user-guide.md"
@@ -204,20 +206,16 @@ def tool_value_at(lat: float, lon: float, depth_m: float, variable: str = "tempe
 
 def tool_list_observations(kind: str = "all", limit: int = 15, only_rejected: bool = False) -> dict:
     """Casts in the demo window: position, time, QC, data mode, source file."""
-    from . import argo, glider
-
     out = []
-    for k, profiles in (("argo", argo.load_window(config.DEMO_DATE, "temperature")),
-                        ("glider", glider.load_window(config.DEMO_DATE, "temperature"))):
-        if kind not in ("all", k):
+    for inst, p in instruments.observations(config.DEMO_DATE, "temperature"):
+        if kind not in ("all", inst.kind):
             continue
-        for p in profiles:
-            if only_rejected and not p.n_rejected:
-                continue
-            out.append({"kind": k, "platform": p.platform, "lat": round(p.lat, 2),
-                        "lon": round(p.lon, 2), "time": str(p.time)[:16],
-                        "levels": int(p.depth.size), "levels_rejected_by_qc": p.n_rejected,
-                        "data_mode": p.data_mode, "source_file": p.source_file})
+        if only_rejected and not p.n_rejected:
+            continue
+        out.append({"kind": inst.kind, "platform": p.platform, "lat": round(p.lat, 2),
+                    "lon": round(p.lon, 2), "time": str(p.time)[:16],
+                    "levels": int(p.depth.size), "levels_rejected_by_qc": p.n_rejected,
+                    "data_mode": p.data_mode, "source_file": p.source_file})
     out.sort(key=lambda c: -c["levels_rejected_by_qc"])
     n = max(1, min(int(limit), 40))
     return {"window_centre": config.DEMO_DATE.isoformat(), "total": len(out),
@@ -336,10 +334,10 @@ TOOLS: dict[str, tuple[Callable[..., dict], dict]] = {
             "date_": {"type": "string", "description": "YYYY-MM-DD; nearest analysis step"}},
             "required": ["lat", "lon", "depth_m"]}}),
     "list_observations": (tool_list_observations, {
-        "description": "Argo and glider casts near the demo date, with QC counts, data mode "
-                       "and source file.",
+        "description": "In-situ casts near the demo date (Argo floats, glider, moorings, "
+                       "uploads), with QC counts, data mode and source file.",
         "parameters": {"type": "object", "properties": {
-            "kind": {"type": "string", "enum": ["all", "argo", "glider"]},
+            "kind": {"type": "string", "enum": ["all", *INSTRUMENT_KINDS]},
             "limit": {"type": "integer"},
             "only_rejected": {"type": "boolean"}}}}),
     "profile": (tool_profile, {

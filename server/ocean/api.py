@@ -21,7 +21,7 @@ from fastapi.concurrency import run_in_threadpool
 from fastapi.responses import JSONResponse
 
 from . import (argo, assistant, catalog, cf, colocate, config, cube, cubecasts, currents, fishing,
-               glider, globalsurface, heat, marine, pfz, residual, sources, surface,
+               glider, globalsurface, heat, instruments, marine, pfz, residual, sources, surface,
                textcast, volume, wms)
 
 # Variables that exist as gridded fields but not as instrument measurements. Asking a
@@ -571,25 +571,11 @@ async def chat(request: Request) -> dict:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
 
 
-# Casts uploaded as delimited text, kept as the raw text and parsed per variable on use.
-# In memory and per server process: an upload is for looking at, not an archive. Capped,
-# because this is the one endpoint that takes arbitrary bytes from a client.
-_UPLOADS: dict[str, str] = {}
-# The assumptions the parser made for each file (units, pressure->depth, ...). Hard rule 5:
-# they travel with the casts to the profile panel, not just back to the uploader.
-_UPLOAD_NOTES: dict[str, list[str]] = {}
+# Casts uploaded as delimited text are kept in instruments.UPLOADS as raw text and parsed
+# per variable on use. Capped, because this is the one endpoint that takes arbitrary bytes
+# from a client.
 UPLOAD_MAX_BYTES = 10_000_000
 UPLOAD_MAX_FILES = 8
-
-
-def _uploaded(variable: str) -> list[argo.Profile]:
-    out = []
-    for name, text in _UPLOADS.items():
-        try:
-            out.extend(textcast.read_text(text, variable, source_name=name)[0])
-        except textcast.TextCastError:
-            continue  # e.g. a temperature-only file asked for salinity
-    return out
 
 
 @app.post("/api/casts")
@@ -603,7 +589,7 @@ async def upload_casts(request: Request, name: str = "upload.csv") -> dict:
     body = await request.body()
     if len(body) > UPLOAD_MAX_BYTES:
         raise HTTPException(413, f"file is {len(body)} bytes; the limit is {UPLOAD_MAX_BYTES}")
-    if len(_UPLOADS) >= UPLOAD_MAX_FILES and name not in _UPLOADS:
+    if len(instruments.UPLOADS) >= UPLOAD_MAX_FILES and name not in instruments.UPLOADS:
         raise HTTPException(409, f"{UPLOAD_MAX_FILES} files already uploaded; restart to clear")
     text = body.decode("utf-8", errors="replace")
     safe = "".join(c for c in name if c.isalnum() or c in "._-")[:80] or "upload.csv"
@@ -611,38 +597,44 @@ async def upload_casts(request: Request, name: str = "upload.csv") -> dict:
         profiles, notes = textcast.read_text(text, "temperature", source_name=safe)
     except textcast.TextCastError as exc:
         raise HTTPException(422, str(exc)) from exc
-    _UPLOADS[safe] = text
-    _UPLOAD_NOTES[safe] = notes
+    instruments.UPLOADS[safe] = text
+    instruments.UPLOAD_NOTES[safe] = notes
     return {"name": safe, "casts": len(profiles),
             "levels": int(sum(p.depth.size for p in profiles)), "notes": notes}
 
 
+@app.get("/api/instruments")
+def instruments_legend() -> dict:
+    """Every registered instrument: label, colour, QC vocabulary, variables it measures."""
+    return {"instruments": instruments.legend()}
+
+
 @app.get("/api/observations")
 def observations(on: str | None = None, variable: str = "temperature") -> dict:
-    """Float and glider positions for the map, with enough to draw a marker and no more.
+    """Every instrument's cast positions for the map, with enough to draw a marker.
 
-    Full profiles are a separate call, because 147 casts x 500 levels is not something
-    to send just so a dot can appear on a globe.
+    Instruments come from `instruments.INSTRUMENTS`; the viewer draws whatever kinds arrive,
+    labelled from `instruments`, so a new one needs no viewer change. Full profiles are a
+    separate call, because 147 casts x 500 levels is not something to send just so a dot
+    can appear on a globe.
     """
     centre = date.fromisoformat(on) if on else config.DEMO_DATE
     variable = _instrument_variable(variable)
     out = []
-    for kind, profiles in (("argo", argo.load_window(centre, variable)),
-                           ("glider", glider.load_window(centre, variable)),
-                           ("text", _uploaded(variable))):
-        for p in profiles:
-            out.append({
-                "kind": kind,
-                "platform": p.platform,
-                "lat": p.lat,
-                "lon": p.lon,
-                "time": str(p.time)[:19],
-                "levels": int(p.depth.size),
-                "levelsRejected": p.n_rejected,
-                "dataMode": p.data_mode,
-                "maxDepth": float(p.depth.max()),
-            })
-    return {"date": str(centre), "variable": variable, "count": len(out), "observations": out}
+    for inst, p in instruments.observations(centre, variable):
+        out.append({
+            "kind": inst.kind,
+            "platform": p.platform,
+            "lat": p.lat,
+            "lon": p.lon,
+            "time": str(p.time)[:19],
+            "levels": int(p.depth.size),
+            "levelsRejected": p.n_rejected,
+            "dataMode": p.data_mode,
+            "maxDepth": float(p.depth.max()),
+        })
+    return {"date": str(centre), "variable": variable, "count": len(out), "observations": out,
+            "instruments": instruments.legend()}
 
 
 @app.get("/api/profile")
@@ -659,17 +651,13 @@ def profile(platform: str, on: str | None = None, variable: str = "temperature",
     start, end = _window(t0, t1)
     variable = _instrument_variable(variable)
 
-    found = None
-    for profiles in (argo.load_window(centre, variable), glider.load_window(centre, variable),
-                     _uploaded(variable)):
-        for p in profiles:
-            if p.platform == platform:
-                found = p
-                break
-        if found:
-            break
-    if found is None:
+    hit = instruments.find(platform, centre, variable)
+    if hit is None:
         raise HTTPException(status_code=404, detail=f"no profile {platform!r} on {centre}")
+    inst, found = hit
+    if variable not in config.SOURCES[source].variables:
+        raise HTTPException(status_code=422, detail=(
+            f"{config.SOURCES[source].title} has no {variable} to compare {platform} against"))
 
     ds, names = _dataset(variable, source, start, end)
     comparison = colocate.colocate(found, ds, names["value"], names.get("error"),
@@ -692,7 +680,10 @@ def profile(platform: str, on: str | None = None, variable: str = "temperature",
         "summary": {k: v for k, v in comparison.summary().items() if k != "per_profile"},
         # Cyclone heat potential from the same pair, on the same levels (heat.py).
         "tchp": heat.compare(comparison) if variable == "temperature" else None,
-        "assumptions": _UPLOAD_NOTES.get(found.source_file, []),
+        "kind": inst.kind,
+        "dataMode": found.data_mode,
+        "sourceFile": found.source_file,
+        "assumptions": instruments.notes(inst, found),
     }
 
 

@@ -15,7 +15,11 @@ it came from, so you can look at it from the side. Every face is a slice through
   velocity, density, speed of sound. Biogeochemistry: chlorophyll, oxygen, nitrate,
   phosphate, silicate, iron, pH, dissolved carbon, alkalinity, phytoplankton, primary
   production. All from Copernicus Marine models; density and sound speed are worked out
-  from temperature and salinity.
+  from temperature and salinity. **Machine-learning estimates**: chlorophyll, particle
+  backscatter and particulate organic carbon, estimated by a neural network from satellite
+  ocean colour and trained on BGC-Argo floats. They are weekly, 1998 to 2023, down to
+  1000 m, and the provenance says which week was used and how the values were made.
+  Set the ML chlorophyll beside the model's to see two independent estimates.
 - **Day** — any day from 1993 to about nine days ahead. The line under it says which model
   the day comes from. Days after today are a **forecast** and are marked in yellow.
 - **Down to** — how deep the cube goes, down to the sea floor.
@@ -208,7 +212,12 @@ Panels fold away with **[** and **]**.
   the way up.
 - **Glider** (green, or gold when unevaluated) — an underwater drone that saw-tooths along a
   track, measuring every few hours.
+- **Mooring** (orange) — a buoy anchored to the sea floor with sensors hung at fixed depths
+  down the line. The dot is its column for the day nearest the date shown. The Bay's are
+  the RAMA moorings along 90°E.
 - **Uploaded cast** (pink) — a measurement from a file you added.
+- Any marker is **gold** when no quality control was ever run on it. The legend under
+  *Observations* lists every instrument the server has; a new one appears there by itself.
 - Click any marker to draw its **profile**: measured values (blue line) against the model
   (orange line) from the surface down. Red circles are measurements that failed quality
   control; they are shown, never hidden.

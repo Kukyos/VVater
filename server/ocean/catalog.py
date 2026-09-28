@@ -28,7 +28,7 @@ from __future__ import annotations
 import sys
 from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass, field
-from datetime import date
+from datetime import date, timedelta
 
 # ------------------------------------------------------------------ datasets
 
@@ -44,6 +44,12 @@ BGC_PFT_ANFC = "cmems_mod_glo_bgc-pft_anfc_0.25deg_P1D-m"
 BGC_BIO_ANFC = "cmems_mod_glo_bgc-bio_anfc_0.25deg_P1D-m"
 BGC_NUT_ANFC = "cmems_mod_glo_bgc-nut_anfc_0.25deg_P1D-m"
 BGC_CAR_ANFC = "cmems_mod_glo_bgc-car_anfc_0.25deg_P1D-m"
+# Machine-learning derived: a neural network (Sauzède et al. 2016, SOCA) estimates the
+# vertical structure of chlorophyll and particle backscatter from surface ocean colour
+# plus hydrography, trained on BGC-Argo floats. Weekly, 1998-2023, 36 levels to 1000 m.
+ML_BGC_3D = "cmems_obs-mob_glo_bgc-chl-poc_my_0.25deg_P7D-m"
+ML_METHOD = ("neural-network estimate (SOCA; Sauzède et al. 2016, doi:10.1002/2015JC011408), "
+             "trained on BGC-Argo; not a measurement and not a model run")
 
 TITLES = {
     PHY_MY: "Copernicus GLORYS12 reanalysis, 1/12°",
@@ -57,6 +63,7 @@ TITLES = {
     BGC_BIO_ANFC: "Copernicus PISCES biogeochemistry analysis & forecast, 1/4°",
     BGC_NUT_ANFC: "Copernicus PISCES biogeochemistry analysis & forecast, 1/4°",
     BGC_CAR_ANFC: "Copernicus PISCES biogeochemistry analysis & forecast, 1/4°",
+    ML_BGC_3D: "Copernicus MULTIOBS 3D BGC, neural-network estimate, weekly, 1/4°",
 }
 
 # Native vertical levels, the ceiling on anything we emit (hard rule 3). The stores are
@@ -64,7 +71,7 @@ TITLES = {
 # second, looser ceiling exactly as regrid.build_grid does for config.Source.
 NATIVE_LEVELS = {PHY_MY: 50, PHY_T_ANFC: 50, PHY_S_ANFC: 50, PHY_UV_ANFC: 50, PHY_W_ANFC: 50,
                  BGC_MY: 75, BGC_PFT_ANFC: 50, BGC_BIO_ANFC: 50, BGC_NUT_ANFC: 50,
-                 BGC_CAR_ANFC: 50}
+                 BGC_CAR_ANFC: 50, ML_BGC_3D: 36}
 
 
 @dataclass(frozen=True)
@@ -72,6 +79,10 @@ class Era:
     name: str        # "reanalysis" | "analysis-forecast"
     dataset: str
     var: str         # the dataset's own variable name
+    # Days between the store's time steps. A daily store must have the requested day
+    # exactly; a coarser one (the weekly ML product) gives the nearest step within half a
+    # period, and the cube records which step and how far away (cube._open).
+    step_days: int = 1
 
 
 @dataclass(frozen=True)
@@ -88,6 +99,9 @@ class Variable:
     derived: tuple[str, ...] = ()  # computed from these variables instead of read
     formula: str = ""
     note: str = ""
+    # How the values were made, when that is neither a measurement nor a model run (a
+    # machine-learning product). Travels in every provenance record and the catalogue.
+    method: str = ""
     # For the CF layer (cf.normalise_variable) and the range test (cf.global_range_check).
     canonical: str = ""
 
@@ -154,6 +168,15 @@ VARIABLES: dict[str, Variable] = {v.key: v for v in [
              (Era("analysis-forecast", BGC_NUT_ANFC, "fe"),), log=True),
     Variable("phytoplankton", "Phytoplankton carbon", "mmol/m³", "algae", "biogeochemistry",
              (Era("analysis-forecast", BGC_PFT_ANFC, "phyc"),), log=True),
+    # ---- machine-learning derived, 1/4 deg weekly (a new product is an entry here)
+    Variable("chlorophyll_ml", "Chlorophyll (ML estimate)", "mg/m³", "algae", "ml",
+             (Era("estimate", ML_BGC_3D, "chl", step_days=7),), log=True, method=ML_METHOD,
+             note="compare with the PISCES model's chlorophyll: two independent estimates"),
+    Variable("backscatter_ml", "Particle backscatter (ML estimate)", "1/m", "matter", "ml",
+             (Era("estimate", ML_BGC_3D, "bbp", step_days=7),), log=True, method=ML_METHOD,
+             note="particulate backscattering coefficient; a proxy for suspended particles"),
+    Variable("poc_ml", "Particulate organic carbon (ML estimate)", "mg C/m³", "matter", "ml",
+             (Era("estimate", ML_BGC_3D, "poc", step_days=7),), log=True, method=ML_METHOD),
     # ---- 2D fields, for the globe
     Variable("sea_level", "Sea surface height", "m", "balance", "surface",
              _phy("zos", PHY_2D_ANFC), depth=False, signed=True,
@@ -186,6 +209,7 @@ class Resolved:
             "variable": self.era.var,
             "day": self.day,
             "forecast": self.forecast,
+            **({"method": self.variable.method} if self.variable.method else {}),
         }
 
 
@@ -205,6 +229,8 @@ def resolve(key: str, day: str, today: date | None = None,
         raise ValueError(f"{key} is derived from {variable.derived}; resolve those instead")
     for era in variable.eras:
         first, last = coverage(era.dataset)
+        if era.step_days > 1:  # the last weekly step still covers the half-week after it
+            last = (date.fromisoformat(last) + timedelta(days=era.step_days // 2)).isoformat()
         if first <= day <= last:
             today = today or date.today()
             return Resolved(variable, era, day, forecast=day > today.isoformat())
@@ -236,6 +262,7 @@ def describe() -> dict:
             "key": v.key, "title": v.title, "units": v.units, "palette": v.palette,
             "group": v.group, "depth": v.depth, "signed": v.signed, "log": v.log,
             "derived": list(v.derived), "formula": v.formula, "note": v.note,
+            "method": v.method,
             "eras": eras,
         })
     return {"variables": out, "today": date.today().isoformat()}
@@ -280,6 +307,12 @@ def demo() -> None:
     else:
         raise AssertionError("beyond the forecast horizon there is nothing")
 
+    r = resolve("chlorophyll_ml", "2018-08-25", today,
+                {ML_BGC_3D: ("1998-01-07", "2023-12-27")}.__getitem__)
+    assert r.era.step_days == 7 and "neural" in r.provenance()["method"],         "an ML product says so in every provenance record"
+    assert resolve("chlorophyll_ml", "2023-12-30", today,
+                   {ML_BGC_3D: ("1998-01-07", "2023-12-27")}.__getitem__)
+    assert all(v.method for v in VARIABLES.values() if v.group == "ml")
     assert base_variables("density") == ("temperature", "salinity")
     assert base_variables("speed") == ("u", "v")
     for v in VARIABLES.values():

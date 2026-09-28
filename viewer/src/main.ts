@@ -1150,7 +1150,8 @@ async function main(): Promise<void> {
     const p = cube.data!.meta.provenance;
     const lines = [
       ...p.sources.map((s) => `source: ${s.source} (${s.era}${s.forecast ? ", FORECAST" : ""})\n` +
-        `  dataset ${s.dataset}, variable ${s.variable} (${s.standard_name}), ${s.units}`),
+        `  dataset ${s.dataset}, variable ${s.variable} (${s.standard_name}), ${s.units}` +
+        (s.method ? `\n  method: ${s.method}` : "")),
       p.derived ? `derived from ${p.derived.from.join(" and ")}: ${p.derived.formula}` : "",
       `day: ${p.day}`,
       `depth: ${p.native_levels} native levels; ${p.depth_note}`,
@@ -1191,7 +1192,8 @@ async function main(): Promise<void> {
   async function loadObservations(): Promise<void> {
     viewer.entities.removeAll();
     if (!showBay) return;
-    const { observations } = await api.getObservations(state.meta.demoDate, state.variable);
+    const { observations, instruments } = await api.getObservations(state.meta.demoDate, state.variable);
+    const byKind = new Map(instruments.map((i) => [i.kind, i]));
 
     // A float can surface more than once inside a +/-5 day window, and a glider emits
     // a cast every few hours, so the platform id is NOT unique here. Cesium throws on a
@@ -1211,14 +1213,12 @@ async function main(): Promise<void> {
         // testing is off instead, so the translucent surface never hides them.
         position: Cartesian3.fromDegrees(obs.lon, obs.lat, 0),
         point: {
-          pixelSize: obs.kind === "glider" ? 7 : 9,
-          // Colour carries meaning, not decoration: gliders differ from floats, and a
-          // cast whose QC was never run is visibly not the same as one that passed.
-          color: obs.kind === "text"
-            ? Color.fromCssColorString("#ff7bd5")
-            : obs.kind === "glider"
-              ? (unevaluated ? Color.fromCssColorString("#c9a227") : Color.fromCssColorString("#7ee787"))
-              : Color.fromCssColorString("#4dd2ff"),
+          pixelSize: byKind.get(obs.kind)?.size ?? 9,
+          // Colour carries meaning, not decoration: each instrument has its own, and a
+          // cast whose QC was never run is visibly not the same as one that passed. The
+          // colours come from the server's registry; an unknown kind still draws, in white.
+          color: Color.fromCssColorString(
+            (unevaluated ? byKind.get(obs.kind)?.unevaluated : byKind.get(obs.kind)?.colour) ?? "#ffffff"),
           outlineColor: Color.BLACK.withAlpha(0.6),
           outlineWidth: 1,
           disableDepthTestDistance: Number.POSITIVE_INFINITY,
@@ -1227,11 +1227,23 @@ async function main(): Promise<void> {
       });
     }
 
-    const argo = observations.filter((o) => o.kind === "argo").length;
-    const glider = observations.filter((o) => o.kind === "glider").length;
-    const text = observations.length - argo - glider;
-    el("obs-count").textContent = `${argo} Argo · ${glider} glider casts` +
-      (text ? ` · ${text} uploaded` : "");
+    const counts = instruments
+      .map((i) => [i, observations.filter((o) => o.kind === i.kind).length] as const)
+      .filter(([, n]) => n > 0);
+    el("obs-count").textContent = counts.map(([i, n]) => `${n} ${i.label}`).join(" · ") || "none in this window";
+    const key = (colour: string, label: string, title = ""): HTMLElement => {
+      const row = document.createElement("div");
+      row.className = "key";
+      row.title = title;
+      const dot = document.createElement("i");
+      dot.className = "dot";
+      dot.style.background = colour;
+      row.append(dot, ` ${label}`);
+      return row;
+    };
+    el("obs-keys").replaceChildren(
+      ...instruments.map((i) => key(i.colour, i.label, `QC: ${i.qc}`)),
+      key("#c9a227", "any cast whose QC was never run"));
     placeMarkers();
     graphics.kick(1000);
   }

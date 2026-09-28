@@ -158,6 +158,16 @@ The brief asks for new sources "with minimal code change." A **dict of parsers k
 format**, in one file, satisfies that completely. No plugin framework for two parsers.
 Documented as a judgement call so it does not read as laziness.
 
+The same holds for the rest of the *Extensible Design* item, with three dicts instead of
+one (`23-extending.md`): `sources.PARSERS` for gridded providers, `catalog.VARIABLES` for
+model and machine-learning variables, and `instruments.INSTRUMENTS` for in-situ sensors.
+Nothing outside those dicts names an instrument, which is checked rather than asserted:
+the viewer draws and labels whatever kinds the API sends, and `instruments.demo()`
+registers two invented instruments and checks each is asked only for what it measures.
+
+> **Constraint:** an addition that needs an edit outside its dict (other than a reader
+> for a new file format) is a bug in the extension point, and is fixed there.
+
 ## L13 · Faces of the Ocean Cube — a display interpolation, logged (v2, 2026-09-24)
 
 The v2 cube (`viewer/src/cube/`) is sent on the dataset's **native levels only**

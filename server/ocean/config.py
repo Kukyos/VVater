@@ -46,6 +46,33 @@ DEMO_DATE = date(2018, 8, 25)
 # only the second flies inside the Bay of Bengal box.
 GLIDER_DEPLOYMENTS = ["ru29-20180812T0220"]
 
+# Copernicus Marine In Situ TAC, global NRT product: every mooring, CTD, ADCP and HF-radar
+# file shares one NetCDF layout (server/ocean/insitu.py). Public bucket, plain HTTPS.
+INSITU_TAC = ("https://s3.waw3-1.cloudferro.com/mdl-native-01/native/"
+              "INSITU_GLO_PHYBGCWAV_DISCRETE_MYNRT_013_030/"
+              "cmems_obs-ins_glo_phybgcwav_mynrt_na_irr_202311/history")
+
+# In Situ TAC platforms drawn in the Bay, by instrument kind. Found 2026-09-28 by filtering
+# the TAC's index_history.txt to REGION (docs/05-data-sources.md 2.5). The three RAMA
+# moorings are the only subsurface moorings inside the box; 12N and 8N have a gap over
+# the demo week (nearest columns 2018-07-07 and 2018-11-17), so on DEMO_DATE only 15N
+# draws, and the others appear on other days. Adding a platform is a line here.
+INSITU_PLATFORMS: dict[str, list[str]] = {
+    "mooring": ["MO/GL_TS_MO_23009.nc",   # RAMA 15N 90E
+                "MO/GL_TS_MO_23008.nc",   # RAMA 12N 90E
+                "MO/GL_TS_MO_23007.nc"],  # RAMA 8N 90E
+}
+
+# Real files outside the Bay that the reader is checked against, for the instruments that
+# have no public data inside it (docs/11-deferred.md D-50, D-51).
+INSITU_SAMPLES = {
+    "adcp": "AD/BS_PR_AD_Mangalia70.nc",   # vessel ADCP, Black Sea, pressure coordinates
+    "hf_radar": ("https://s3.waw3-1.cloudferro.com/mdl-native-03/native/"
+                 "INSITU_GLO_PHY_UV_DISCRETE_NRT_013_048/"
+                 "cmems_obs-ins_glo_phy-cur_nrt_radar-total_irr_202211/monthly/202412/"
+                 "GL_TV_HF_HFR-EUSKOOS-Total_202412.nc"),  # a closed month: stable
+}
+
 # Argo QC flags we accept. 1 good, 2 probably good, 5 changed, 8 interpolated.
 # Everything else is kept and marked rejected, never dropped (L5).
 QC_ACCEPT = frozenset("1258")

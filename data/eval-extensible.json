@@ -1,0 +1,58 @@
+{
+  "measured": "2026-09-28",
+  "centre_date": "2018-08-25",
+  "casts_by_instrument": {
+    "argo": 35,
+    "glider": 112,
+    "mooring": 1,
+    "text": 0
+  },
+  "moorings": [
+    {
+      "file": "MO/GL_TS_MO_23009.nc",
+      "time": "2018-08-25T12:00",
+      "levels": 6,
+      "levels_compared": 5,
+      "bias": -0.777,
+      "rmse": 1.699,
+      "data_mode": "R"
+    },
+    {
+      "file": "MO/GL_TS_MO_23008.nc",
+      "casts": 0
+    },
+    {
+      "file": "MO/GL_TS_MO_23007.nc",
+      "casts": 0
+    }
+  ],
+  "adcp": {
+    "file": "AD/BS_PR_AD_Mangalia70.nc",
+    "casts": 1,
+    "levels": 9
+  },
+  "hf_radar": {
+    "network": "HFR-EUSKOOS-Total",
+    "time": "2024-12-03T00:00:00",
+    "vectors": 116,
+    "rejected_by_qc": 47,
+    "depth_m": 0.0,
+    "source_file": "GL_TV_HF_HFR-EUSKOOS-Total_202412.nc",
+    "qc": "aggregate QCflag; accepted ['1', '2', '5', '8']"
+  },
+  "ml_cube": {
+    "variable": "chlorophyll_ml",
+    "shape": [
+      36,
+      72,
+      80
+    ],
+    "seconds": 0.77,
+    "step": "chlorophyll_ml: 7-day product: the step stamped 2018-08-22 (-3 d from 2018-08-25) stands for the day",
+    "range": [
+      0.002438,
+      0.783566
+    ],
+    "method": "neural-network estimate (SOCA; Sauz\u00e8de et al. 2016, doi:10.1002/2015JC011408), trained on BGC-Argo; not a measurement and not a model run"
+  }
+}

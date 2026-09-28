@@ -343,6 +343,58 @@ offline, so the viewer still needs no third-party server to work. The 4326 endpo
 not used: its tile matrices are not powers of two (2x1, 3x2, 5x3 ...), which Cesium's
 geographic tiling cannot describe.
 
+### 2.8 Copernicus Marine In Situ TAC — moorings, CTDs, ADCPs, HF-radar (**verified working, 2026-09-28**)
+
+    https://s3.waw3-1.cloudferro.com/mdl-native-01/native/INSITU_GLO_PHYBGCWAV_DISCRETE_MYNRT_013_030/
+      cmems_obs-ins_glo_phybgcwav_mynrt_na_irr_202311/{index_history.txt, history/<type>/<file>.nc}
+    https://s3.waw3-1.cloudferro.com/mdl-native-03/native/INSITU_GLO_PHY_UV_DISCRETE_NRT_013_048/
+      cmems_obs-ins_glo_phy-cur_nrt_radar-total_irr_202211/{history,monthly,latest}/...
+
+Public bucket, plain HTTPS, no account (the same S3 host as the ARCO stores in 1.4). One
+NetCDF layout for every platform; the type code in the file name is the instrument
+(`TS_MO` mooring, `PR_CT` CTD, `PR_AD` ADCP, `TV_HF` HF-radar total vectors). The index
+lists every file with its bounding box, time span and parameters, so the Bay's platforms
+were found by filtering it, not by guessing names. Read by `server/ocean/insitu.py`.
+
+What the filter found inside 78-100°E, 5-23°N:
+
+- **Subsurface moorings:** RAMA 15N 90E (`GL_TS_MO_23009`), 12N 90E (`23008`), 8N 90E
+  (`23007`), with TEMP, PSAL and point current meters (EWCT/NSCT). These are
+  `config.INSITU_PLATFORMS`. Around the demo date only 15N has columns (D-49). The many
+  `GL_TS_MO_2300xxx` files nearby carry surface temperature and met only.
+- **CTD** (`PR_CT`), **XBT**, **bottle** and **glider** files whose bounding boxes touch the
+  Bay; several are multi-year cruise aggregates spanning oceans.
+- **ADCP:** one file, `GL_PR_AD_FNIN.nc`, 205 MB, bounding box across the Bay; not
+  downloaded (D-50). The reader is checked on `BS_PR_AD_Mangalia70.nc` (Black Sea, 66 kB).
+- **HF-radar:** none. Every network in the total-vector index is European or American
+  (D-51). The reader is checked on `GL_TV_HF_HFR-EUSKOOS-Total_202412.nc` from the
+  `monthly/` folder; `latest/` rolls over after about 30 days, so nothing points there.
+
+Flags are Argo-numbered (0 no QC, 1 good, 2 probably good, 3-4 bad, 5 changed,
+8 interpolated, 9 missing) and `data_mode` is an attribute per variable (R/A/D/M).
+
+### 2.9 Other mooring and HF-radar sources tried (probed 2026-09-28)
+
+- **PMEL ERDDAP** (`data.pmel.noaa.gov/pmel/erddap`) lists RAMA daily temperature,
+  salinity, currents and ADCP (`pmelTaoDy*`). Search and `.das` answer; every data query
+  is redirected to `coastwatch.pfeg.noaa.gov`, which times out from this network.
+- **NDBC OceanSITES THREDDS** answers, but carries TAO, not RAMA.
+- **NCEI and IOOS ERDDAPs**: no mooring, ADCP or HF-radar datasets in the Indian Ocean.
+- **INCOIS ERDDAP**: no mooring, ADCP or HF-radar datasets (2.5).
+- **EMODnet Physics ERDDAP** lists HF-radar totals, all European.
+
+### 2.10 Machine-learning derived fields — Copernicus MULTIOBS (**verified working, 2026-09-28**)
+
+`MULTIOBS_GLO_BIO_BGC_3D_REP_015_010`, dataset `cmems_obs-mob_glo_bgc-chl-poc_my_0.25deg_P7D-m`:
+chlorophyll, particle backscatter, particulate organic carbon, PAR and irradiance, 1/4°,
+weekly 1998-01-07 to 2023-12-27, 36 levels from 0 to 1000 m, each with an `_error` field.
+A neural network (SOCA; Sauzède et al. 2016, doi:10.1002/2015JC011408; Renosh et al. 2023)
+estimates the vertical structure from surface ocean colour and hydrography, trained on
+BGC-Argo. Opened through the same ARCO path as 1.4, no account. The vertical axis is
+`elevation`, negative metres, `positive: up` (read as depth = -elevation, recorded).
+`MULTIOBS_GLO_BGC_NUTRIENTS_CARBON_PROFILES_MYNRT_015_009` (nutrient and carbon profiles
+from a neural network) was seen in the catalogue and not probed further.
+
 ---
 
 ## 3 · Toolchain — resolved

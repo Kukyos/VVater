@@ -8,7 +8,7 @@ film that is not in that JSON.
 > That figure was typed by hand and was wrong; the harness says 11.67 m. It is the reason
 > `--json` now exists.
 
-Run: **2026-09-22** (v1 sections), **2026-09-25** (v2 section), **2026-09-27** (cubes anywhere). INCOIS Argo 10-day Variational Analysis, Bay of Bengal
+Run: **2026-09-22** (v1 sections), **2026-09-25** (v2 section), **2026-09-27** (cubes anywhere), **2026-09-28** (extensible design). INCOIS Argo 10-day Variational Analysis, Bay of Bengal
 (78–100°E, 5–23°N), demo date **2018-08-25**, pairing ±5 days.
 
 ## Why 2018-08-25
@@ -299,6 +299,46 @@ v2 · assistant, the deck's prompt, 5 runs
 - The run logs urllib3 `InsecureRequestWarning` lines for the Copernicus S3 host. They are
   cosmetic: `truststore` verifies against the OS store, and an expired certificate still
   fails (`expired.badssl.com` rejected in the same session). TLS is not disabled.
+
+## Extensible design: instruments, readers, the ML product
+
+Run 2026-09-28 with `python -m server.eval.run_eval --extensible`, which also writes
+`data/eval-extensible.json`. What each piece is: `23-extending.md`. Harness output, verbatim:
+
+```
+Extensible design · instruments in the registry
+-----------------------------------------------
+  argo       35 temperature casts   QC: Argo R/A/D with per-level flags
+  glider    112 temperature casts   QC: QARTOD, or unevaluated where never run
+  mooring     1 temperature casts   QC: Copernicus In Situ TAC flags; 0 = never checked
+  text        0 temperature casts   QC: none: a text file carries no agreed QC
+
+RAMA moorings (Copernicus In Situ TAC) against the INCOIS analysis
+------------------------------------------------------------------
+  GL_TS_MO_23009.nc      2018-08-25T12:00  6 levels, 5 compared, bias -0.78 degC, rmse 1.70 degC, data mode R
+  GL_TS_MO_23008.nc      no column within +/-5 days
+  GL_TS_MO_23007.nc      no column within +/-5 days
+
+Readers checked on real files outside the Bay
+---------------------------------------------
+  ADCP     BS_PR_AD_Mangalia70.nc: 1 cast(s), 9 levels of u, depth from pressure
+  HF-radar HFR-EUSKOOS-Total 2024-12-03: 116 vectors, 47 rejected by the network's QC
+
+Machine-learning derived product as a cube
+------------------------------------------
+  chlorophyll_ml  [36, 72, 80] (levels, lat, lon), 0.8 s
+  chlorophyll_ml: 7-day product: the step stamped 2018-08-22 (-3 d from 2018-08-25) stands for the day
+  range 0.00244 - 0.784 mg/m3
+```
+
+- One mooring on the demo date is D-49: the other two RAMA sites have no column that week.
+- The mooring comparison is one cast of 5 compared levels; it shows the path works end to
+  end and is not a skill estimate. The skill numbers above remain Argo and glider (D-54).
+- The ADCP and HF-radar lines are the readers on real files outside the Bay, because no
+  public ADCP or HF-radar data falls inside it (D-50, D-51). The HF-radar line is the
+  network's own QC removing vectors, which is why the flag travels with each vector.
+- The ML cube's time is warm-cache (chunks already on disk from an earlier build); it is
+  a cube like any other, and the cold times in the section above apply to it.
 
 ## Assumptions carried on every record
 

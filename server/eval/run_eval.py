@@ -497,8 +497,74 @@ def anywhere_numbers(assistant_runs: int = 5) -> dict:
     return out
 
 
+def extensible_numbers() -> dict:
+    """The extensible-design pieces, measured: every registered instrument's casts in the
+    demo window, the RAMA mooring against the INCOIS analysis, the ADCP and HF-radar
+    readers on their real sample files, and the ML-derived product read as a cube."""
+    from server.ocean import cube, insitu, instruments
+
+    out: dict = {"measured": time.strftime("%Y-%m-%d"), "centre_date": str(CENTRE)}
+    _rule("Extensible design · instruments in the registry")
+    counts = {}
+    for inst in instruments.INSTRUMENTS.values():
+        casts = inst.load(CENTRE, "temperature") if "temperature" in inst.variables else []
+        counts[inst.kind] = len(casts)
+        print(f"  {inst.kind:8s} {len(casts):4d} temperature casts   QC: {inst.qc}")
+    out["casts_by_instrument"] = counts
+
+    _rule("RAMA moorings (Copernicus In Situ TAC) against the INCOIS analysis")
+    ds, names = sources.fetch("temperature", *WINDOW, cache_dir=CACHE)
+    rows = []
+    for f in config.INSITU_PLATFORMS["mooring"]:
+        casts = insitu.load_window([f], CENTRE, "temperature", nearest_only=True)
+        if not casts:
+            print(f"  {f.split('/')[-1]:22s} no column within +/-{config.FLOAT_PAIRING_DAYS:.0f} days")
+            rows.append({"file": f, "casts": 0})
+            continue
+        s = colocate.colocate(casts[0], ds, names["value"], names.get("error")).summary()
+        print(f"  {f.split('/')[-1]:22s} {str(casts[0].time)[:16]}  {s['levels']} levels, "
+              f"{s['levels_compared']} compared, bias {s['bias']:+.2f} degC, rmse {s['rmse']:.2f} degC, "
+              f"data mode {s['data_mode']}")
+        rows.append({"file": f, "time": str(casts[0].time)[:16], "levels": s["levels"],
+                     "levels_compared": s["levels_compared"], "bias": round(s["bias"], 3),
+                     "rmse": round(s["rmse"], 3), "data_mode": s["data_mode"]})
+    out["moorings"] = rows
+
+    _rule("Readers checked on real files outside the Bay")
+    adcp = insitu.read_profiles(insitu.fetch(config.INSITU_SAMPLES["adcp"]), "u")
+    hf = insitu.read_surface_currents(insitu.fetch(config.INSITU_SAMPLES["hf_radar"]))
+    hp = hf.provenance()
+    print(f"  ADCP     {config.INSITU_SAMPLES['adcp'].split('/')[-1]}: {len(adcp)} cast(s), "
+          f"{sum(p.depth.size for p in adcp)} levels of u, depth from pressure")
+    print(f"  HF-radar {hp['network']} {hp['time'][:10]}: {hp['vectors']} vectors, "
+          f"{hp['rejected_by_qc']} rejected by the network's QC")
+    out["adcp"] = {"file": config.INSITU_SAMPLES["adcp"], "casts": len(adcp),
+                   "levels": int(sum(p.depth.size for p in adcp))}
+    out["hf_radar"] = hp
+
+    _rule("Machine-learning derived product as a cube")
+    t0 = time.perf_counter()
+    c = cube.build("chlorophyll_ml", cube.Box.parse(80, 100, 5, 23), str(CENTRE), 1000.0)
+    ml_s = time.perf_counter() - t0
+    meta = c.meta()
+    step = next(a for a in meta["provenance"]["cf_assumptions"] if "product" in a)
+    print(f"  chlorophyll_ml  {meta['shape']} (levels, lat, lon), {ml_s:.1f} s")
+    print(f"  {step}")
+    print(f"  range {meta['valueRange'][0]:.3g} - {meta['valueRange'][1]:.3g} mg/m3")
+    out["ml_cube"] = {"variable": "chlorophyll_ml", "shape": meta["shape"],
+                      "seconds": round(ml_s, 2), "step": step,
+                      "range": meta["valueRange"],
+                      "method": meta["provenance"]["sources"][0].get("method")}
+    return out
+
+
 if __name__ == "__main__":
-    if "--anywhere" in sys.argv:  # just the cubes outside the Bay and the assistant
+    if "--extensible" in sys.argv:  # just the instruments, readers and the ML product
+        rec = extensible_numbers()
+        path = Path(__file__).resolve().parents[2] / "data" / "eval-extensible.json"
+        path.write_text(json.dumps(rec, indent=2, default=str), encoding="utf-8")
+        print(f"\nwrote {path.relative_to(path.parents[1])}")
+    elif "--anywhere" in sys.argv:  # just the cubes outside the Bay and the assistant
         rec = anywhere_numbers()
         path = Path(__file__).resolve().parents[2] / "data" / "eval-anywhere.json"
         path.write_text(json.dumps(rec, indent=2, default=str), encoding="utf-8")

@@ -55,8 +55,21 @@ export interface VolumeMeta {
   };
 }
 
+/** One registered in-situ instrument (server/ocean/instruments.py). The viewer draws and
+ *  labels any kind from this, so a new instrument needs no change here. */
+export interface Instrument {
+  kind: string;
+  label: string;
+  colour: string;
+  /** Marker colour for a cast whose QC was never run. */
+  unevaluated: string;
+  size: number;
+  qc: string;
+  variables: string[];
+}
+
 export interface Observation {
-  kind: "argo" | "glider" | "text";
+  kind: string;
   platform: string;
   lat: number;
   lon: number;
@@ -85,8 +98,11 @@ export interface ProfileComparison {
     difference_kj_cm2: number | null; observed_d26_m: number | null;
     analysis_d26_m: number | null; levels: number; notes: string[];
   } | null;
-  /** What the text parser assumed for an uploaded cast; empty for Argo and gliders. */
+  /** What the reader of the cast's file assumed (text parser, In Situ TAC); may be empty. */
   assumptions?: string[];
+  kind?: string;
+  dataMode?: string;
+  sourceFile?: string;
 }
 
 async function json<T>(path: string): Promise<T> {
@@ -139,7 +155,8 @@ export const getVolumeMeta = (variable: string, source: string, timeIndex: numbe
   json<VolumeMeta>(`/api/volume/meta?variable=${variable}&source=${source}&time_index=${timeIndex}`);
 
 export const getObservations = (on: string, variable: string) =>
-  json<{ observations: Observation[] }>(`/api/observations?on=${on}&variable=${variable}`);
+  json<{ observations: Observation[]; instruments: Instrument[] }>(
+    `/api/observations?on=${on}&variable=${variable}`);
 
 export const getProfile = (platform: string, on: string, variable: string) =>
   json<ProfileComparison>(
@@ -235,9 +252,10 @@ export interface CatalogEra { name: string; dataset: string; source: string; fro
 
 export interface CatalogVariable {
   key: string; title: string; units: string; palette: string;
-  group: "physics" | "biogeochemistry" | "surface";
+  /** "ml": machine-learning derived; `method` then says how, and it is shown everywhere. */
+  group: "physics" | "biogeochemistry" | "ml" | "surface";
   depth: boolean; signed: boolean; log: boolean;
-  derived: string[]; formula: string; note: string;
+  derived: string[]; formula: string; note: string; method: string;
   eras: CatalogEra[];
 }
 
@@ -253,7 +271,7 @@ export const getCatalog = () => json<Catalog>("/api/catalog");
 export interface CubeProvenance {
   variable: string; title: string; units: string; day: string; forecast: boolean;
   sources: { dataset: string; source: string; era: string; variable: string; day: string;
-             forecast: boolean; standard_name: string; units: string }[];
+             forecast: boolean; standard_name: string; units: string; method?: string }[];
   derived: { from: string[]; formula: string } | null;
   native_levels: number | null;
   depth_note: string;
