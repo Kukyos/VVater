@@ -7,6 +7,18 @@ infographics / pictures" rather than paragraphs. The deck is built, not drawn.
 portal's rubric, team approved for the finals.** It is the built deck hand-edited through 15
 graded versions (kept locally, not in the repo); the build below does not reproduce it.
 
+**For the finals: `final/VVater-SIH2026-finalv1.pdf`.** It is the submitted deck with the corrections from
+`24-brief-coverage.md`, applied by `python submission/sih/finalv1.py` (edits text in place, keeps every style):
+
+- The assistant's real models are named (AIRouter), and the "no API cost" claim is gone.
+- The float-colour claim that D-46 contradicts is reworded.
+- The ML products, moorings, CTD, ADCP and HF-radar are named.
+- Time-step animation is named.
+- The roadmap is corrected.
+- The In Situ TAC is added as a source, and references are renumbered to 25.
+
+Later corrections go in `finalv2`, `finalv3` and so on, each from the one before; the submitted `final` is never edited.
+
 We assume the evaluator never opens the live site, so every slide shows the product in a
 real capture. Every picture is a capture of the running build, cropped, never a mock-up.
 

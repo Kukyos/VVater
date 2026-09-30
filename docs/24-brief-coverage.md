@@ -59,6 +59,19 @@ State: **Built** (in the running build, checked), **Partial** (built with a logg
 | Public, exhibitions | Built. Immersive view and cinematic tour | `immersive.ts`, `learn/tour.ts` | 5 |
 | Policymakers | Built. Before-and-after Amphan, benefits | scenarios in `config.py` | 5 |
 
+## Implementation, counted
+
+Scoring is from the tables above: Built = 1, Partial = ½, Not built = 0. This is a count of rows, not a harness measurement, so it stays off the deck.
+
+| Scope | Built | Partial | Not built | Fully built | Partial counted as ½ |
+|---|---|---|---|---|---|
+| Core functional requirements (27) | 23 | 3 | 1 | 85 % | **91 %** |
+| All rows: core, key gaps and outreach (35) | 31 | 3 | 1 | 89 % | 93 % |
+
+- **Partial:** isosurface (Bay volume only), current vectors (2D overlay), and the named sensors (ADCP and HF-radar have readers but no Bay data).
+- **Not built:** WCS (D-05).
+- No further building is planned before the finals, so these figures are final.
+
 ## Beyond the brief
 
 Built but not asked for (details in `14-novelties.md`):
@@ -79,18 +92,18 @@ Built but not asked for (details in `14-novelties.md`):
 
 Also built and not asked for: the AI assistant that drives the viewer, the Fly view, Globe, INCOIS PFZ fishing advisories with sea state, NOAA GFS winds, cyclone heat potential per float, the course, the immersive view, and a measured test harness behind every number.
 
-## Where the deck and the build disagree
+## Where the deck and the build disagreed
 
-The deck was right on 27 Sept for the first four rows below. The build has moved since. Rows 5 and 6 need correcting whatever else changes.
+The submitted deck was right on 27 Sept for rows 1–4; the build moved after that. Rows 5 and 6 were wrong on the day. **All of rows 1–6 are fixed in `final/VVater-SIH2026-finalv1`** (see `16-submission.md`). Row 7 is left as it is.
 
 | # | Deck says | Build says | For the finals |
 |---|---|---|---|
-| 1 | Slide 4 roadmap: ML at 12 months | Three ML products are live (`13-eval-results.md`, *Extensible design*) | Move ML to "now, built" |
-| 2 | Slide 2: 23 variables | 26 | Re-run `run_eval --json` and take the count from it |
-| 3 | Slide 2: instruments are Argo, BGC, gliders and CSV | Adds RAMA moorings, the TAC CTD reader, and ADCP and HF-radar readers | Name CTD, moorings, ADCP, HF-radar and ML against the brief's *Extensible Design* line |
-| 4 | Slide 2: "a day-by-day timeline" | Play animates it | Say "time-step animation (Play)" in the brief's words |
-| 5 | Slide 3: "Open-source AI model, Llama 3.1 on Ollama, free, no API cost". Slide 4: "0 Rs running cost" | `assistant.py` calls AIRouter with `gpt-4.1-mini`, `gemini-2.5-flash` and `deepseek-v4-flash`, on a prepaid balance (D-26). There is no Ollama path in the repo | Either build the local-model path D-26 names, or change both slides |
-| 6 | Slide 2, innovation: "where model and float disagree, the colours differ on the same wall" | D-46: in a closed cube every stick is drawn dashed white, so this is almost never seen | Fix D-46, or reword to "click a float for its profile against the model" |
+| 1 | Slide 4 roadmap: ML at 12 months | Three ML products are live (`13-eval-results.md`, *Extensible design*) | finalv1: roadmap "NOW: built, live, ML"; 12 MO: "HF-radar, more basins" |
+| 2 | Slide 2: 23 variables | 26 | finalv1 keeps 23, the harness figure; ML products are named, not counted |
+| 3 | Slide 2: instruments are Argo, BGC, gliders and CSV | Adds RAMA moorings, the TAC CTD reader, and ADCP and HF-radar readers | finalv1: slide 2 names each one; slide 3 adds the In Situ TAC source; slide 6 adds it and the ML method as refs 9 and 18 |
+| 4 | Slide 2: "a day-by-day timeline" | Play animates it | finalv1: "time-step animation (Play)" |
+| 5 | Slide 3: "Open-source AI model, Llama 3.1 on Ollama, free, no API cost". Slide 4: "0 Rs running cost" | `assistant.py` calls AIRouter with `gpt-4.1-mini`, `gemini-2.5-flash` and `deepseek-v4-flash`, on a prepaid balance (D-26). There is no Ollama path in the repo | finalv1: slide 3 names the AIRouter models; slide 4 says "only AI calls cost" |
+| 6 | Slide 2, innovation: "where model and float disagree, the colours differ on the same wall" | D-46: in a closed cube every stick is drawn dashed white, so this is almost never seen | finalv1: "click one: its readings beside the model's, on the float's own day" |
 | 7 | Slide 3: API "on Render" | The live backend is a laptop through ngrok (D-41) | Fine for the idea stage; the finals demo needs a host (`18-deploy.md`) |
 
 ## Repository hygiene
