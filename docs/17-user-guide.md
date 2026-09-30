@@ -3,6 +3,14 @@
 What every control does and what every word on screen means. Written for someone who
 has never used an ocean data tool. The in-app assistant answers from this page.
 
+## "The ocean server is asleep"
+
+The live site's data server runs on the team's computer. If it is switched off when you
+open the site, a card says so instead of the globe. **Message server** sends the team a
+message on their phone; they start the server within 30 minutes. Keep the tab open: it
+checks every 30 seconds and opens by itself when the server is back. If you already sent
+the message in the last 30 minutes, the card shows when, rather than the button again.
+
 ## The Ocean Cube (Properties, top)
 
 The cube is a block of ocean cut out of the planet and set down on the sea surface where

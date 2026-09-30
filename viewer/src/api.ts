@@ -1,6 +1,6 @@
 /** Thin wrapper over the FastAPI backend. No state, no caching — that lives in main.ts. */
 
-const BASE = import.meta.env.VITE_API_BASE ?? "http://127.0.0.1:8011";
+export const BASE = import.meta.env.VITE_API_BASE ?? "http://127.0.0.1:8011";
 
 // An ngrok free domain answers browsers with an HTML warning page unless this header is
 // sent (docs/18-deploy.md, laptop backend). Only then: it makes every GET preflighted.
@@ -9,6 +9,17 @@ const fetch: typeof globalThis.fetch = BASE.includes("ngrok")
       ...init, headers: { ...(init.headers as Record<string, string>), "ngrok-skip-browser-warning": "1" },
     })
   : globalThis.fetch.bind(globalThis);
+
+/** True when the API answers /api/health within a few seconds. An ngrok domain with no
+ *  tunnel behind it answers with its own error page, which fails here, as it should. */
+export async function healthy(): Promise<boolean> {
+  try {
+    const r = await fetch(`${BASE}/api/health`, { signal: AbortSignal.timeout(8000) });
+    return r.ok && (await r.json()).ok === true;
+  } catch {
+    return false;
+  }
+}
 
 export interface Meta {
   region: { name: string; lon: [number, number]; lat: [number, number] };

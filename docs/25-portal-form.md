@@ -2,7 +2,7 @@
 
 The text entered on the SIH portal for the final submission. Every number comes from the
 deck (`final/VVater-SIH2026-finalv2`), and every deck number comes from `13-eval-results.md`.
-Lengths on 2026-09-30: title 86 of 100, abstract 2,627 of 10,000, description 9,729 of 50,000 characters.
+Lengths on 2026-09-30: title 86 of 100, abstract 2,851 of 10,000, description 10,004 of 50,000 characters.
 
 ## Idea Title (max 100)
 
@@ -38,6 +38,8 @@ It is built for four kinds of people:
 There is also an AI assistant. Ask in plain words ("show me oxygen in the Arabian Sea") and it builds the view for you. It can only reach data through our own API, and any number it cannot trace is flagged on screen. In our test it built the asked-for cube 5 times out of 5, with a median reply time of 4.6 seconds.
 
 It runs in any browser with nothing to install. Nothing has to be downloaded or archived first: it reads only the pieces of the Copernicus and INCOIS data a box needs, straight from where they are published. A cached view opens in 0.08 s, and the whole server peaked at 639 MB of memory over a full test session.
+
+Try it: v-vater.vercel.app. The data server runs on our team's computer; if it is asleep when you open the site, press "Message server" and we will have it running within 30 minutes. The page opens by itself once it is up.
 
 It is open source, and every number we quote is produced by a test script in the repository: github.com/Kukyos/VVater
 <!-- /abstract -->
@@ -175,6 +177,9 @@ ROADMAP
 - 12 months: HF-radar and more ocean basins.
 
 LINKS
+
+Live site: v-vater.vercel.app
+The data server runs on our team's computer. If it is asleep when you open the site, press "Message server": we get a message on our phone and will have it running within 30 minutes. Keep the tab open; it opens by itself once the server is up.
 
 Source code, documentation and every measured number: github.com/Kukyos/VVater
 <!-- /description -->

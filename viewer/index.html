@@ -288,6 +288,18 @@
   #learn .btn.on { background: var(--accent); color: var(--accent-ink); font-weight: 600; }
   #learn .btn.right { border-color: #5fd38a; color: #5fd38a; }
   #learn .btn.wrong { border-color: var(--error); color: var(--error); }
+  /* Shown only when the live backend is off (src/wake.ts). */
+  #wake { position: fixed; z-index: 50; left: 50%; top: 50%; transform: translate(-50%, -50%);
+    width: min(440px, calc(100vw - 32px)); background: var(--dock); border: 1px solid var(--line);
+    border-radius: 6px; padding: 18px 20px; color: var(--text); font-size: 13px; line-height: 1.5;
+    box-shadow: 0 12px 40px rgba(0,0,0,.55); }
+  #wake .wake-title { display: block; font-size: 16px; margin-bottom: 6px; }
+  #wake p { margin: 8px 0; }
+  #wake .btn { padding: 7px 14px; font-size: 13px; }
+  #wake .btn.on { background: var(--accent); color: var(--accent-ink); font-weight: 600; }
+  #wake .wake-error { color: var(--error); }
+  #wake .wake-small { color: var(--muted); font-size: 11.5px; }
+  #wake a { color: var(--accent); }
   .learn-q { font-weight: 600; color: #fff; }
   .learn-good { color: #5fd38a; } .learn-bad { color: var(--error); }
   .learn-place { display: grid; grid-template-columns: 1fr auto auto; gap: 6px; }

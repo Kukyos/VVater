@@ -139,6 +139,33 @@ Limits:
 - In return: the disk cache stays warm between runs and there is no 512 MB ceiling, so
   no cold start and no out-of-memory restarts.
 
+## When the laptop is off: the wake button
+
+When the site cannot reach the API, it opens a card instead of a broken globe:
+*"The ocean server is asleep"*, with a **Message server** button (`viewer/src/wake.ts`).
+The button sends a push notification to the team's phone through ntfy.sh (no account),
+and the card tells the visitor the server will be up within 30 minutes. The page checks
+`/api/health` every 30 seconds and carries on loading by itself once it answers. If the
+visitor reloads within 30 minutes, the card shows the message as already sent rather than
+offering the button again. Local development (API on `localhost` or `127.0.0.1`) never
+shows the card.
+
+One-time setup on the phone: install **ntfy** (Android or iOS), then **Subscribe to
+topic** → `vvater-wake-d83b0af66b99`, on the default server `ntfy.sh`. Allow its
+notifications. A message arrives titled *"VVater: start the server"*; tapping it opens the
+site. Then run `serve.bat` on the laptop.
+
+Checked on 2026-09-30:
+- The dead ngrok domain answers `/api/health` with 404, which reads as down.
+- ntfy accepts the browser's request and sends `Access-Control-Allow-Origin: *`.
+- End to end in headless Chrome against an API address with nothing on it: the card
+  appeared, the button sent the push, a reload showed "Message sent", and the card cleared
+  itself 31 s after the API was started. The site then loaded as normal.
+
+The topic name ships in the public bundle, so anyone who reads it can send a push to it.
+The random name stops guessing, not reading. If that is ever abused, move the send
+behind a Vercel function that holds a secret.
+
 ## When the live site cannot reach the API
 
 Check, in order:

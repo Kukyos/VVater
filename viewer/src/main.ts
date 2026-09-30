@@ -34,6 +34,7 @@ import "@cesium/widgets/Source/widgets.css";
 
 import * as api from "./api";
 import type { Meta, VolumeMeta } from "./api";
+import { awaitServer } from "./wake";
 import {
   DEFAULT_PALETTE_FOR, PALETTES, byId, logScaleAllowed, renderLegend, symmetricRange,
 } from "./colorbar";
@@ -116,6 +117,7 @@ const status = (message: string, kind: "info" | "busy" | "warn" | "error" = "inf
 
 async function main(): Promise<void> {
   status("contacting the API…", "busy");
+  await awaitServer();
   const meta = await api.getMeta();
   if (import.meta.env.DEV) {
     sectionDemo();
