@@ -48,7 +48,7 @@ State: **Built** (in the running build, checked), **Partial** (built with a logg
 | New model variables | Built. One catalogue line each | `catalog.py` | 2 |
 | Machine-learning derived products | Built. Three MULTIOBS neural-network fields as cube variables, weekly, ending 2023 (D-53) | `catalog.py`, `cube.py` | **Slide 4 roadmap says "12 MO … ML"** |
 | OGC WMS | Built. `GetCapabilities` and `GetMap` | `wms.py` | 2 |
-| OGC WCS | Not built, deliberately (D-05) | — | Not claimed. Correct |
+| OGC WCS | Not built, deliberately (D-05) | — | finalv2: on the roadmap at 6 months, beside INCOIS servers |
 | CF Conventions | Built. Read defensively, with every normalisation recorded | `cf.py` | 6 |
 
 ## Public outreach

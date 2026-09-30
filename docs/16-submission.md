@@ -17,7 +17,11 @@ graded versions (kept locally, not in the repo); the build below does not reprod
 - The roadmap is corrected.
 - The In Situ TAC is added as a source, and references are renumbered to 25.
 
-Later corrections go in `finalv2`, `finalv3` and so on, each from the one before; the submitted `final` is never edited.
+**`finalv2`** is finalv1 as hand-edited in PowerPoint (larger sustainability text, centred roadmap), plus
+OGC WCS on the roadmap at 6 months: `python submission/sih/finalv2.py`. WCS is the one item the brief
+names that the deck did not mention.
+
+Later corrections go in `finalv3` and so on, each from the one before; the submitted `final` is never edited.
 
 We assume the evaluator never opens the live site, so every slide shows the product in a
 real capture. Every picture is a capture of the running build, cropped, never a mock-up.
