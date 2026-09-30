@@ -35,6 +35,7 @@ ERDDAP** for floats anywhere.
 | `22-user-test.md` | The first user test: ten classmates, ratings and what they found. | Before quoting user feedback. |
 | `23-extending.md` | Adding a sensor, a model variable or an ML product: the three registries and the files each case touches. Moorings, ADCP, HF-radar and the ML products are worked through. | Before adding any source. |
 | `24-brief-coverage.md` | Every requirement in the brief: where it is built, its state, and which deck slide shows it; where the deck and the build disagree. | Before the finals deck, and whenever someone asks "is X covered?" |
+| `25-portal-form.md` | The text entered on the SIH portal for the final submission: title, abstract, description, technology bucket. | Before editing the portal entry. |
 
 ## What is built, as of 2026-09-24 (branch `v2`)
 
