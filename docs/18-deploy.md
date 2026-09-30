@@ -128,6 +128,16 @@ preflighted.
 
 Limits:
 
+- **Not every network lets ngrok through.** Found on 2026-09-30: a Fortinet FortiGate
+  firewall (college or office Wi-Fi) inspects TLS to ngrok's hosts and re-signs their
+  certificates with its own "FortiGate CA". The agent rejects that, as it should, and sits
+  at `"status":"reconnecting"` (`curl http://127.0.0.1:4040/api/status`) with no tunnel,
+  so the site shows the server as asleep while the API runs fine locally. GitHub was not
+  intercepted on the same network. Fix: serve from a network that does not inspect
+  traffic (a phone hotspot, home broadband). Do not point ngrok at the firewall's CA:
+  that is trusting the interception, the same thing hard rule 7 forbids.
+  Check with `openssl s_client -connect connect.ngrok-agent.com:443 </dev/null | grep i:`;
+  the issuer must not be the firewall.
 - The laptop must be on, awake and online: set Windows sleep to *Never* while plugged
   in, and don't close the lid unless lid-close is set to *Do nothing*.
 - Cube loads are bounded by the laptop's upload speed, not a datacentre's.
