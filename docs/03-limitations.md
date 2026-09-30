@@ -134,7 +134,11 @@ THREDDS and ncWMS exist. We will not out-build them.
 - **WCS — deferred, and logged as deferred.** Claiming it unbuilt loses more than it
   gains.
 
-## L9 · Gliders may simply not be obtainable
+## L9 · Gliders may simply not be obtainable — resolved
+
+*Resolved: the U.S. IOOS Glider DAC serves real glider files over ERDDAP (`05-data-sources.md`
+§2.3). Rutgers `ru29` is ingested by `glider.py`, and its 98 casts in the demo window are
+the independent check in `13-eval-results.md`. The original entry is kept below.*
 
 FTP is dead and no HTTPS mirror was found (`05-data-sources.md` §2.3). The overlay is
 built against the schema — a glider is a moving platform emitting a sawtooth of profiles,
