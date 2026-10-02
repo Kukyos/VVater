@@ -43,7 +43,10 @@ GUIDE = ROOT / "docs" / "17-user-guide.md"
 EVAL = ROOT / "data" / "eval-latest.json"
 ROUTER_URL = "https://api.airouter.in/v1"
 # Fast, cheap, reliable at tool calls; tried in this order. Override with AI_ROUTER_MODEL.
-DEFAULT_MODELS = "openai/gpt-4.1-mini,google/gemini-2.5-flash,deepseek/deepseek-v4-flash"
+# Measured on the router: gpt-4.1-mini has hung past a minute at times, and Gemini there
+# ignores the tools and answers from memory, so it is not in the list at all.
+DEFAULT_MODELS = "anthropic/claude-haiku-4.5,openai/gpt-4.1-mini-fast,openai/gpt-4o-mini"
+MODEL_TIMEOUT = 20      # seconds per model before falling through to the next
 MAX_ROUNDS = 5          # tool rounds per question before giving up
 MAX_HISTORY = 12        # messages of conversation kept
 MAX_QUESTION = 2_000    # characters
@@ -484,9 +487,18 @@ def unverified_numbers(reply: str, evidence: list[str]) -> list[str]:
 Transport = Callable[[dict], dict]
 
 
+_last_good: str | None = None   # the model that answered last; tried first next time
+
+
 def models() -> list[str]:
-    """The models to try, in order: `AI_ROUTER_MODEL` is a comma-separated list."""
-    return [m.strip() for m in os.environ.get("AI_ROUTER_MODEL", DEFAULT_MODELS).split(",") if m.strip()]
+    """The models to try, in order: `AI_ROUTER_MODEL` is a comma-separated list, with the
+    one that answered last moved to the front so a hung model costs one timeout, not one
+    per tool round."""
+    listed = [m.strip() for m in os.environ.get("AI_ROUTER_MODEL", DEFAULT_MODELS).split(",") if m.strip()]
+    if _last_good in listed:
+        listed.remove(_last_good)
+        listed.insert(0, _last_good)
+    return listed
 
 
 def router_transport(payload: dict) -> dict:
@@ -494,6 +506,7 @@ def router_transport(payload: dict) -> dict:
     refuses is skipped for the next one in `models()`; the first answer wins."""
     import requests
 
+    global _last_good
     key = os.environ.get("AI_ROUTER_KEY")
     if not key:
         raise AssistantUnavailable("the assistant needs AI_ROUTER_KEY in .env")
@@ -502,7 +515,7 @@ def router_transport(payload: dict) -> dict:
     failures = []
     for model in models():
         try:
-            response = requests.post(url, json={**body, "model": model}, timeout=45,
+            response = requests.post(url, json={**body, "model": model}, timeout=MODEL_TIMEOUT,
                                      headers={"Authorization": f"Bearer {key}"})
         except requests.RequestException as exc:
             failures.append(f"{model}: {type(exc).__name__}")
@@ -514,6 +527,7 @@ def router_transport(payload: dict) -> dict:
         if response.status_code >= 400:
             failures.append(f"{model}: {response.status_code}")
             continue
+        _last_good = model
         return response.json()
     raise AssistantUnavailable("no language model answered (" + "; ".join(failures) + ")")
 
@@ -536,8 +550,11 @@ def run(messages: list[dict], context: dict | None = None,
     used: list[str] = []
     schema = [{"type": "function", "function": {"name": n, **spec}} for n, (_, spec) in TOOLS.items()]
 
-    for _ in range(MAX_ROUNDS):
-        reply = transport({"messages": convo, "tools": schema, "temperature": 0.2})
+    for round_ in range(MAX_ROUNDS):
+        # The first round must call a tool: left to choose, some models answer data questions
+        # from memory and says it highlighted a control it never touched.
+        reply = transport({"messages": convo, "tools": schema, "temperature": 0.2,
+                           "tool_choice": "required" if round_ == 0 else "auto"})
         message = reply["choices"][0]["message"]
         calls = message.get("tool_calls") or []
         if not calls:

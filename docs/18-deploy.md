@@ -66,9 +66,9 @@ dashboard after the blueprint creates the service; they're deliberately not comm
 | Variable | Required | Notes |
 |---|---|---|
 | `AI_ROUTER_KEY` | for `/api/chat` | AIRouter (`api.airouter.in`, OpenAI-compatible, prepaid in rupees). Backend-only secret. Never prefix a secret `VITE_`, it ships in the public bundle. |
-| `AI_ROUTER_MODEL` | optional | Comma-separated, tried in order when one fails. Defaults to `openai/gpt-4.1-mini,google/gemini-2.5-flash,deepseek/deepseek-v4-flash`. |
+| `AI_ROUTER_MODEL` | optional | Comma-separated, tried in order when one fails. Defaults to `anthropic/claude-haiku-4.5,openai/gpt-4.1-mini-fast,openai/gpt-4o-mini`; each gets 20 s, and the one that answered last is tried first. |
 | `AI_ROUTER_URL` | optional | Defaults to `https://api.airouter.in/v1`. Any OpenAI-compatible base works. |
-| `ALLOWED_ORIGINS` | yes, in production | Comma-separated exact origins, e.g. `https://vvater.vercel.app`. Local dev origins (`localhost`/`127.0.0.1` on 5173/4173) are always allowed. |
+| `ALLOWED_ORIGINS` | yes, in production | Comma-separated exact origins, e.g. `https://v-vater.vercel.app`. Local dev origins (`localhost`/`127.0.0.1` on 5173/4173) are always allowed. |
 | `ALLOWED_ORIGIN_REGEX` | recommended | Vercel preview deploys get a random `*.vercel.app` subdomain per deploy; a regex like `https://vvater-.*\.vercel\.app` covers them since exact-match origins can't. |
 | `COPERNICUSMARINE_SERVICE_USERNAME` / `_PASSWORD` | not needed | The Ocean Cube, whole ocean, winds and waves read Copernicus's public ARCO stores anonymously; checked 2026-09-24 with no credentials and no credential file. Only the older `sources.py` subset path used a login. |
 | `MALLOC_ARENA_MAX` | set in `render.yaml` | `2`. Keeps glibc from giving each of the 32 zarr reader threads its own memory arena. |

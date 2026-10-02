@@ -52,3 +52,11 @@ def test_cube_depth_is_the_one_built():
     b = assistant.check_action("make_cube", {"west": 0, "east": 1, "south": 0, "north": 1,
                                              "depth_max": 1000})
     assert b["depth_max"] == 1000 and "note" not in b
+
+
+def test_last_answering_model_is_tried_first(monkeypatch):
+    monkeypatch.setenv("AI_ROUTER_MODEL", "a,b,c")
+    monkeypatch.setattr(assistant, "_last_good", None)
+    assert assistant.models() == ["a", "b", "c"]
+    monkeypatch.setattr(assistant, "_last_good", "c")
+    assert assistant.models() == ["c", "a", "b"]
