@@ -1,5 +1,8 @@
 {
   "installCommand": "cd viewer && npm ci",
   "buildCommand": "cd viewer && npm run build",
-  "outputDirectory": "viewer/dist"
+  "outputDirectory": "viewer/dist",
+  "rewrites": [
+    { "source": "/api/:path*", "destination": "http://51.79.178.49:8004/api/:path*" }
+  ]
 }

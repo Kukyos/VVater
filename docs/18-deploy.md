@@ -4,6 +4,21 @@ The repo splits across two hosts. Vercel serves the viewer as a static build; th
 FastAPI server needs a real process (netCDF4, dask, xarray, scipy, long ERDDAP/Copernicus
 fetches) and does not fit Vercel's serverless functions.
 
+## Current setup: a hosted server behind Vercel's proxy
+
+Since 2026-10-02 the API runs on a team member's server as the Docker container
+`vvater-api` (persistent `data/cache` volume, restarts on its own), on plain HTTP at
+`51.79.178.49:8004`. A browser on the HTTPS site cannot call an HTTP address (mixed
+content), so `vercel.json` rewrites `/api/*` on the Vercel domain to that server: the
+browser only ever talks HTTPS to Vercel, and Vercel fetches from the server.
+
+- `VITE_API_BASE` on Vercel is `https://v-vater.vercel.app`, the site's own domain.
+- The hop from Vercel to the server is unencrypted. Nothing secret crosses it: the
+  AIRouter key lives on the server, not in requests.
+- To move the backend, change the destination in `vercel.json` and push.
+- An HTTPS hostname on the server (Caddy, or a Cloudflare Tunnel) would allow pointing
+  `VITE_API_BASE` straight at it and dropping the rewrite.
+
 ## Viewer → Vercel
 
 Root `vercel.json` points Vercel at `viewer/` (`npm ci`, `npm run build`, `viewer/dist`),
