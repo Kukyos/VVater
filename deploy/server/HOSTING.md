@@ -14,6 +14,8 @@ Docker:
       -e ALLOWED_ORIGINS=https://v-vater.vercel.app \
       -e ALLOWED_ORIGIN_REGEX='https://v-vater-.*\.vercel\.app' \
       -e AI_ROUTER_KEY=<sent separately> \
+      -e COPERNICUSMARINE_SERVICE_USERNAME=<sent separately> \
+      -e COPERNICUSMARINE_SERVICE_PASSWORD=<sent separately> \
       --name vvater-api vvater-api
 
 Without Docker: Python 3.14, `pip install -r server/requirements.txt`, then the same

@@ -176,8 +176,17 @@ def volume_data(variable: str = "temperature",
 def _residual(variable: str, source_key: str, on: str, t0: str, t1: str):
     ds, names = _dataset(variable, source_key, t0, t1)
     centre = date.fromisoformat(on)
-    casts = (argo.load_window(centre, variable) + glider.load_window(centre, variable))
-    return residual.build(ds, names["value"], casts, on, source_key, canonical=variable)
+    try:
+        gliders, missing = glider.load_window(centre, variable), None
+    except instruments.UNAVAILABLE as exc:
+        # IOOS down must not take the floats with it. Said in the provenance; and the
+        # callers drop this entry from the cache, so the gliders return when IOOS does.
+        gliders, missing = [], f"gliders unavailable ({str(exc)[:80]}); Argo floats only"
+    packed, stats = residual.build(ds, names["value"], argo.load_window(centre, variable) + gliders,
+                                   on, source_key, canonical=variable)
+    if missing:
+        packed.provenance["cf_assumptions"].append(missing)
+    return packed, stats, missing
 
 
 @app.get("/api/residual/meta")
@@ -193,7 +202,7 @@ def residual_meta(variable: str = "temperature",
     start, end = _window(t0, t1)
     centre = on or str(config.DEMO_DATE)
     try:
-        packed, _ = _residual(variable, source, centre, start, end)
+        packed, _, _ = _residual(variable, source, centre, start, end)
     except (KeyError, IndexError) as exc:
         raise HTTPException(status_code=404, detail=str(exc)) from exc
     return packed.as_dict()
@@ -206,7 +215,11 @@ def residual_data(variable: str = "temperature",
                   t0: str | None = None, t1: str | None = None) -> Response:
     start, end = _window(t0, t1)
     centre = on or str(config.DEMO_DATE)
-    packed, _ = _residual(variable, source, centre, start, end)
+    packed, _, missing = _residual(variable, source, centre, start, end)
+    if missing:
+        # ponytail: cleared after the data call, which the viewer makes after meta; the
+        # whole cache goes, so a glider outage costs a rebuild per residual load.
+        _residual.cache_clear()
     return Response(content=packed.values.tobytes(),
                     media_type="application/octet-stream",
                     headers={"Cache-Control": "public, max-age=3600"})

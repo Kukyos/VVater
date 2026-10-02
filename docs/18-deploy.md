@@ -13,7 +13,7 @@ content), so `vercel.json` rewrites `/api/*` on the Vercel domain to that server
 browser only ever talks HTTPS to Vercel, and Vercel fetches from the server.
 
 - `VITE_API_BASE` on Vercel is `https://v-vater.vercel.app`, the site's own domain.
-- The container runs with `ALLOWED_ORIGINS`, `ALLOWED_ORIGIN_REGEX` and `AI_ROUTER_KEY`
+- The container runs with `ALLOWED_ORIGINS`, `ALLOWED_ORIGIN_REGEX`, `AI_ROUTER_KEY` and the Copernicus login
   (table under "Server → Render"); `deploy/server/HOSTING.md` has the `docker run` line.
 - The hop from Vercel to the server is unencrypted. Nothing secret crosses it: the
   AIRouter key lives on the server, not in requests.
@@ -70,7 +70,7 @@ dashboard after the blueprint creates the service; they're deliberately not comm
 | `AI_ROUTER_URL` | optional | Defaults to `https://api.airouter.in/v1`. Any OpenAI-compatible base works. |
 | `ALLOWED_ORIGINS` | yes, in production | Comma-separated exact origins, e.g. `https://v-vater.vercel.app`. Local dev origins (`localhost`/`127.0.0.1` on 5173/4173) are always allowed. |
 | `ALLOWED_ORIGIN_REGEX` | recommended | Vercel preview deploys get a random `*.vercel.app` subdomain per deploy; a regex like `https://vvater-.*\.vercel\.app` covers them since exact-match origins can't. |
-| `COPERNICUSMARINE_SERVICE_USERNAME` / `_PASSWORD` | not needed | The Ocean Cube, whole ocean, winds and waves read Copernicus's public ARCO stores anonymously; checked 2026-09-24 with no credentials and no credential file. Only the older `sources.py` subset path used a login. |
+| `COPERNICUSMARINE_SERVICE_USERNAME` / `_PASSWORD` | for the global layers and Bay currents | The Ocean Cube, winds and waves read Copernicus's public ARCO stores anonymously (checked 2026-09-24). The whole-Earth surface layers (`globalsurface.py`) and the Bay streamlines (`sources.py`) still download through the logged-in subset path and answer 501 without these. |
 | `MALLOC_ARENA_MAX` | set in `render.yaml` | `2`. Keeps glibc from giving each of the 32 zarr reader threads its own memory arena. |
 | `ZARR_CONCURRENCY` | set in `render.yaml` | `8` (default 32). Fewer chunk reads in flight: slower cube loads, lower peak memory. |
 

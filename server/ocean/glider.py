@@ -75,7 +75,9 @@ def fetch_deployment(dataset_id: str, cache_dir: Path, fmt: str = "nc") -> Path:
     )
     resp = requests.get(f"{IOOS_BASE}/{dataset_id}.{fmt}?{query}", timeout=config.HTTP_TIMEOUT)
     if resp.status_code != 200:
-        raise RuntimeError(f"IOOS {resp.status_code} for {dataset_id}: {resp.text[:300]}")
+        # An HTTPError, not RuntimeError: callers treat it as "gliders unavailable" and
+        # carry on with the floats, rather than failing the whole observation list.
+        raise requests.HTTPError(f"IOOS {resp.status_code} for {dataset_id}: {resp.text[:300]}")
     path.write_bytes(resp.content)
     return path
 
