@@ -315,8 +315,8 @@ Every source was probed rather than assumed; the probes and their results are in
   archive, one flies inside it. Europe's glider archive is not connected yet.
 - **A depth-aware range test needs a published limit.** Until one exists, the 18
   impossible-but-passing model cells are logged, not filtered.
-- **The hosted server runs on the team's machine.** If the live site says it is asleep,
-  press *Message server*; the page resumes on its own once the API answers.
+- **The live site's data server is a single machine the team runs.** If the site says it
+  is asleep, press *Message server*; the page resumes on its own once the API answers.
 
 The full list, with what each limit forces, is in
 [`docs/03-limitations.md`](docs/03-limitations.md) and

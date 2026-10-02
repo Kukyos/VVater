@@ -555,7 +555,7 @@ async def chat(request: Request) -> dict:
     503 when the model is unreachable: the viewer shows that and carries on.
     """
     body = await request.json()
-    # Behind ngrok or Render the proxy appends the caller's real address last; earlier
+    # Behind Vercel's rewrite, ngrok or Render the proxy appends the caller's real address last; earlier
     # entries are whatever the client sent, so they cannot be trusted to name it.
     visitor = (request.headers.get("x-forwarded-for", "").split(",")[-1].strip()
                or (request.client.host if request.client else "?"))

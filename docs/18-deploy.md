@@ -13,11 +13,31 @@ content), so `vercel.json` rewrites `/api/*` on the Vercel domain to that server
 browser only ever talks HTTPS to Vercel, and Vercel fetches from the server.
 
 - `VITE_API_BASE` on Vercel is `https://v-vater.vercel.app`, the site's own domain.
+- The container runs with `ALLOWED_ORIGINS`, `ALLOWED_ORIGIN_REGEX` and `AI_ROUTER_KEY`
+  (table under "Server → Render"); `deploy/server/HOSTING.md` has the `docker run` line.
 - The hop from Vercel to the server is unencrypted. Nothing secret crosses it: the
   AIRouter key lives on the server, not in requests.
 - To move the backend, change the destination in `vercel.json` and push.
 - An HTTPS hostname on the server (Caddy, or a Cloudflare Tunnel) would allow pointing
   `VITE_API_BASE` straight at it and dropping the rewrite.
+
+Checked on 2026-10-02, in Chrome on the live site after the redeploy: all 14 requests of
+the default page (health, meta, catalog, the Bay cube and the next day's, surface
+temperature, currents, casts) returned 200 through the rewrite, and the cube rendered.
+`/api/catalog` from an empty cache took 34 s through it and was not cut off.
+
+### Updating the server
+
+The server holds a copy of the code, not a clone: it does not follow `main`. After a
+backend change, build the zip and send it to whoever runs the server:
+
+```
+git archive --prefix=vvater-backend/ --add-file=deploy/server/Dockerfile \
+  --add-file=deploy/server/HOSTING.md -o vvater-backend.zip HEAD server data
+```
+
+`deploy/server/HOSTING.md` (inside the zip) says how to rebuild the container while
+keeping its cache volume. Viewer-only changes need nothing on the server.
 
 ## Viewer → Vercel
 
@@ -29,12 +49,13 @@ Preview:
 
 | Variable | Value | Notes |
 |---|---|---|
-| `VITE_API_BASE` | `https://<backend-host>` | No trailing slash, no `/api` — `api.ts` appends `/api/...` itself. Must be HTTPS or the browser blocks it as mixed content. Baked in at build time — redeploy after changing it. |
+| `VITE_API_BASE` | `https://v-vater.vercel.app` while the rewrite above is in use; otherwise `https://<backend-host>` | No trailing slash, no `/api` — `api.ts` appends `/api/...` itself. Must be HTTPS or the browser blocks it as mixed content. Baked in at build time — redeploy after changing it. |
 | `VITE_CESIUM_ION_TOKEN` | a Cesium ion access token | Optional. Turns on Cesium World Terrain and Bing aerial imagery in Fly and immersive. It ships in the public bundle, as every ion token does: restrict it in the ion dashboard (Access Tokens → the token → *Allowed URLs*) to the Vercel domain and `http://localhost:5173`. Visitors need no account. Unset, the globe stays smooth and nothing calls ion. Baked in at build time — redeploy after changing it. Locally it goes in `viewer/.env.local` (gitignored). |
 
 ## Server → Render
 
-Not on Vercel. Root `render.yaml` defines the web service (`pip install -r
+Not in use since 2026-10-02 (the free plan's 512 MB is too small, D-40); kept as the
+blueprint for a paid plan. Not on Vercel. Root `render.yaml` defines the web service (`pip install -r
 server/requirements.txt`, then `uvicorn server.ocean.api:app --host 0.0.0.0 --port
 $PORT`). On [render.com](https://render.com) → New → Blueprint, point at this repo and
 it reads `render.yaml` directly — no manual service setup.
@@ -118,8 +139,11 @@ judging. Without the variable the globe stays smooth and nothing calls ion.
 
 ## Laptop as the backend (ngrok)
 
-While no free host keeps the API up (D-40, D-41), the live site can use a laptop as its
-backend. ngrok's free plan gives one **static domain** (`<name>.ngrok-free.dev`) that
+The fallback if the hosted server goes away; the live site used it from 2026-09-30 to
+2026-10-02 (D-41). To switch back, set `VITE_API_BASE` to the ngrok domain and redeploy;
+the rewrite in `vercel.json` can stay, nothing calls it then.
+
+A laptop can serve as the live site's backend. ngrok's free plan gives one **static domain** (`<name>.ngrok-free.dev`) that
 never changes, so the Vercel build is pointed at it once and then works whenever the
 laptop is serving.
 
@@ -164,7 +188,7 @@ Limits:
 - In return: the disk cache stays warm between runs and there is no 512 MB ceiling, so
   no cold start and no out-of-memory restarts.
 
-## When the laptop is off: the wake button
+## When the server is down: the wake button
 
 When the site cannot reach the API, it opens a card instead of a broken globe:
 *"The ocean server is asleep"*, with a **Message server** button (`viewer/src/wake.ts`).
@@ -178,7 +202,10 @@ shows the card.
 One-time setup on the phone: install **ntfy** (Android or iOS), then **Subscribe to
 topic** → `vvater-wake-d83b0af66b99`, on the default server `ntfy.sh`. Allow its
 notifications. A message arrives titled *"VVater: start the server"*; tapping it opens the
-site. Then run `serve.bat` on the laptop.
+site. Then bring the backend back: check the container on the hosted server
+(`docker ps`, `docker logs vvater-api`), or run `serve.bat` if the laptop is the backend.
+Through the rewrite, a server that is down answers `/api/health` with a Vercel error,
+which reads as down the same way.
 
 Checked on 2026-09-30:
 - The dead ngrok domain answers `/api/health` with 404, which reads as down.
@@ -193,7 +220,19 @@ behind a Vercel function that holds a secret.
 
 ## When the live site cannot reach the API
 
-Check, in order:
+Check, in order, for the current setup:
+
+1. **Is the server up?** `curl -i http://51.79.178.49:8004/api/health` must return
+   `{"ok":true,...}`. If not, the container is down: `docker ps -a` and
+   `docker logs vvater-api` on the server.
+2. **Does the rewrite reach it?** `curl -i https://v-vater.vercel.app/api/health` must
+   return the same. If (1) passes and this fails, check the destination in `vercel.json`
+   and that the latest deploy is Ready.
+3. **Is the site pointed at it?** Fetch the bundle (command in step 3 below) and grep it
+   for `v-vater.vercel.app`. An ngrok or `127.0.0.1` address means `VITE_API_BASE` is
+   stale on Vercel, or the browser holds the old bundle (Ctrl+Shift+R).
+
+For Render, when it was the host:
 
 1. **Is the backend up?** `curl -i https://vvater-api.onrender.com/api/meta`. A **502**
    from Render means the process is down or restarting (a crash, a failed deploy, or the

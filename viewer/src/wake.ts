@@ -1,6 +1,6 @@
 /**
- * The live site's backend is a laptop behind ngrok (docs/11-deferred.md D-41). When it is
- * off, every request fails and the page would open broken. Instead: say so, and let the
+ * The live site's backend is one machine the team runs (docs/11-deferred.md D-41). When it
+ * is down, every request fails and the page would open broken. Instead: say so, and let the
  * visitor ping the team, who start the server within 30 minutes. The page keeps checking
  * and carries on by itself once the API answers.
  *
@@ -61,7 +61,7 @@ export async function awaitServer(): Promise<void> {
       try {
         const r = await fetch(`https://ntfy.sh/${TOPIC}?${q}`, {
           method: "POST",
-          body: `A visitor at ${clock(at)} (their time) is waiting for the server. Run serve.bat.`,
+          body: `A visitor at ${clock(at)} (their time) is waiting for the server. Check the backend (docs/18-deploy.md).`,
         });
         if (!r.ok) throw new Error(`HTTP ${r.status}`);
         remember(at);

@@ -1,5 +1,6 @@
 #!/usr/bin/env sh
 # Serves the API from this laptop to the live Vercel site through an ngrok static domain.
+# Fallback only: the site reaches it once VITE_API_BASE on Vercel is the ngrok domain again.
 # Ctrl+C stops both. See docs/18-deploy.md, "Laptop as the backend".
 NGROK_DOMAIN=rockstar-wanting-reanalyze.ngrok-free.dev
 SITE=https://v-vater.vercel.app

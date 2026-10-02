@@ -1,5 +1,6 @@
 @echo off
 rem Serves the API from this laptop to the live Vercel site through an ngrok static domain.
+rem Fallback only: the site reaches it once VITE_API_BASE on Vercel is the ngrok domain again.
 rem Close both windows to stop. See docs/18-deploy.md, "Laptop as the backend".
 set NGROK_DOMAIN=rockstar-wanting-reanalyze.ngrok-free.dev
 set SITE=https://v-vater.vercel.app
