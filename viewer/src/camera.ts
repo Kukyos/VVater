@@ -40,6 +40,9 @@ export class OrbitCamera {
   pose: OrbitPose;
   private active = false;
   private drag?: { x: number; y: number; mode: "orbit" | "pan" };
+  /** Fingers on the canvas; two of them pinch to zoom and move together to pan. */
+  private touches = new Map<number, { x: number; y: number }>();
+  private pinch?: { dist: number; x: number; y: number };
   private frame?: number;
   private last = 0;
   private readonly margin = 6; // degrees the target may leave the box by
@@ -83,6 +86,7 @@ export class OrbitCamera {
     canvas.addEventListener("pointerdown", this.down);
     window.addEventListener("pointermove", this.move);
     window.addEventListener("pointerup", this.up);
+    window.addEventListener("pointercancel", this.up);
     canvas.addEventListener("wheel", this.wheel, { passive: false });
     canvas.addEventListener("contextmenu", this.noMenu);
     this.apply();
@@ -96,6 +100,7 @@ export class OrbitCamera {
     canvas.removeEventListener("pointerdown", this.down);
     window.removeEventListener("pointermove", this.move);
     window.removeEventListener("pointerup", this.up);
+    window.removeEventListener("pointercancel", this.up);
     canvas.removeEventListener("wheel", this.wheel);
     canvas.removeEventListener("contextmenu", this.noMenu);
     if (this.frame) cancelAnimationFrame(this.frame);
@@ -141,12 +146,37 @@ export class OrbitCamera {
     this.pose.lon += east / (111_320 * Math.cos(this.pose.lat * DEG));
   }
 
+  private twoFingers(): { dist: number; x: number; y: number } {
+    const [a, b] = [...this.touches.values()];
+    return { dist: Math.max(Math.hypot(a.x - b.x, a.y - b.y), 1),
+             x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 };
+  }
+
   private down = (e: PointerEvent) => {
+    if (e.pointerType === "touch") {
+      this.touches.set(e.pointerId, { x: e.clientX, y: e.clientY });
+      if (this.touches.size === 2) {
+        this.drag = undefined;
+        this.pinch = this.twoFingers();
+        return;
+      }
+      if (this.touches.size > 2) return;
+    }
     const pan = e.button === 1 || e.button === 2 || e.shiftKey;
     this.drag = { x: e.clientX, y: e.clientY, mode: pan ? "pan" : "orbit" };
   };
 
   private move = (e: PointerEvent) => {
+    if (this.touches.has(e.pointerId)) this.touches.set(e.pointerId, { x: e.clientX, y: e.clientY });
+    if (this.pinch && this.touches.size === 2) {
+      const now = this.twoFingers();
+      const perPixel = this.pose.range / this.viewer.canvas.clientHeight;
+      this.pan((now.y - this.pinch.y) * perPixel, -(now.x - this.pinch.x) * perPixel);
+      this.pose.range *= this.pinch.dist / now.dist;
+      this.pinch = now;
+      this.apply();
+      return;
+    }
     if (!this.drag) return;
     const dx = e.clientX - this.drag.x;
     const dy = e.clientY - this.drag.y;
@@ -162,7 +192,13 @@ export class OrbitCamera {
     this.apply();
   };
 
-  private up = () => { this.drag = undefined; };
+  // Lifting either finger of a pinch ends it; the other does not start an orbit until it
+  // is put down again, so the view does not jump.
+  private up = (e: PointerEvent) => {
+    this.touches.delete(e.pointerId);
+    this.pinch = undefined;
+    this.drag = undefined;
+  };
 
   private wheel = (e: WheelEvent) => {
     e.preventDefault();
@@ -266,6 +302,7 @@ export class FlightCamera {
     this.viewer.canvas.addEventListener("pointerdown", this.down);
     window.addEventListener("pointermove", this.move);
     window.addEventListener("pointerup", this.up);
+    window.addEventListener("pointercancel", this.up);
     this.last = 0;
     // The pose is set inside Cesium's own tick, just before it renders, so the globe and
     // the particles drawn after it see the same camera (as the cinematic does).
@@ -279,6 +316,7 @@ export class FlightCamera {
     this.viewer.canvas.removeEventListener("pointerdown", this.down);
     window.removeEventListener("pointermove", this.move);
     window.removeEventListener("pointerup", this.up);
+    window.removeEventListener("pointercancel", this.up);
     this.viewer.scene.screenSpaceCameraController.enableInputs = true;
   }
 

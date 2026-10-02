@@ -116,6 +116,9 @@ const status = (message: string, kind: "info" | "busy" | "warn" | "error" = "inf
 };
 
 async function main(): Promise<void> {
+  // On a phone the docks are drawers over the globe (index.html): they start shut, even
+  // while the API is still waking, whatever a desktop session remembered.
+  if (matchMedia("(max-width: 900px)").matches) el("app").classList.add("left-closed", "right-closed");
   status("contacting the API…", "busy");
   await awaitServer();
   const meta = await api.getMeta();
@@ -2240,10 +2243,13 @@ async function main(): Promise<void> {
 
 
   const app = el("app");
+  // Below this width a dock is a drawer over the viewport (index.html), so one at a time.
+  const narrow = matchMedia("(max-width: 900px)");
   function setDock(side: "left" | "right", open?: boolean, remember = true): void {
     const cls = `${side}-closed`;
     const closed = open === undefined ? !app.classList.contains(cls) : !open;
     app.classList.toggle(cls, closed);
+    if (!closed && narrow.matches) app.classList.add(side === "left" ? "right-closed" : "left-closed");
     if (!remember) return;
     try {
       localStorage.setItem(`vvater.dock.${side}`, closed ? "closed" : "open");
@@ -2258,6 +2264,26 @@ async function main(): Promise<void> {
       // Storage unavailable: docks open.
     }
   }
+  // On a phone a drawer gets out of the way of a touch on the globe or a box being drawn.
+  const shutDrawers = () => {
+    if (!narrow.matches) return;
+    setDock("left", false, false);
+    setDock("right", false, false);
+  };
+  el("view").addEventListener("pointerdown", shutDrawers);
+  el("cube-draw").addEventListener("click", shutDrawers);
+  // No keyboard on a touch screen: the fly pad's buttons press and release the keys.
+  document.querySelectorAll<HTMLElement>("#fly-pad [data-key]").forEach((button) => {
+    const send = (type: string) => window.dispatchEvent(new KeyboardEvent(type, { key: button.dataset.key }));
+    button.addEventListener("pointerdown", (event) => {
+      event.preventDefault();
+      event.stopPropagation(); // not a touch on the globe: keep the camera's drag out of it
+      send("keydown");
+    });
+    for (const type of ["pointerup", "pointerleave", "pointercancel"]) {
+      button.addEventListener(type, () => send("keyup"));
+    }
+  });
   document.querySelectorAll<HTMLElement>("[data-dock]").forEach((node) => {
     node.addEventListener("click", () => setDock(node.dataset.dock as "left" | "right"));
   });

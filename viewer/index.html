@@ -22,7 +22,7 @@
     font: 12px/1.45 "Segoe UI", system-ui, -apple-system, sans-serif; overflow: hidden; }
   button, select, input { font: inherit; color: inherit; }
 
-  #app { display: grid; height: 100%;
+  #app { display: grid; height: 100%; height: 100dvh;
     grid-template-columns: var(--left) minmax(0, 1fr) var(--right);
     grid-template-rows: 34px minmax(0, 1fr) 24px;
     grid-template-areas: "top top top" "left view right" "status status status";
@@ -317,10 +317,43 @@
   .learn-ask .chat-suggest { display: none; }
 
   @media (max-width: 1400px) { .brand span { display: none; } }
+  /* ---- flight controls for a screen with no keyboard: each button holds a key */
+  #fly-pad { display: none; position: absolute; right: 10px; bottom: 52px; z-index: 5;
+    grid-template-columns: repeat(2, 68px); gap: 6px; }
+  #fly-pad button { padding: 10px 0; background: rgba(5, 12, 18, .6); color: var(--accent);
+    border: 1px solid rgba(77, 210, 255, .45); border-radius: 4px; touch-action: none;
+    user-select: none; -webkit-user-select: none; }
+  #fly-pad button:active { background: rgba(77, 210, 255, .25); }
+  #globe canvas { touch-action: none; }
+
   @media (max-width: 900px) {
+    /* A phone or a narrow window: each dock is a drawer over the viewport, one open at a
+       time (main.ts), and the header scrolls sideways rather than clipping its buttons. */
     #app { --left: 26px; --right: 26px; }
-    .brand span, #view-hint { display: none; }
+    .brand span, #view-hint, #top .tag { display: none; }
+    #top { overflow-x: auto; scrollbar-width: none; gap: 8px; }
+    #top > * { flex: none; }
+    #app:not(.left-closed) #left, #app:not(.right-closed) #right { position: fixed; z-index: 20;
+      top: 35px; bottom: 25px; width: min(340px, calc(100vw - 30px));
+      box-shadow: 0 0 24px rgba(0, 0, 0, .6); }
+    #left { left: 0; } #right { right: 0; }
+    #flight-hud { grid-template-columns: repeat(2, auto); gap: 4px 16px; margin-top: 30px;
+      padding: 8px 12px; }
+    #timeline { gap: 6px; padding: 6px; }
+    #time-label { min-width: 0; }
+    #immersive-bar { flex-wrap: wrap; justify-content: center; width: max-content;
+      max-width: calc(100% - 16px); }
   }
+  @media (any-pointer: coarse) {
+    /* 16 px stops iOS zooming the page into a field; taller fields are hittable. */
+    select, input[type=number], input[type=date], .chat-form textarea { font-size: 16px; }
+    select, input[type=number], input[type=date] { height: 32px; }
+    input[type=range] { height: 26px; }
+    .collapse { width: 34px; height: 26px; }
+    #fly-pad { display: grid; }
+    #flight-hud p { display: none; } /* the keys it lists are the pad's buttons here */
+  }
+  #flight-hud.hidden ~ #fly-pad, #app.immersive #fly-pad { display: none; }
 </style>
 </head>
 <body>
@@ -559,6 +592,11 @@
     <div id="globe"></div>
     <div id="hud"></div>
     <div id="flight-hud" class="hidden"></div>
+    <div id="fly-pad" role="group" aria-label="Flight controls">
+      <button data-key="r">Climb</button><button data-key="w">Faster</button>
+      <button data-key="f">Descend</button><button data-key="s">Slower</button>
+      <button data-key="p">Pause</button>
+    </div>
     <div id="immersive-bar" role="toolbar" aria-label="Immersive view">
       <button id="imm-cinema" title="Let the camera tell it (C)">Cinematic</button>
       <button id="imm-currents" class="on" title="Ocean currents">Currents</button>
