@@ -9,7 +9,7 @@
  */
 import { BASE, healthy } from "./api";
 
-// ponytail: the topic ships in the public bundle, so anyone who reads it can ping or
+// The topic ships in the public bundle, so anyone who reads it can ping or
 // subscribe. The random name stops guessing, not reading; a Vercel function holding a
 // secret is the upgrade if that is ever abused.
 export const TOPIC = "vvater-wake-d83b0af66b99";

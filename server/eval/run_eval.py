@@ -1,11 +1,11 @@
-"""The numbers table. Nothing is quoted in a deck, proposal or film that this did not print.
+"""The numbers table. Every figure the project quotes is one this printed.
 
     python -m server.eval.run_eval
     python -m server.eval.run_eval --json    # also writes data/eval-latest.json
 
-The JSON dump exists so the trace from a figure in the deck back to the harness is a file
-rather than a copy-paste out of a terminal scroll. The one architectural rule
-(docs/00-start-here.md) is only true if the numbers are machine-readable.
+The JSON dump exists so the trace from a quoted figure back to the harness is a file
+rather than a copy-paste out of a terminal scroll. Quoting only measured
+numbers is only checkable if the numbers are machine-readable.
 """
 
 import json
@@ -373,7 +373,7 @@ def v2_numbers() -> dict:
                   f"open {first_s:.2f} s from disk cache, {again_s * 1000:.0f} ms again  "
                   f"surface mean {sea[key]:.2f} C")
         out["amphan_cooling_c"] = round(sea["amphan_before"] - sea["amphan_after"], 2)
-        # The deck's hero picture is the before cube taken down to 1,000 m, not the
+        # The README's hero picture is the before cube taken down to 1,000 m, not the
         # scenario's 300 m: its own level count, so the caption describes the picture.
         sc = scen["amphan_before"]
         c = cube.build(sc.variable, cube.Box.parse(*sc.box), sc.day, 1000.0)
@@ -420,8 +420,8 @@ ANYWHERE = ("arabian_sea", "gulf_stream", "kuroshio", "agulhas", "el_nino", "dra
 
 
 def anywhere_numbers(assistant_runs: int = 5) -> dict:
-    """Cubes outside the Bay, timed three ways, and the assistant timed on the prompt the
-    deck shows. Cold means an empty chunk cache made for this run, so every byte comes
+    """Cubes outside the Bay, timed three ways, and the assistant timed on one fixed
+    prompt. Cold means an empty chunk cache made for this run, so every byte comes
     from Copernicus; disk means the same cube again after dropping it from memory."""
     import tempfile
     from server.ocean import arco, assistant, cube
@@ -468,7 +468,7 @@ def anywhere_numbers(assistant_runs: int = 5) -> dict:
             cube._build.cache_clear()
     out["cubes"] = rows
 
-    _rule(f"v2 · assistant, the deck's prompt, {assistant_runs} runs")
+    _rule(f"v2 · assistant, fixed prompt, {assistant_runs} runs")
     print(f"  prompt  {ASSISTANT_PROMPT!r}")
     runs = []
     for i in range(assistant_runs):

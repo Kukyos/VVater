@@ -3,7 +3,7 @@
 `docs/03-limitations.md` L8 is the scoping argument: THREDDS and ncWMS exist and we are
 not going to out-build them, and INCOIS ERDDAP already serves WMS for these datasets. So
 this is deliberately small — `GetCapabilities` and `GetMap`, nothing else — and its point
-is that the platform speaks a standard a judge can check from QGIS rather than that it
+is that the platform speaks a standard anyone can check from QGIS rather than that it
 replaces anything.
 
 **WCS is not implemented and is not claimed.** It is logged in `docs/11-deferred.md` D-05

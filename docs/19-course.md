@@ -1,8 +1,8 @@
 # The course — learner mode
 
 The problem statement asks for the platform to serve "educating school and college students
-about ocean dynamics" and "e-learning initiatives" (`01-problem-statement.md`, *Public
-Outreach & Science Communication*). This is that: six short lessons for class 8 to 12,
+about ocean dynamics" and "e-learning initiatives" (*Public Outreach & Science
+Communication*). This is that: six short lessons for class 8 to 12,
 run inside the viewer itself on real data.
 
 ## How it works

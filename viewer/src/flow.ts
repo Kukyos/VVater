@@ -257,7 +257,7 @@ export class FlowOverlay {
    * camera that never stops (the cinematic): two animation-frame loops run in no fixed
    * order, so the overlay could project this frame's camera over a globe still showing
    * the last one, and the particles shivered against the water. It also exempts the
-   * overlay from pauseOnMove, which would otherwise blank it for the whole film.
+   * overlay from pauseOnMove, which would otherwise blank it for the whole tour.
    */
   follow(on: boolean): void {
     if (on === this.following) return;
@@ -410,7 +410,7 @@ export class FlowOverlay {
           // Moving: the canvas was wiped, so redraw the whole trail from the positions this
           // particle has been at. Straight streaks along today's flow looked like needles.
           let open = false;
-          // ponytail: the cinematic redraws every trail every frame and stroke time goes
+          // The cinematic redraws every trail every frame and stroke time goes
           // with segment count, so it takes every other stored point: half the segments,
           // the same trail length.
           const stride = this.following ? 2 : 1;

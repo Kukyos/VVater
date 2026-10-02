@@ -240,7 +240,7 @@ def tool_profile(platform: str) -> dict:
 
 
 def tool_eval_summary() -> dict:
-    """The harness's measured numbers (data/eval-latest.json), the ones the deck quotes."""
+    """The harness's measured numbers (data/eval-latest.json), the ones the project quotes."""
     e = json.loads(EVAL.read_text(encoding="utf-8"))
     return {k: e[k] for k in ("centre_date", "region", "argo", "glider", "depth_bands",
                               "residual", "tchp", "field_range_test", "currents") if k in e} | {

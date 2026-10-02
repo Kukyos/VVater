@@ -46,7 +46,7 @@ demo. The Starter plan has the same 512 MB; the Standard plan's 2 GB removes the
 
 ## What a host needs (measured)
 
-`python -m server.tools.measure_hosting`, run twice on 2026-09-25 (the second writes `data/hosting-latest.json`, which the eval harness reads for the deck): a cold cache, one session touching
+`python -m server.tools.measure_hosting`, run twice on 2026-09-25 (the second writes `data/hosting-latest.json`, which the eval harness reads): a cold cache, one session touching
 every feature (all 9 scenario cubes with casts, an Argo profile, currents, wind and
 fishing each; the whole-ocean temperature and salinity; PFZ; a second variable; the INCOIS
 volume; Argo observations), 97 requests, all 200, `ZARR_CONCURRENCY` 32 (the default).

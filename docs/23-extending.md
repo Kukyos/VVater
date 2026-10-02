@@ -1,6 +1,6 @@
 # Extending the platform — sensors, variables, ML products
 
-The brief's *Extensible Design* item (`01-problem-statement.md`) asks for a plugin-style module
+The brief's *Extensible Design* item asks for a plugin-style module
 for future sensors (CTDs, moorings, HF-radar, ADCP), new ocean model variables, and
 machine-learning derived products. This document is that module's manual: where each kind
 of addition goes, which files it touches, and what has actually been done with it.

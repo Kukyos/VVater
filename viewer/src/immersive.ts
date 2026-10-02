@@ -290,9 +290,9 @@ export class Immersive {
   }
 
   /**
-   * A brighter, softer sun for the film: a wider glow on the disc and more forward
+   * A brighter, softer sun for the cinematic tour: a wider glow on the disc and more forward
    * scattering in the sky around it, so a sun on the horizon reads as a bright haze
-   * rather than a hard dot. Set once for the whole film (not per shot) because each
+   * rather than a hard dot. Set once for the whole tour (not per shot) because each
    * change to the glow rebuilds the sun's texture. Put back exactly on the way out.
    */
   private brightSky(on: boolean): void {

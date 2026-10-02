@@ -1113,7 +1113,7 @@ async function main(): Promise<void> {
     showCube((e.target as HTMLInputElement).checked));
   // Asking for a cube is asking to see it; in a lesson the lesson decides.
   // The box is drawn on a clear globe: the cube is put away for the drag and comes back
-  // with the new one, or as it was if the drawing is cancelled. ponytail: a failed load
+  // with the new one, or as it was if the drawing is cancelled. A failed load
   // leaves it put away; "Show the cube" brings it back.
   let showOnLoad = false;
   let hiddenForDraw = false;
@@ -2075,7 +2075,7 @@ async function main(): Promise<void> {
     },
     kick: (ms) => graphics.kick(ms),
     cinema: (on) => {
-      // The camera never rests in the film: render every frame, draw the particles from
+      // The camera never rests in the tour: render every frame, draw the particles from
       // the render itself, and never swap to the rest resolution (a framebuffer resize at
       // every cut). On the way out the panel's own settings decide again.
       ocean.flow.follow(on);

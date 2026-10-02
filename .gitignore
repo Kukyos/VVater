@@ -1,6 +1,3 @@
-# Local instructions — never pushed
-CLAUDE.md
-
 # Secrets
 .env
 .env.local
@@ -23,27 +20,3 @@ venv/
 node_modules/
 dist/
 .vite/
-
-# Build output
-submission/sih/final/*.bak
-video/out/
-# The film: clips regenerate from capture.cjs (about 1 GB); the narration is kept, since
-# re-rendering it costs ElevenLabs credits; check.mjs writes the two JSON files the film reads
-video/public/clips/
-video/src/eval.json
-video/src/voice.json
-
-# Submission templates supplied by the portal, kept local
-*.pptx
-*.docx
-!submission/sih/final/*.docx
-# ...but the deck we build from it is ours
-!submission/sih/final/*.pptx
-dist/
-
-# derived from the shots by figures.py
-submission/sih/figures/crop-*.jpg
-
-# Deck iterations and superseded decks, kept local
-submission/sih/final/iter/
-submission/sih/final/archive/

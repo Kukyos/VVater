@@ -120,7 +120,7 @@ is quietly, invisibly wrong.
 > the deliverable.** Every comparison carries the interpolation method and the
 > model–float separation in space and time.
 
-## L8 · OGC compliance is a claim a judge can check
+## L8 · OGC compliance is a claim anyone can check
 
 THREDDS and ncWMS exist. We will not out-build them.
 

@@ -2,7 +2,7 @@
 
 Everything here was probed from this machine on **2026-09-22**. Nothing in this file is
 quoted from documentation. Where a probe failed, it says so. Re-run the probes in
-`server/tools/probe_sources.py` before quoting any of it in a deck.
+`server/tools/probe_sources.py` before quoting any of it.
 
 ---
 
@@ -12,7 +12,7 @@ quoted from documentation. Where a probe failed, it says so. Re-run the probes i
 `ftp://`, and port 21 is blocked — `ftp.ifremer.fr` fails to connect at all. Every source
 below is an HTTPS path we found and tested ourselves.
 
-This is worth saying out loud in the proposal. A platform that ingests what INCOIS
+A platform that ingests what INCOIS
 actually serves is worth more than one built against a link that times out.
 
 ---
@@ -242,8 +242,8 @@ Do **not** download `ar_index_global_prof.txt` — it is 317 MB.
   20 profiles — and 10 days is exactly the cadence of the gridded product in §1.1.
 
 > **Design consequence:** the float overlay and the gridded field share a 10-day window
-> by default. That is not a convenience, it is what makes the co-location in
-> `docs/03-requirements.md` §3.6 scientifically meaningful — the same water, the same
+> by default. That is not a convenience, it is what makes the co-location the
+> brief asks for scientifically meaningful — the same water, the same
 > ten days.
 
 ### 2.2 INCOIS ERDDAP `Indian_ARGO_Floats` — tabular, INCOIS-native
@@ -282,7 +282,7 @@ OPeNDAP and direct file access. **184 gliders**, global, 0–2000 m, `TEMP`/`PSA
 Its catalogue is per-glider with no spatial index, so finding Indian Ocean deployments
 means walking 184 catalogues — logged as `11-deferred.md` D-02.
 
-> **Finding worth stating in the proposal:** glider coverage in the Bay of Bengal is not
+> **Finding:** glider coverage in the Bay of Bengal is not
 > thin, it is **nearly absent** — one deployment in 2,562. The brief presents gliders as
 > a routine data stream alongside Argo. For this region, they are not.
 

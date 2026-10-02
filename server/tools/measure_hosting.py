@@ -127,7 +127,7 @@ out = {
     "cache_disk_mb": round(disk), "requests": log,
 }
 (HERE.parent / f"vvater-measure-{env['ZARR_CONCURRENCY']}.json").write_text(json.dumps(out, indent=1))
-# The copy the eval harness reads, so the deck's hosting figures trace to a file.
+# The copy the eval harness reads, so the quoted hosting figures trace to a file.
 out["measured"] = time.strftime("%Y-%m-%d")
 (REPO / "data" / "hosting-latest.json").write_text(json.dumps(out, indent=1))
 print(json.dumps({k: v for k, v in out.items() if k != "requests"}, indent=1))
