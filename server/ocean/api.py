@@ -9,6 +9,7 @@ call so the binary stays a clean typed array and both are independently cacheabl
 """
 
 import io
+import os
 import time
 from datetime import date, datetime
 from functools import lru_cache
@@ -50,12 +51,33 @@ async def _errors_as_json(request: Request, call_next):
         return JSONResponse({"detail": f"{type(exc).__name__}: {exc}"}, status_code=500)
 
 
+# VVATER_RECORD=<dir> writes every successful GET under /api/ for the static snapshot the
+# viewer falls back to when this server is unreachable (snapshot.py). Inside GZip, so the
+# bytes recorded are the uncompressed ones the viewer parses.
+_RECORD = os.environ.get("VVATER_RECORD")
+if _RECORD:
+    from pathlib import Path
+
+    from . import snapshot
+
+    @app.middleware("http")
+    async def _record(request: Request, call_next):
+        response = await call_next(request)
+        if not snapshot.wanted(request.method, request.url.path, response.status_code):
+            return response
+        body = b"".join([chunk async for chunk in response.body_iterator])
+        media = response.media_type or response.headers.get("content-type", "application/octet-stream")
+        snapshot.record(Path(_RECORD), snapshot.key_of(request.url.path, request.url.query),
+                        body, media)
+        headers = {k: v for k, v in response.headers.items() if k.lower() != "content-length"}
+        return Response(content=body, status_code=response.status_code, headers=headers,
+                        media_type=media)
+
+
 # The viewer runs on Vite's dev server on another port during development, and on a
 # separate Vercel host in production (Vercel preview deploys get a random *.vercel.app
 # subdomain each time, so ALLOWED_ORIGIN_REGEX covers those; ALLOWED_ORIGINS covers the
 # fixed production domain). Falls back to local dev origins when unset.
-import os
-
 _extra_origins = [o.strip() for o in os.environ.get("ALLOWED_ORIGINS", "").split(",") if o.strip()]
 app.add_middleware(
     CORSMiddleware,
@@ -258,6 +280,20 @@ def streamlines(source: str = "glorys12", time_index: int = 0,
         raise
     except RuntimeError as exc:
         raise HTTPException(status_code=501, detail=str(exc)) from exc
+
+
+@app.get("/api/drift")
+def drift_run(lon: float, lat: float, day: str, hours: int = 72,
+              direction: str = "forward", object: str = "liferaft") -> dict:
+    """Search-and-rescue drift: an ensemble carried by each day's surface currents and the
+    wind's leeway, forward or back in time, with a 90 % ellipse per day (drift.py)."""
+    from . import drift
+    try:
+        # Rounded so two clicks a few metres apart share one run (and one snapshot entry).
+        return drift.drift(round(lon, 2), round(lat, 2), day, hours,
+                           direction == "backward", object)
+    except (LookupError, ValueError) as exc:
+        raise HTTPException(404, str(exc)) from exc
 
 
 @app.get("/api/global/layers")

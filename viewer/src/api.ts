@@ -1,20 +1,42 @@
 /** Thin wrapper over the FastAPI backend. No state, no caching — that lives in main.ts. */
 
+import * as snapshot from "./snapshot";
+
 export const BASE = import.meta.env.VITE_API_BASE ?? "http://127.0.0.1:8011";
 
 // An ngrok free domain answers browsers with an HTML warning page unless this header is
 // sent (docs/18-deploy.md, laptop backend). Only then: it makes every GET preflighted.
-const fetch: typeof globalThis.fetch = BASE.includes("ngrok")
+const network: typeof globalThis.fetch = BASE.includes("ngrok")
   ? (url, init = {}) => globalThis.fetch(url, {
       ...init, headers: { ...(init.headers as Record<string, string>), "ngrok-skip-browser-warning": "1" },
     })
   : globalThis.fetch.bind(globalThis);
 
+/**
+ * Every request the viewer makes. A GET that cannot reach the server (network error or a
+ * 502–504 from the Vercel proxy) falls back to the recorded snapshot, and from then on the
+ * page replays the snapshot (snapshot.ts). A 500 is the server's own answer and stands.
+ */
+const fetch = async (url: string, init: RequestInit = {}): Promise<Response> => {
+  const get = !init.method || init.method === "GET";
+  if (get && snapshot.active()) return snapshot.replay(url);
+  try {
+    const r = await network(url, init);
+    if (get && r.status >= 502 && r.status <= 504 && await snapshot.activate()) return snapshot.replay(url);
+    return r;
+  } catch (error) {
+    if (get && (error as Error).name !== "AbortError" && await snapshot.activate()) return snapshot.replay(url);
+    if (!get && snapshot.active()) throw new Error("not available in the offline snapshot");
+    throw error;
+  }
+};
+
 /** True when the API answers /api/health within a few seconds. An ngrok domain with no
  *  tunnel behind it answers with its own error page, which fails here, as it should. */
 export async function healthy(): Promise<boolean> {
   try {
-    const r = await fetch(`${BASE}/api/health`, { signal: AbortSignal.timeout(8000) });
+    // Straight to the network: the health check is what decides whether to replay.
+    const r = await network(`${BASE}/api/health`, { signal: AbortSignal.timeout(8000) });
     return r.ok && (await r.json()).ok === true;
   } catch {
     return false;
@@ -541,4 +563,31 @@ export async function geocode(name: string): Promise<{ name: string; lat: number
     throw new Error(`place search unavailable (${response.status}${detail ? `: ${detail}` : ""})`);
   }
   return response.json();
+}
+
+/** One drift run (server/ocean/drift.py). */
+export interface Drift {
+  start: { lon: number; lat: number; day: string; time_utc: string };
+  hours: number;
+  direction: "forward" | "backward";
+  object: { key: string; title: string; leeway_pct: number };
+  track: [number, number][];
+  snapshots: { hour: number; points: [number, number][] }[];
+  days: { hour: number; lon: number; lat: number; a_km: number; b_km: number; area_km2: number;
+          bearing_deg: number; ring: [number, number][]; reached_coast: number; left_area: number }[];
+  provenance: { currents: { source: string; day: string; level_m: number }[]; method: string;
+                assumptions: string[]; note: string };
+}
+
+/** Lon and lat are rounded to 0.01 deg here and on the server, so a run is one key. */
+export async function getDrift(q: { lon: number; lat: number; day: string; hours: number;
+                                     direction: string; object: string }): Promise<Drift> {
+  const r2 = (v: number) => Math.round(v * 100) / 100;
+  const response = await fetch(`${BASE}/api/drift?lon=${r2(q.lon)}&lat=${r2(q.lat)}&day=${q.day}` +
+    `&hours=${q.hours}&direction=${q.direction}&object=${q.object}`);
+  if (!response.ok) {
+    const detail = await response.json().catch(() => ({}));
+    throw new Error(detail.detail ?? `${response.status} ${response.statusText}`);
+  }
+  return response.json() as Promise<Drift>;
 }

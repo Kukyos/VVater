@@ -1,0 +1,389 @@
+{
+ "entries": {
+  "/api/catalog": {
+   "file": "527fbd35eea001f02de4.json",
+   "type": "application/json"
+  },
+  "/api/cube/casts?variable=temperature&lon0=78&lon1=100&lat0=5&lat1=23&day=2018-08-25&depth_max=2000": {
+   "file": "c43620180ae15a2431f9.json",
+   "type": "application/json"
+  },
+  "/api/cube/casts?variable=temperature&lon0=80&lon1=95&lat0=5&lat1=23&day=2020-05-14&depth_max=500": {
+   "file": "f4063edb21406aba59ac.json",
+   "type": "application/json"
+  },
+  "/api/cube/casts?variable=temperature&lon0=80&lon1=95&lat0=5&lat1=23&day=2020-05-22&depth_max=500": {
+   "file": "ec5b3d6d591c6ad24544.json",
+   "type": "application/json"
+  },
+  "/api/cube/currents/data?lon0=78&lon1=100&lat0=5&lat1=23&day=2018-08-25&depth=0&n=14497": {
+   "file": "812306fb0ce404abc2b9.bin",
+   "type": "application/octet-stream"
+  },
+  "/api/cube/currents/data?lon0=80&lon1=95&lat0=5&lat1=23&day=2020-05-14&depth=0&n=9919": {
+   "file": "98479814ec330ab5f5b0.bin",
+   "type": "application/octet-stream"
+  },
+  "/api/cube/currents/data?lon0=80&lon1=95&lat0=5&lat1=23&day=2020-05-22&depth=0&n=9919": {
+   "file": "c8df3a8ef74f160a6310.bin",
+   "type": "application/octet-stream"
+  },
+  "/api/cube/currents/meta?lon0=78&lon1=100&lat0=5&lat1=23&day=2018-08-25&depth=0": {
+   "file": "2942e91e5f447228ebd7.json",
+   "type": "application/json"
+  },
+  "/api/cube/currents/meta?lon0=80&lon1=95&lat0=5&lat1=23&day=2020-05-14&depth=0": {
+   "file": "b8b0d06e989387d795e9.json",
+   "type": "application/json"
+  },
+  "/api/cube/currents/meta?lon0=80&lon1=95&lat0=5&lat1=23&day=2020-05-22&depth=0": {
+   "file": "9e0337cee698b76d378f.json",
+   "type": "application/json"
+  },
+  "/api/cube/data?variable=temperature&lon0=78&lon1=100&lat0=5&lat1=23&day=2018-08-25&depth_max=2000&n=579880": {
+   "file": "37907cb5ed409ee0f211.bin",
+   "type": "application/octet-stream"
+  },
+  "/api/cube/data?variable=temperature&lon0=78&lon1=100&lat0=5&lat1=23&day=2018-08-26&depth_max=2000&n=579880": {
+   "file": "0084aa6a4f37eb2648b9.bin",
+   "type": "application/octet-stream"
+  },
+  "/api/cube/data?variable=temperature&lon0=80&lon1=95&lat0=5&lat1=23&day=2020-05-14&depth_max=500&n=307489": {
+   "file": "fa0b1153520d79667099.bin",
+   "type": "application/octet-stream"
+  },
+  "/api/cube/data?variable=temperature&lon0=80&lon1=95&lat0=5&lat1=23&day=2020-05-15&depth_max=500&n=307489": {
+   "file": "582a4906d140b75b5c8e.bin",
+   "type": "application/octet-stream"
+  },
+  "/api/cube/data?variable=temperature&lon0=80&lon1=95&lat0=5&lat1=23&day=2020-05-22&depth_max=500&n=307489": {
+   "file": "dc76d9ed4b9c06c38f3e.bin",
+   "type": "application/octet-stream"
+  },
+  "/api/cube/data?variable=temperature&lon0=80&lon1=95&lat0=5&lat1=23&day=2020-05-23&depth_max=500&n=307489": {
+   "file": "01e8b9ac14b4645cc695.bin",
+   "type": "application/octet-stream"
+  },
+  "/api/cube/meta?variable=temperature&lon0=78&lon1=100&lat0=5&lat1=23&day=2018-08-25&depth_max=2000": {
+   "file": "e7309282b01a6c847dcc.json",
+   "type": "application/json"
+  },
+  "/api/cube/meta?variable=temperature&lon0=78&lon1=100&lat0=5&lat1=23&day=2018-08-26&depth_max=2000": {
+   "file": "c705ef91dafd2b64b05d.json",
+   "type": "application/json"
+  },
+  "/api/cube/meta?variable=temperature&lon0=80&lon1=95&lat0=5&lat1=23&day=2020-05-14&depth_max=500": {
+   "file": "89c6caa9201a7721490b.json",
+   "type": "application/json"
+  },
+  "/api/cube/meta?variable=temperature&lon0=80&lon1=95&lat0=5&lat1=23&day=2020-05-15&depth_max=500": {
+   "file": "b768824f674f995663b8.json",
+   "type": "application/json"
+  },
+  "/api/cube/meta?variable=temperature&lon0=80&lon1=95&lat0=5&lat1=23&day=2020-05-22&depth_max=500": {
+   "file": "3c8ca4314686658d9e56.json",
+   "type": "application/json"
+  },
+  "/api/cube/meta?variable=temperature&lon0=80&lon1=95&lat0=5&lat1=23&day=2020-05-23&depth_max=500": {
+   "file": "aa9a3883cce990ab7011.json",
+   "type": "application/json"
+  },
+  "/api/cube/profile?variable=temperature&lon0=78&lon1=100&lat0=5&lat1=23&day=2018-08-25&depth_max=2000&platform=2901895&cycle=152": {
+   "file": "72cf955b7572536fd21a.json",
+   "type": "application/json"
+  },
+  "/api/cube/profile?variable=temperature&lon0=78&lon1=100&lat0=5&lat1=23&day=2018-08-25&depth_max=2000&platform=2901898&cycle=151": {
+   "file": "d3745ba02c9d7ef281df.json",
+   "type": "application/json"
+  },
+  "/api/cube/profile?variable=temperature&lon0=78&lon1=100&lat0=5&lat1=23&day=2018-08-25&depth_max=2000&platform=2902154&cycle=140": {
+   "file": "c86c38b667ed7f140f78.json",
+   "type": "application/json"
+  },
+  "/api/cube/profile?variable=temperature&lon0=78&lon1=100&lat0=5&lat1=23&day=2018-08-25&depth_max=2000&platform=2902192&cycle=196": {
+   "file": "67a372270f120e4a0669.json",
+   "type": "application/json"
+  },
+  "/api/cube/profile?variable=temperature&lon0=78&lon1=100&lat0=5&lat1=23&day=2018-08-25&depth_max=2000&platform=2902194&cycle=196": {
+   "file": "f4890d00323155c37ea1.json",
+   "type": "application/json"
+  },
+  "/api/cube/profile?variable=temperature&lon0=78&lon1=100&lat0=5&lat1=23&day=2018-08-25&depth_max=2000&platform=2902197&cycle=195": {
+   "file": "c0409c02bff90bbc4334.json",
+   "type": "application/json"
+  },
+  "/api/cube/profile?variable=temperature&lon0=78&lon1=100&lat0=5&lat1=23&day=2018-08-25&depth_max=2000&platform=2902229&cycle=180": {
+   "file": "403bdd8e39620d1b0057.json",
+   "type": "application/json"
+  },
+  "/api/cube/profile?variable=temperature&lon0=78&lon1=100&lat0=5&lat1=23&day=2018-08-25&depth_max=2000&platform=2902230&cycle=181": {
+   "file": "2034fb3570fe9a570391.json",
+   "type": "application/json"
+  },
+  "/api/cube/profile?variable=temperature&lon0=78&lon1=100&lat0=5&lat1=23&day=2018-08-25&depth_max=2000&platform=2902232&cycle=180": {
+   "file": "6ffb156c489f650cb765.json",
+   "type": "application/json"
+  },
+  "/api/cube/profile?variable=temperature&lon0=78&lon1=100&lat0=5&lat1=23&day=2018-08-25&depth_max=2000&platform=2902233&cycle=180": {
+   "file": "122584cba1db6b308a9b.json",
+   "type": "application/json"
+  },
+  "/api/cube/profile?variable=temperature&lon0=78&lon1=100&lat0=5&lat1=23&day=2018-08-25&depth_max=2000&platform=2902234&cycle=180": {
+   "file": "46a87e7f84f9cdf77762.json",
+   "type": "application/json"
+  },
+  "/api/cube/profile?variable=temperature&lon0=78&lon1=100&lat0=5&lat1=23&day=2018-08-25&depth_max=2000&platform=2902235&cycle=180": {
+   "file": "01d1543be1d9f9aa5b4a.json",
+   "type": "application/json"
+  },
+  "/api/cube/profile?variable=temperature&lon0=78&lon1=100&lat0=5&lat1=23&day=2018-08-25&depth_max=2000&platform=2902236&cycle=86": {
+   "file": "72c914e7f1533acae9c5.json",
+   "type": "application/json"
+  },
+  "/api/cube/profile?variable=temperature&lon0=78&lon1=100&lat0=5&lat1=23&day=2018-08-25&depth_max=2000&platform=2902264&cycle=29": {
+   "file": "ebbfecaa9fdbd47955cd.json",
+   "type": "application/json"
+  },
+  "/api/cube/profile?variable=temperature&lon0=78&lon1=100&lat0=5&lat1=23&day=2018-08-25&depth_max=2000&platform=2902570&cycle=171": {
+   "file": "aa10f3c86755eba50456.json",
+   "type": "application/json"
+  },
+  "/api/cube/profile?variable=temperature&lon0=78&lon1=100&lat0=5&lat1=23&day=2018-08-25&depth_max=2000&platform=2902605&cycle=156": {
+   "file": "6e72dee2d5765abf8bf1.json",
+   "type": "application/json"
+  },
+  "/api/cube/profile?variable=temperature&lon0=78&lon1=100&lat0=5&lat1=23&day=2018-08-25&depth_max=2000&platform=2902680&cycle=78": {
+   "file": "96ef9efb384dee9bca2b.json",
+   "type": "application/json"
+  },
+  "/api/cube/profile?variable=temperature&lon0=78&lon1=100&lat0=5&lat1=23&day=2018-08-25&depth_max=2000&platform=2902681&cycle=78": {
+   "file": "8f2f852add69ad8c39c5.json",
+   "type": "application/json"
+  },
+  "/api/cube/profile?variable=temperature&lon0=78&lon1=100&lat0=5&lat1=23&day=2018-08-25&depth_max=2000&platform=6901740&cycle=218": {
+   "file": "c69be38809a234d3dc4d.json",
+   "type": "application/json"
+  },
+  "/api/cube/profile?variable=temperature&lon0=80&lon1=95&lat0=5&lat1=23&day=2020-05-14&depth_max=500&platform=2901892&cycle=212": {
+   "file": "3f6bc55f567d473dac5d.json",
+   "type": "application/json"
+  },
+  "/api/cube/profile?variable=temperature&lon0=80&lon1=95&lat0=5&lat1=23&day=2020-05-14&depth_max=500&platform=2902230&cycle=306": {
+   "file": "07ad39d26fd71eec2bfa.json",
+   "type": "application/json"
+  },
+  "/api/cube/profile?variable=temperature&lon0=80&lon1=95&lat0=5&lat1=23&day=2020-05-14&depth_max=500&platform=2902232&cycle=305": {
+   "file": "75c165b7765bf81acc3f.json",
+   "type": "application/json"
+  },
+  "/api/cube/profile?variable=temperature&lon0=80&lon1=95&lat0=5&lat1=23&day=2020-05-14&depth_max=500&platform=2902233&cycle=305": {
+   "file": "a31bfdb05b83d2c43195.json",
+   "type": "application/json"
+  },
+  "/api/cube/profile?variable=temperature&lon0=80&lon1=95&lat0=5&lat1=23&day=2020-05-14&depth_max=500&platform=2902234&cycle=305": {
+   "file": "a37554b715f33161a1ee.json",
+   "type": "application/json"
+  },
+  "/api/cube/profile?variable=temperature&lon0=80&lon1=95&lat0=5&lat1=23&day=2020-05-14&depth_max=500&platform=2902235&cycle=305": {
+   "file": "c3a0fc7446046e37d59a.json",
+   "type": "application/json"
+  },
+  "/api/cube/profile?variable=temperature&lon0=80&lon1=95&lat0=5&lat1=23&day=2020-05-14&depth_max=500&platform=2902236&cycle=212": {
+   "file": "09bfb4093be9453a1a39.json",
+   "type": "application/json"
+  },
+  "/api/cube/profile?variable=temperature&lon0=80&lon1=95&lat0=5&lat1=23&day=2020-05-14&depth_max=500&platform=2902264&cycle=155": {
+   "file": "162ba7386a365035ea18.json",
+   "type": "application/json"
+  },
+  "/api/cube/profile?variable=temperature&lon0=80&lon1=95&lat0=5&lat1=23&day=2020-05-14&depth_max=500&platform=2902278&cycle=71": {
+   "file": "dd722a18ddf78efbaf8f.json",
+   "type": "application/json"
+  },
+  "/api/cube/profile?variable=temperature&lon0=80&lon1=95&lat0=5&lat1=23&day=2020-05-14&depth_max=500&platform=2902279&cycle=71": {
+   "file": "c24659bc6935624919f5.json",
+   "type": "application/json"
+  },
+  "/api/cube/profile?variable=temperature&lon0=80&lon1=95&lat0=5&lat1=23&day=2020-05-14&depth_max=500&platform=2902280&cycle=71": {
+   "file": "184810eed9cb15e31acf.json",
+   "type": "application/json"
+  },
+  "/api/cube/profile?variable=temperature&lon0=80&lon1=95&lat0=5&lat1=23&day=2020-05-14&depth_max=500&platform=2902282&cycle=71": {
+   "file": "23c76d77f3e204d23960.json",
+   "type": "application/json"
+  },
+  "/api/cube/profile?variable=temperature&lon0=80&lon1=95&lat0=5&lat1=23&day=2020-05-14&depth_max=500&platform=2902283&cycle=71": {
+   "file": "402064501f93e79db067.json",
+   "type": "application/json"
+  },
+  "/api/cube/profile?variable=temperature&lon0=80&lon1=95&lat0=5&lat1=23&day=2020-05-14&depth_max=500&platform=2902285&cycle=326": {
+   "file": "c986d582999b93e6047e.json",
+   "type": "application/json"
+  },
+  "/api/cube/profile?variable=temperature&lon0=80&lon1=95&lat0=5&lat1=23&day=2020-05-14&depth_max=500&platform=2902596&cycle=218": {
+   "file": "26390e84d049cbc0148f.json",
+   "type": "application/json"
+  },
+  "/api/cube/profile?variable=temperature&lon0=80&lon1=95&lat0=5&lat1=23&day=2020-05-14&depth_max=500&platform=2902605&cycle=219": {
+   "file": "ed18bc7ba9365b93c9ab.json",
+   "type": "application/json"
+  },
+  "/api/cube/profile?variable=temperature&lon0=80&lon1=95&lat0=5&lat1=23&day=2020-05-14&depth_max=500&platform=2902765&cycle=11": {
+   "file": "3d9c9b1996ccf8ffaa4a.json",
+   "type": "application/json"
+  },
+  "/api/cube/profile?variable=temperature&lon0=80&lon1=95&lat0=5&lat1=23&day=2020-05-22&depth_max=500&platform=2901892&cycle=213": {
+   "file": "25606446aac352006bb6.json",
+   "type": "application/json"
+  },
+  "/api/cube/profile?variable=temperature&lon0=80&lon1=95&lat0=5&lat1=23&day=2020-05-22&depth_max=500&platform=2902230&cycle=308": {
+   "file": "cedf8d8b8ae1cf5c185e.json",
+   "type": "application/json"
+  },
+  "/api/cube/profile?variable=temperature&lon0=80&lon1=95&lat0=5&lat1=23&day=2020-05-22&depth_max=500&platform=2902232&cycle=307": {
+   "file": "9a5d9d1bdaeee3b9d983.json",
+   "type": "application/json"
+  },
+  "/api/cube/profile?variable=temperature&lon0=80&lon1=95&lat0=5&lat1=23&day=2020-05-22&depth_max=500&platform=2902233&cycle=307": {
+   "file": "4ccfd3e71673c55a1c0a.json",
+   "type": "application/json"
+  },
+  "/api/cube/profile?variable=temperature&lon0=80&lon1=95&lat0=5&lat1=23&day=2020-05-22&depth_max=500&platform=2902234&cycle=307": {
+   "file": "f98b0b810afbef7f57f6.json",
+   "type": "application/json"
+  },
+  "/api/cube/profile?variable=temperature&lon0=80&lon1=95&lat0=5&lat1=23&day=2020-05-22&depth_max=500&platform=2902235&cycle=307": {
+   "file": "a413adb0637e9903a860.json",
+   "type": "application/json"
+  },
+  "/api/cube/profile?variable=temperature&lon0=80&lon1=95&lat0=5&lat1=23&day=2020-05-22&depth_max=500&platform=2902236&cycle=214": {
+   "file": "36e3e940deb010462829.json",
+   "type": "application/json"
+  },
+  "/api/cube/profile?variable=temperature&lon0=80&lon1=95&lat0=5&lat1=23&day=2020-05-22&depth_max=500&platform=2902264&cycle=157": {
+   "file": "0cda6bdc347d31261fe6.json",
+   "type": "application/json"
+  },
+  "/api/cube/profile?variable=temperature&lon0=80&lon1=95&lat0=5&lat1=23&day=2020-05-22&depth_max=500&platform=2902278&cycle=73": {
+   "file": "05d82720da69848c9382.json",
+   "type": "application/json"
+  },
+  "/api/cube/profile?variable=temperature&lon0=80&lon1=95&lat0=5&lat1=23&day=2020-05-22&depth_max=500&platform=2902279&cycle=73": {
+   "file": "2793a1b9efca469c0364.json",
+   "type": "application/json"
+  },
+  "/api/cube/profile?variable=temperature&lon0=80&lon1=95&lat0=5&lat1=23&day=2020-05-22&depth_max=500&platform=2902280&cycle=72": {
+   "file": "041205f0d34effaf321a.json",
+   "type": "application/json"
+  },
+  "/api/cube/profile?variable=temperature&lon0=80&lon1=95&lat0=5&lat1=23&day=2020-05-22&depth_max=500&platform=2902282&cycle=72": {
+   "file": "9c154954007e65710435.json",
+   "type": "application/json"
+  },
+  "/api/cube/profile?variable=temperature&lon0=80&lon1=95&lat0=5&lat1=23&day=2020-05-22&depth_max=500&platform=2902283&cycle=72": {
+   "file": "726b7250689be5c8c5bf.json",
+   "type": "application/json"
+  },
+  "/api/cube/profile?variable=temperature&lon0=80&lon1=95&lat0=5&lat1=23&day=2020-05-22&depth_max=500&platform=2902285&cycle=328": {
+   "file": "67e6da27b16acf050a27.json",
+   "type": "application/json"
+  },
+  "/api/cube/profile?variable=temperature&lon0=80&lon1=95&lat0=5&lat1=23&day=2020-05-22&depth_max=500&platform=2902394&cycle=167": {
+   "file": "5807f5b055213f1da122.json",
+   "type": "application/json"
+  },
+  "/api/cube/profile?variable=temperature&lon0=80&lon1=95&lat0=5&lat1=23&day=2020-05-22&depth_max=500&platform=2902596&cycle=219": {
+   "file": "b7fe88ebd0aa060fba33.json",
+   "type": "application/json"
+  },
+  "/api/cube/profile?variable=temperature&lon0=80&lon1=95&lat0=5&lat1=23&day=2020-05-22&depth_max=500&platform=2902682&cycle=143": {
+   "file": "a327eec113197bc9005d.json",
+   "type": "application/json"
+  },
+  "/api/cube/profile?variable=temperature&lon0=80&lon1=95&lat0=5&lat1=23&day=2020-05-22&depth_max=500&platform=2902764&cycle=17": {
+   "file": "4a482a8dce90839e3b27.json",
+   "type": "application/json"
+  },
+  "/api/cube/profile?variable=temperature&lon0=80&lon1=95&lat0=5&lat1=23&day=2020-05-22&depth_max=500&platform=2902765&cycle=12": {
+   "file": "d65226eacb4fb437d465.json",
+   "type": "application/json"
+  },
+  "/api/cube/profile?variable=temperature&lon0=80&lon1=95&lat0=5&lat1=23&day=2020-05-22&depth_max=500&platform=2902771&cycle=14": {
+   "file": "e47c7656118510303ce6.json",
+   "type": "application/json"
+  },
+  "/api/cube/profile?variable=temperature&lon0=80&lon1=95&lat0=5&lat1=23&day=2020-05-22&depth_max=500&platform=2903132&cycle=77": {
+   "file": "aad31db9cb878e80db9b.json",
+   "type": "application/json"
+  },
+  "/api/cube/profile?variable=temperature&lon0=80&lon1=95&lat0=5&lat1=23&day=2020-05-22&depth_max=500&platform=2903135&cycle=104": {
+   "file": "ef526cc59030c03d66a3.json",
+   "type": "application/json"
+  },
+  "/api/drift?lon=88&lat=15&day=2018-08-25&hours=72&direction=forward&object=liferaft": {
+   "file": "dc93348096f27e64513c.json",
+   "type": "application/json"
+  },
+  "/api/drift?lon=88&lat=15&day=2020-05-14&hours=72&direction=forward&object=liferaft": {
+   "file": "13faa027c7c55de33b1a.json",
+   "type": "application/json"
+  },
+  "/api/drift?lon=88&lat=15&day=2020-05-22&hours=72&direction=forward&object=liferaft": {
+   "file": "07748a6e3fb0b0487749.json",
+   "type": "application/json"
+  },
+  "/api/meta": {
+   "file": "be7b90a11cde1462383c.json",
+   "type": "application/json"
+  },
+  "/api/surface/currents/data?day=2018-08-25&depth=0&n=980640": {
+   "file": "402180dc1d8a38486dc3.bin",
+   "type": "application/octet-stream"
+  },
+  "/api/surface/currents/data?day=2020-05-14&depth=0&n=980640": {
+   "file": "f6b8a5942949dae3f1e1.bin",
+   "type": "application/octet-stream"
+  },
+  "/api/surface/currents/data?day=2020-05-22&depth=0&n=980640": {
+   "file": "232541aa13ce9dd4a987.bin",
+   "type": "application/octet-stream"
+  },
+  "/api/surface/currents/meta?day=2018-08-25&depth=0": {
+   "file": "5098c7e6a86a70bbb4f5.json",
+   "type": "application/json"
+  },
+  "/api/surface/currents/meta?day=2020-05-14&depth=0": {
+   "file": "44950be95691c99d2a9d.json",
+   "type": "application/json"
+  },
+  "/api/surface/currents/meta?day=2020-05-22&depth=0": {
+   "file": "5bd5ce799686fb93eb80.json",
+   "type": "application/json"
+  },
+  "/api/surface/data?variable=temperature&day=2018-08-25&depth=0&n=980640": {
+   "file": "65d660f1056661ea4ee5.bin",
+   "type": "application/octet-stream"
+  },
+  "/api/surface/data?variable=temperature&day=2020-05-14&depth=0&n=980640": {
+   "file": "144d6f243060cd60209d.bin",
+   "type": "application/octet-stream"
+  },
+  "/api/surface/data?variable=temperature&day=2020-05-22&depth=0&n=980640": {
+   "file": "f1878fde1e2cb621299e.bin",
+   "type": "application/octet-stream"
+  },
+  "/api/surface/meta?variable=temperature&day=2018-08-25&depth=0": {
+   "file": "28f12f3ef71f5900bacf.json",
+   "type": "application/json"
+  },
+  "/api/surface/meta?variable=temperature&day=2020-05-14&depth=0": {
+   "file": "91def86922a2bb35ec21.json",
+   "type": "application/json"
+  },
+  "/api/surface/meta?variable=temperature&day=2020-05-22&depth=0": {
+   "file": "e4bd3d039f8b238446b1.json",
+   "type": "application/json"
+  }
+ },
+ "recorded_utc": "2026-10-31 16:35 UTC"
+}

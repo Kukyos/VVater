@@ -44,7 +44,8 @@ import {
 } from "@cesium/engine";
 
 import { CubeData, depthTicks, depthToT, tToDepth } from "./data";
-import { type Style, paintFloor, paintLevel, paintWall } from "./paint";
+import { type Style, paintFloor, paintLevel, paintWall, rgbFor } from "./paint";
+import { type IsoMesh, isosurface, rangeFor } from "./iso";
 
 /** The visible part of the cube: its own extent, or a cut into it. */
 export interface Cut { lon0: number; lon1: number; lat0: number; lat1: number;
@@ -68,6 +69,35 @@ function faceMaterial(image: HTMLCanvasElement, opacity: number): Material {
     translucent: opacity < 1,
   });
 }
+
+/**
+ * The isosurface: one colour, the colour bar's at the iso value, shaded by a light at the
+ * eye (how much the surface faces the viewer), so its shape reads at any time of day and the
+ * sun never darkens it. Emission only: Cesium's own lighting adds nothing.
+ */
+const isoAppearance = (rgb: [number, number, number]) => new MaterialAppearance({
+  material: new Material({
+    fabric: {
+      uniforms: { tint: new Color(rgb[0] / 255, rgb[1] / 255, rgb[2] / 255, 1) },
+      source: `
+        czm_material czm_getMaterial(czm_materialInput materialInput) {
+          czm_material material = czm_getDefaultMaterial(materialInput);
+          // A light just above and left of the eye: relief shows even on a near-flat sheet.
+          float facing = abs(dot(normalize(materialInput.normalEC), normalize(vec3(-0.35, 0.55, 0.76))));
+          material.diffuse = vec3(0.0);
+          material.specular = 0.0;
+          material.emission = min(tint.rgb * (0.25 + 0.95 * facing), vec3(1.0));
+          material.alpha = 1.0;
+          return material;
+        }`,
+    },
+    translucent: false,
+  }),
+  faceForward: true,
+  translucent: false,
+  closed: false,
+  materialSupport: MaterialAppearance.MaterialSupport.BASIC,
+});
 
 const appearance = (image: HTMLCanvasElement, opacity: number) => new MaterialAppearance({
   material: faceMaterial(image, opacity),
@@ -97,6 +127,11 @@ export class CubeScene {
   opacity = 1;
   private style?: Style;
   private cut?: Cut;
+  /** The value an isosurface is drawn at, or undefined for none. */
+  iso?: number;
+  /** The last isosurface built, and what it was built for: rebuilt only when that changes. */
+  isoMesh?: IsoMesh;
+  private isoKey = "";
 
   constructor(private scene: Scene) {
     scene.primitives.add(this.edges);
@@ -190,6 +225,15 @@ export class CubeScene {
 
     const floor = this.floorGeometry(data, cut);
     if (floor) add(floor, paintFloor(data, style.cubeBottom));
+
+    const iso = this.isoGeometry(data, cut);
+    if (iso) {
+      next.push(new Primitive({
+        geometryInstances: new GeometryInstance({ geometry: iso }),
+        appearance: isoAppearance(rgbFor(this.iso!, style)),
+        asynchronous: false,
+      }));
+    }
 
     // Swap in one go: the new primitives are built synchronously on their first update.
     for (const p of this.primitives) this.scene.primitives.remove(p);
@@ -288,6 +332,52 @@ export class CubeScene {
     });
     return new Geometry({
       attributes, indices, primitiveType: PrimitiveType.TRIANGLES,
+      boundingSphere: BoundingSphere.fromVertices(Array.from(positions)),
+    });
+  }
+
+  /**
+   * The isosurface inside the cut as Cesium geometry (iso.ts builds the mesh). Normals come
+   * from the mesh's local east-north-up frame, turned to Earth-fixed at each vertex.
+   */
+  private isoGeometry(c: CubeData, cut: Cut): Geometry | undefined {
+    if (this.iso === undefined) { this.isoMesh = undefined; this.isoKey = ""; return undefined; }
+    const key = [this.iso, cut.lon0, cut.lon1, cut.lat0, cut.lat1, cut.top, cut.bottom,
+                 this.style!.axis, this.height, this.base, c.values.length].join("|");
+    const range = rangeFor(c, cut);
+    if (key !== this.isoKey || !this.isoMesh) {
+      this.isoMesh = range ? isosurface(c, this.iso, range, (d) => this.heightOf(d))
+        : { points: new Float64Array(), normals: new Float32Array(), indices: new Uint32Array(), cells: 0 };
+      this.isoKey = key;
+    }
+    const m = this.isoMesh;
+    if (!m.indices.length) return undefined;
+    const n = m.points.length / 3;
+    const positions = new Float64Array(n * 3);
+    const normals = new Float32Array(n * 3);
+    const scratch = new Cartesian3();
+    const rad = Math.PI / 180;
+    for (let v = 0; v < n; v += 1) {
+      const lon = m.points[v * 3], lat = m.points[v * 3 + 1];
+      const p = Cartesian3.fromDegrees(wrap(lon), lat, this.heightOf(m.points[v * 3 + 2]),
+                                       Ellipsoid.WGS84, scratch);
+      positions[v * 3] = p.x; positions[v * 3 + 1] = p.y; positions[v * 3 + 2] = p.z;
+      const cl = Math.cos(lon * rad), sl = Math.sin(lon * rad);
+      const cp = Math.cos(lat * rad), sp = Math.sin(lat * rad);
+      const e = m.normals[v * 3], nn = m.normals[v * 3 + 1], u = m.normals[v * 3 + 2];
+      normals[v * 3] = -sl * e - sp * cl * nn + cp * cl * u;
+      normals[v * 3 + 1] = cl * e - sp * sl * nn + cp * sl * u;
+      normals[v * 3 + 2] = cp * nn + sp * u;
+    }
+    const attributes = new GeometryAttributes();
+    attributes.position = new GeometryAttribute({
+      componentDatatype: ComponentDatatype.DOUBLE, componentsPerAttribute: 3, values: positions,
+    });
+    attributes.normal = new GeometryAttribute({
+      componentDatatype: ComponentDatatype.FLOAT, componentsPerAttribute: 3, values: normals,
+    });
+    return new Geometry({
+      attributes, indices: m.indices, primitiveType: PrimitiveType.TRIANGLES,
       boundingSphere: BoundingSphere.fromVertices(Array.from(positions)),
     });
   }

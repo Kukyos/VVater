@@ -11,6 +11,13 @@ message on their phone; they start the server within 30 minutes. Keep the tab op
 checks every 30 seconds and opens by itself when the server is back. If you already sent
 the message in the last 30 minutes, the card shows when, rather than the button again.
 
+## RECORDED SNAPSHOT
+
+If this badge is in the header, the data server could not be reached, and what you see is
+a recording of what it sent for the demo: the same data, replayed. The Bay of Bengal and
+the two Cyclone Amphan days work, with their floats and the drift from the Bay demo point.
+Anything else says "not in the offline snapshot". The assistant needs the live server.
+
 ## The Ocean Cube (Properties, top)
 
 The cube is a block of ocean cut out of the planet and set down on the sea surface where
@@ -60,7 +67,32 @@ kept and opens at once.
 - **Native levels only** — shows the model's own depth levels as bands, with nothing
   blended between them. Off, colours are blended between levels, as sections are usually
   drawn.
+- **Isosurface** — draws every place inside the cut where the field equals one value, as a
+  surface: for temperature it opens on 20 °C, the usual marker of the thermocline. **Iso
+  value** moves it across the colour bar's range. The surface is placed between the model's
+  own levels and stops at the coast and the sea floor. While it is on, the faces turn
+  see-through so it can be seen; turning it off puts the opacity back.
 - **Whole cube** puts the cuts back; **Look at it** points the camera at the cube.
+
+## Search & rescue drift
+
+Where would something in the water go, or where did it come from?
+
+- **Object** — what is drifting. The wind pushes a life raft harder (3 % of the wind speed)
+  than a person in the water (1 %); "current only" leaves the wind out.
+- **Direction** — *where will it go* runs forward in time; *where did it come from* runs
+  backward from where something was found.
+- **Hours** — 24, 48 or 72.
+- **Click the sea…** then click where the object is. **Bay demo point** uses 15° N, 88° E.
+  The day is the cube's day, starting at 12:00 UTC.
+
+200 particles are carried by each day's real surface currents in turn, plus the wind's
+push, with a little random spread for what the model cannot resolve. On the globe: the red
+line is the average track, the yellow rings are the **90 % search ellipses** (nine in ten
+particles are inside) after each day, the white dots are where the particles ended. The
+table gives each ellipse's size and area and how many particles **reached the coast**.
+**How the spread is made** lists every choice behind it. It is a planning and teaching aid,
+not an operational search-and-rescue product.
 
 ## Whole ocean
 

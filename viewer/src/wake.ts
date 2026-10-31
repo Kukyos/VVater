@@ -8,6 +8,7 @@
  * the ntfy app. Plain-text POST with query parameters, so the browser sends no preflight.
  */
 import { BASE, healthy } from "./api";
+import * as snapshot from "./snapshot";
 
 // The topic ships in the public bundle, so anyone who reads it can ping or
 // subscribe. The random name stops guessing, not reading; a Vercel function holding a
@@ -27,7 +28,12 @@ const clock = (t: number) => new Date(t).toLocaleTimeString([], { hour: "2-digit
 
 /** Resolves once the API answers. Local development never waits: there is nobody to ping. */
 export async function awaitServer(): Promise<void> {
+  // ?snapshot plays the recorded demo even with the server up: for rehearsing the fallback.
+  if (new URLSearchParams(location.search).has("snapshot") && await snapshot.activate()) return;
   if (/localhost|127\.0\.0\.1/.test(BASE) || await healthy()) return;
+  // The server is off but a recorded demo ships with the site: open that, and say so
+  // (the badge is main.ts's). Nobody needs to be woken to see the demo.
+  if (await snapshot.activate()) return;
 
   const card = document.createElement("div");
   card.id = "wake";

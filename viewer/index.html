@@ -301,6 +301,10 @@
   #wake .wake-error { color: var(--error); }
   #wake .wake-small { color: var(--muted); font-size: 11.5px; }
   #wake a { color: var(--accent); }
+  .drift-table { width: 100%; border-collapse: collapse; font-size: 11.5px; margin: 6px 0; }
+  .drift-table th, .drift-table td { text-align: left; padding: 2px 4px; border-bottom: 1px solid var(--line); }
+  #snapshot-badge { background: #b8860b; color: #111; font-weight: 700; font-size: 11.5px;
+    padding: 3px 8px; border-radius: 3px; white-space: nowrap; cursor: help; }
   .learn-q { font-weight: 600; color: #fff; }
   .learn-good { color: #5fd38a; } .learn-bad { color: var(--error); }
   .learn-place { display: grid; grid-template-columns: 1fr auto auto; gap: 6px; }
@@ -361,6 +365,7 @@
 
   <header id="top">
     <div class="brand">VVater<span>3D ocean model &amp; in-situ observations · any ocean</span></div>
+    <span id="snapshot-badge" hidden>RECORDED SNAPSHOT</span>
     <span class="tag">View</span>
     <div class="seg" role="group" aria-label="View">
       <button id="view-region" class="on" title="Oblique 3D view of the region (1)">Region 3D</button>
@@ -440,10 +445,40 @@
           <label class="check"><input type="checkbox" id="cube-contours" checked /> Contours</label>
         </div>
         <label class="check"><input type="checkbox" id="cube-native" /> Native levels only (no interpolation)</label>
+        <label class="check" title="Every place inside the cut where the field equals one value, as a surface"><input type="checkbox" id="cube-iso" /> Isosurface</label>
+        <div class="prop"><label for="cube-iso-value">Iso value</label>
+          <div class="slider"><input type="range" id="cube-iso-value" min="0" max="1000" value="500" disabled /><span class="val" id="cube-iso-label">—</span></div></div>
+        <div id="cube-iso-note" class="hint"></div>
         <div class="row">
           <button id="cut-reset" class="btn">Whole cube</button>
           <button id="cube-home" class="btn">Look at it</button>
         </div>
+      </div></details>
+
+      <details open id="drift-section"><summary>Search &amp; rescue drift</summary><div class="sec">
+        <div class="prop"><label for="drift-object">Object</label>
+          <select id="drift-object">
+            <option value="liferaft">Life raft (leeway 3 %)</option>
+            <option value="person">Person in the water (1 %)</option>
+            <option value="current">Current only, no wind</option>
+          </select></div>
+        <div class="pair">
+          <div><label for="drift-direction">Direction</label>
+            <select id="drift-direction">
+              <option value="forward">Where will it go</option>
+              <option value="backward">Where did it come from</option>
+            </select></div>
+          <div><label for="drift-hours">Hours</label>
+            <select id="drift-hours"><option>24</option><option>48</option><option selected>72</option></select></div>
+        </div>
+        <div class="row">
+          <button id="drift-pick" class="btn" title="Then click the sea">Click the sea…</button>
+          <button id="drift-demo" class="btn" title="15° N, 88° E, the middle of the Bay">Bay demo point</button>
+          <button id="drift-clear" class="btn">Clear</button>
+        </div>
+        <div class="hint">Day: the cube's day, from 12:00 UTC. Each day's real surface currents
+          in turn, plus wind leeway; 200 particles give a 90 % search ellipse per day.</div>
+        <div id="drift-out"></div>
       </div></details>
 
       <details open id="ocean-section"><summary>Whole ocean</summary><div class="sec">

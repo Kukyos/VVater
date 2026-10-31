@@ -78,6 +78,10 @@ export class CubeController {
   stretched = true;
   native = false;
   contours = true;
+  /** The isosurface: on or off, and the value it is drawn at (cube/iso.ts). */
+  isoOn = false;
+  isoValue = 0;
+  private opacityBefore = 1;
   private ticket = 0;
   private repaintFrame?: number;
   private catalog!: Catalog;
@@ -247,6 +251,10 @@ export class CubeController {
         log: variable.log && got.meta.valueRange[0] > 0,
         range: [...got.meta.valueRange] as [number, number],
       };
+      // Temperature opens on the 20 °C isotherm, the thermocline marker the Bay volume's
+      // preset uses; anything else on the middle of its range.
+      const [lo, hi] = got.meta.valueRange;
+      this.isoValue = variable.key === "temperature" && lo < 20 && hi > 20 ? 20 : (lo + hi) / 2;
     }
     this.writeUrl();
     this.repaintNow();
@@ -393,12 +401,29 @@ export class CubeController {
     const d = this.data;
     const cut = this.currentCut();
     if (!d || !cut) return;
+    this.scene.iso = this.isoOn ? this.isoValue : undefined;
     this.scene.render(d, cut, this.style(), this.displayHeight());
+    this.labelIso();
     this.drawCasts();
     this.onRepaint?.();
     this.labelCut(cut);
     el("cube-height-label").textContent = `×${Math.round(this.scene.exaggeration)}`;
     this.hooks.kick(400);
+  }
+
+  /** The iso slider runs across the colour bar's range; its label and note say what is drawn. */
+  private labelIso(): void {
+    const [lo, hi] = this.colour.range;
+    const units = this.variable?.units ? ` ${this.variable.units}` : "";
+    el<HTMLInputElement>("cube-iso-value").value =
+      String(Math.round(1000 * (this.isoValue - lo) / ((hi - lo) || 1)));
+    el("cube-iso-label").textContent = `${formatValue(this.isoValue)}${units}`;
+    const m = this.scene.isoMesh;
+    el("cube-iso-note").textContent = !this.isoOn ? ""
+      : !m?.cells ? `${formatValue(this.isoValue)}${units} is not reached inside the cut.`
+      : `The ${formatValue(this.isoValue)}${units} surface crosses ${m.cells.toLocaleString()} ` +
+        `grid cells, placed between native levels; it stops at the coast and the sea floor. ` +
+        `The faces are see-through while it is on.`;
   }
 
   private labelCut(cut: Cut): void {
@@ -499,6 +524,27 @@ export class CubeController {
     });
     el<HTMLInputElement>("cube-contours").addEventListener("change", (e) => {
       this.contours = (e.target as HTMLInputElement).checked;
+      this.repaint();
+    });
+    el<HTMLInputElement>("cube-iso").addEventListener("change", (e) => {
+      this.isoOn = (e.target as HTMLInputElement).checked;
+      el<HTMLInputElement>("cube-iso-value").disabled = !this.isoOn;
+      // An opaque cube hides a surface inside it: see-through while the surface is on,
+      // back to what it was after.
+      const slider = el<HTMLInputElement>("cube-opacity");
+      if (this.isoOn) {
+        this.opacityBefore = this.scene.opacity;
+        this.scene.opacity = Math.min(this.scene.opacity, 0.25);
+      } else {
+        this.scene.opacity = this.opacityBefore;
+      }
+      slider.value = String(Math.round(this.scene.opacity * 100));
+      el("cube-opacity-label").textContent = this.scene.opacity.toFixed(2);
+      this.repaint();
+    });
+    el<HTMLInputElement>("cube-iso-value").addEventListener("input", (e) => {
+      const [lo, hi] = this.colour.range;
+      this.isoValue = lo + (hi - lo) * Number((e.target as HTMLInputElement).value) / 1000;
       this.repaint();
     });
     el<HTMLInputElement>("cube-native").addEventListener("change", (e) => {

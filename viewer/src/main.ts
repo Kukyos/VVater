@@ -35,6 +35,8 @@ import "@cesium/widgets/Source/widgets.css";
 import * as api from "./api";
 import type { Meta, VolumeMeta } from "./api";
 import { awaitServer } from "./wake";
+import { DriftLayer, describe as describeDrift } from "./drift";
+import * as snapshot from "./snapshot";
 import {
   DEFAULT_PALETTE_FOR, PALETTES, byId, logScaleAllowed, renderLegend, symmetricRange,
 } from "./colorbar";
@@ -48,6 +50,7 @@ import { Tour } from "./learn/tour";
 import { demo as lessonsDemo } from "./learn/lessons";
 import { CubeController, formatValue, shiftDay } from "./cube/controller";
 import { demo as cubeDataDemo, matchVariable } from "./cube/data";
+import { demo as isoDemo } from "./cube/iso";
 import { drawColumn } from "./cube/column";
 import { OceanLayer } from "./ocean";
 import { demo as flowDemo } from "./flow";
@@ -120,12 +123,24 @@ async function main(): Promise<void> {
   // while the API is still waking, whatever a desktop session remembered.
   if (matchMedia("(max-width: 900px)").matches) el("app").classList.add("left-closed", "right-closed");
   status("contacting the API…", "busy");
+  // The server could not be reached and the recorded demo is playing instead (snapshot.ts):
+  // say so on screen for as long as it lasts, never pass a recording off as live.
+  snapshot.onActivate((recorded) => {
+    const badge = el("snapshot-badge");
+    badge.hidden = false;
+    badge.title = `The data server cannot be reached, so this is a recording of what it sent ` +
+      `on ${recorded}: the same bytes, replayed. Only the recorded demo path works; anything ` +
+      `else says "not in the offline snapshot". The assistant needs the live server.`;
+    status(`data server unreachable: replaying the snapshot recorded ${recorded}`, "warn");
+  });
   await awaitServer();
   const meta = await api.getMeta();
   if (import.meta.env.DEV) {
     sectionDemo();
+    snapshot.demo();
     cameraDemo();
     cubeDataDemo();
+    isoDemo();
     flowDemo();
     fishingDemo();
     immersiveDemo();
@@ -1320,6 +1335,43 @@ async function main(): Promise<void> {
     const platform = entity.properties?.platform?.getValue?.() ?? String(entity.id).split("@")[0];
     await showProfile(String(platform));
   }, ScreenSpaceEventType.LEFT_CLICK);
+
+  // ---- search-and-rescue drift (drift.ts, server/ocean/drift.py) --------------------
+  const drift = new DriftLayer(viewer);
+  async function runDrift(lat: number, lon: number): Promise<void> {
+    const day = cube.request?.day ?? meta.demoDate;
+    const q = { lon, lat, day, hours: Number(el<HTMLSelectElement>("drift-hours").value),
+                direction: el<HTMLSelectElement>("drift-direction").value,
+                object: el<HTMLSelectElement>("drift-object").value };
+    status(`drifting from ${lat.toFixed(2)}° ${lon.toFixed(2)}° on ${day}: reading each day's ` +
+      `currents${q.object === "current" ? "" : " and wind"}…`, "busy");
+    el("drift-out").textContent = "";
+    try {
+      const got = await api.getDrift(q);
+      const height = cubeActive() && cube.currentCut() ? cube.scene.heightOf(cube.currentCut()!.top) + 1_000 : 0;
+      drift.show(got, height);
+      el("drift-out").innerHTML = describeDrift(got);
+      const end = got.days[got.days.length - 1];
+      status(`drift: after ${end.hour} h the 90 % ellipse is ${end.a_km.toFixed(0)} × ` +
+        `${end.b_km.toFixed(0)} km; ${Math.round(end.reached_coast * 100)} % reached the coast`);
+    } catch (error) {
+      const message = (error as Error).message;
+      el("drift-out").textContent = snapshot.active()
+        ? `${message}. The recorded demo only holds the Bay demo point.` : message;
+      status(`drift: ${message}`, "warn");
+    }
+    graphics.kick(1000);
+  }
+  el("drift-pick").addEventListener("click", () => {
+    status("click the sea where the object is (or was found)");
+    pickOnce = (lat, lon) => void runDrift(lat, lon);
+  });
+  el("drift-demo").addEventListener("click", () => void runDrift(15, 88));
+  el("drift-clear").addEventListener("click", () => {
+    drift.clear();
+    el("drift-out").textContent = "";
+    graphics.kick(300);
+  });
 
   /** The cube's column at a clicked place, native levels, in the Probe panel. */
   function showColumn(hit: { lon: number; lat: number; column: { depth: number; value: number }[] }): void {

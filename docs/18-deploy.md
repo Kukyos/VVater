@@ -218,6 +218,25 @@ The topic name ships in the public bundle, so anyone who reads it can send a pus
 The random name stops guessing, not reading. If that is ever abused, move the send
 behind a Vercel function that holds a secret.
 
+## When the server is down and a snapshot ships: the recorded demo
+
+If `viewer/public/snapshot/manifest.json` exists, the site never shows the wake card.
+Instead, when `/api/health` fails at load, or any request fails mid-demo (a network error
+or a 502-504 from the Vercel proxy), the page replays what the API sent when the snapshot
+was recorded (`viewer/src/snapshot.ts`) and shows **RECORDED SNAPSHOT** in the header
+from then on. What is covered is listed in `11-deferred.md` D-56. Add `?snapshot` to any
+URL to rehearse it with the server up.
+
+To record or re-record (from the repository root, with the viewer on `npm run dev`):
+
+    rm -rf viewer/public/snapshot
+    VVATER_RECORD=viewer/public/snapshot .venv/Scripts/python -m uvicorn server.ocean.api:app --port 8011
+
+Then walk the demo in a fresh browser profile, or with the cache disabled in DevTools:
+a response the browser serves from its own cache never reaches the server and is not
+recorded. Every successful GET under `/api/` is written; `/api/chat` and `/api/casts` never
+are. Commit the folder; Vercel serves it as static files.
+
 ## When the live site cannot reach the API
 
 Check, in order, for the current setup:
