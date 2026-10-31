@@ -5,6 +5,8 @@
  * Everything scientific happens on the server; this file is presentation and state.
  */
 
+import { inject } from "@vercel/analytics";
+
 import {
   Cartesian3,
   Cartographic,
@@ -116,6 +118,9 @@ const status = (message: string, kind: "info" | "busy" | "warn" | "error" = "inf
 };
 
 async function main(): Promise<void> {
+  // Initialize Vercel Web Analytics
+  inject();
+
   // On a phone the docks are drawers over the globe (index.html): they start shut, even
   // while the API is still waking, whatever a desktop session remembered.
   if (matchMedia("(max-width: 900px)").matches) el("app").classList.add("left-closed", "right-closed");
