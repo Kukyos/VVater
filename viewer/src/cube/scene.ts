@@ -132,6 +132,8 @@ export class CubeScene {
   /** The last isosurface built, and what it was built for: rebuilt only when that changes. */
   isoMesh?: IsoMesh;
   private isoKey = "";
+  /** The data the mesh was built from: two days with the same grid must not share one. */
+  private isoData?: CubeData;
 
   constructor(private scene: Scene) {
     scene.primitives.add(this.edges);
@@ -343,9 +345,10 @@ export class CubeScene {
   private isoGeometry(c: CubeData, cut: Cut): Geometry | undefined {
     if (this.iso === undefined) { this.isoMesh = undefined; this.isoKey = ""; return undefined; }
     const key = [this.iso, cut.lon0, cut.lon1, cut.lat0, cut.lat1, cut.top, cut.bottom,
-                 this.style!.axis, this.height, this.base, c.values.length].join("|");
+                 this.style!.axis, this.height, this.base].join("|");
     const range = rangeFor(c, cut);
-    if (key !== this.isoKey || !this.isoMesh) {
+    if (key !== this.isoKey || c !== this.isoData || !this.isoMesh) {
+      this.isoData = c;
       this.isoMesh = range ? isosurface(c, this.iso, range, (d) => this.heightOf(d))
         : { points: new Float64Array(), normals: new Float32Array(), indices: new Uint32Array(), cells: 0 };
       this.isoKey = key;

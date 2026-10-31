@@ -20,12 +20,15 @@ const network: typeof globalThis.fetch = BASE.includes("ngrok")
 const fetch = async (url: string, init: RequestInit = {}): Promise<Response> => {
   const get = !init.method || init.method === "GET";
   if (get && snapshot.active()) return snapshot.replay(url);
+  // One slow answer the proxy turned into a 504 is not a dead server: switch to the
+  // recording only when the health check fails too, or the rest of the session is replayed.
+  const fallBack = async () => !(await healthy()) && snapshot.activate();
   try {
     const r = await network(url, init);
-    if (get && r.status >= 502 && r.status <= 504 && await snapshot.activate()) return snapshot.replay(url);
+    if (get && r.status >= 502 && r.status <= 504 && await fallBack()) return snapshot.replay(url);
     return r;
   } catch (error) {
-    if (get && (error as Error).name !== "AbortError" && await snapshot.activate()) return snapshot.replay(url);
+    if (get && (error as Error).name !== "AbortError" && await fallBack()) return snapshot.replay(url);
     if (!get && snapshot.active()) throw new Error("not available in the offline snapshot");
     throw error;
   }

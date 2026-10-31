@@ -1,7 +1,7 @@
 """Record what the API answered, so the static site can replay it with no server.
 
-The live site's backend is one machine (docs/11-deferred.md D-41). If it, or the venue
-network, fails during a demo, the viewer falls back to a **snapshot**: the exact bytes the
+The live site's backend is one machine (docs/11-deferred.md D-41). If it fails or cannot
+be reached during a demo, the viewer falls back to a **snapshot**: the exact bytes the
 API sent for a recorded walk through the demo, served as static files beside the site.
 
 Recording is a switch on the real server, not a second code path that could drift from it:

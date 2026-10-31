@@ -1301,12 +1301,23 @@ async function main(): Promise<void> {
   let pickOnce: ((lat: number, lon: number) => void) | undefined;
   handler.setInputAction(async (movement: { position: unknown }) => {
     if (pickOnce) {
-      const point = viewer.camera.pickEllipsoid(movement.position as never);
-      if (!point) return;
-      const c = Cartographic.fromCartesian(point);
+      // The cube stands far above the globe: a click on its top means the place under the
+      // cursor on the cube, not the ground the ray would reach behind it.
+      const onCube = cubeActive() ? cube.scene.probe(movement.position as never) : undefined;
+      let lat: number, lon: number;
+      if (onCube) {
+        ({ lat, lon } = onCube);
+        if (lon > 180) lon -= 360;
+      } else {
+        const point = viewer.camera.pickEllipsoid(movement.position as never);
+        if (!point) return;
+        const c = Cartographic.fromCartesian(point);
+        lat = CesiumMath.toDegrees(c.latitude);
+        lon = CesiumMath.toDegrees(c.longitude);
+      }
       const then = pickOnce;
       pickOnce = undefined;
-      then(CesiumMath.toDegrees(c.latitude), CesiumMath.toDegrees(c.longitude));
+      then(lat, lon);
       return;
     }
     const picked = viewer.scene.pick(movement.position as never);

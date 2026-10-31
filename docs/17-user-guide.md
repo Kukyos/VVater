@@ -15,7 +15,8 @@ the message in the last 30 minutes, the card shows when, rather than the button 
 
 If this badge is in the header, the data server could not be reached, and what you see is
 a recording of what it sent for the demo: the same data, replayed. The Bay of Bengal and
-the two Cyclone Amphan days work, with their floats and the drift from the Bay demo point.
+the two Cyclone Amphan days work, with their floats and the drift from the Bay demo point,
+and so does the INCOIS Bay volume with its floats, glider and residual.
 Anything else says "not in the offline snapshot". The assistant needs the live server.
 
 ## The Ocean Cube (Properties, top)

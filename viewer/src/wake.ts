@@ -26,6 +26,25 @@ const remember = (t: number): void => {
 };
 const clock = (t: number) => new Date(t).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
 
+/**
+ * With a snapshot shipped, the visitor never sees the wake card, so nobody would know the
+ * server is down. When the page falls back to the recording on the live site, the team's
+ * phone gets the same push, at most once per 30 minutes per browser. Not when rehearsing
+ * with ?snapshot, and never from local development.
+ */
+snapshot.onActivate(() => {
+  if (new URLSearchParams(location.search).has("snapshot") || /localhost|127\.0\.0\.1/.test(BASE)
+      || location.hostname === "localhost" || Date.now() - stored() < WAIT_MS) return;
+  const at = Date.now();
+  const q = new URLSearchParams({ title: "VVater: server down, snapshot playing", priority: "high",
+                                  tags: "ocean", click: location.href });
+  void fetch(`https://ntfy.sh/${TOPIC}?${q}`, {
+    method: "POST",
+    body: `A visitor at ${clock(at)} (their time) could not reach the server and is watching the ` +
+      `recorded snapshot. Check the backend (docs/18-deploy.md).`,
+  }).then((r) => { if (r.ok) remember(at); }).catch(() => { /* the badge still shows */ });
+});
+
 /** Resolves once the API answers. Local development never waits: there is nobody to ping. */
 export async function awaitServer(): Promise<void> {
   // ?snapshot plays the recorded demo even with the server up: for rehearsing the fallback.
